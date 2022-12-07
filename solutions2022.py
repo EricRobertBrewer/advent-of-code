@@ -1,0 +1,209 @@
+import argparse
+
+import aoc_util
+
+
+YEAR = '2022'
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Advent of Code 2022'
+    )
+    parser.add_argument(
+        'day',
+        type=int,
+        help='Day of the month.'
+    )
+    parser.add_argument(
+        'part',
+        type=int,
+        help='Part (1 or 2) of the daily problem.'
+    )
+
+    args = parser.parse_args()
+    day = args.day
+    part = args.part
+    solve(day, part)
+
+
+def solve(day: int, part: int):
+    day_path = aoc_util.download_input_if_needed(YEAR, day)
+    with open(day_path, 'r') as fd:
+        lines = [line.strip('\n') for line in fd.readlines()]
+
+    key = str(day) + '-' + str(part)
+    if key not in SOLVERS:
+        raise ValueError('No solution for day `{:d}` part `{:d}`'.format(day, part))
+    solver = SOLVERS[key]
+    answer = solver(lines)
+    print(answer)
+
+
+def d01_1_calorie_counting(lines):
+    max_ = None
+    sum_ = 0
+    for line in lines:
+        if len(line) == 0:
+            if max_ is None or sum_ > max_:
+                max_ = sum_
+            sum_ = 0
+        else:
+            sum_ += int(line)
+    if max_ is None or sum_ > max_:
+        max_ = sum_
+    return max_
+
+
+def d01_2_calorie_counting(lines):
+    top = list()  # Ascending.
+    sum_ = 0
+    for line in lines:
+        if len(line) == 0:
+            if len(top) < 3:
+                top.append(sum_)
+                top.sort()
+            elif sum_ > top[0]:
+                top[0] = sum_
+                top.sort()
+            sum_ = 0
+        else:
+            sum_ += int(line)
+    if sum_ > top[0]:
+        top[0] = sum_
+        top.sort()
+    return sum(top)
+
+
+def d02_1_rock_paper_scissors(lines):
+    sum_ = 0
+    opp = {'A': 0, 'B': 1, 'C': 2}
+    you = {'X': 0, 'Y': 1, 'Z': 2}
+
+    for line in lines:
+        o, y = line.split(' ')
+        outcome = 3 * ((4 + you[y] - opp[o]) % 3)
+        sum_ += outcome
+        sum_ += you[y] + 1
+    return sum_
+
+
+def d02_2_rock_paper_scissors(lines):
+    sum_ = 0
+    opp = {'A': 0, 'B': 1, 'C': 2}
+    outcome = {'X': 0, 'Y': 1, 'Z': 2}
+
+    for line in lines:
+        o, u = line.split(' ')
+        sum_ += 3 * outcome[u]
+        you = (2 + opp[o] + outcome[u]) % 3
+        sum_ += you + 1
+    return sum_
+
+
+def d03_1_rucksack_reorganization(lines):
+    priority = {c: i + 1 for i, c in
+                enumerate('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')}
+    x = 0
+    for line in lines:
+        n = len(line)//2
+        items = set(line[:n])
+        for c in line[n:]:
+            if c in items:
+                x += priority[c]
+                break
+    return x
+
+
+def d03_2_rucksack_reorganization(lines):
+    priority = {c: i + 1 for i, c in
+                enumerate('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')}
+    x = 0
+    for i in range(0, len(lines), 3):
+        groups = lines[i:i+3]
+        common = set(groups[0]).intersection(set(groups[1])).intersection(set(groups[2]))
+        if len(common) != 1:
+            raise ValueError('Bad groups: {}'.format('\n'.join(groups)))
+        c = next(iter(common))
+        x += priority[c]
+    return x
+
+
+def d04_1_camp_cleanup(lines):
+    x = 0
+    for line in lines:
+        a, b = [tuple(map(int, part.split('-'))) for part in line.split(',')]
+        if (a[0] <= b[0] and a[1] >= b[1]) or (b[0] <= a[0] and b[1] >= a[1]):
+            x += 1
+    return x
+
+
+def d04_2_camp_cleanup(lines):
+    x = 0
+    for line in lines:
+        a, b = [tuple(map(int, part.split('-'))) for part in line.split(',')]
+        if (a[0] <= b[0] and a[1] >= b[1]) or (b[0] <= a[0] and b[1] >= a[1]) or \
+           (a[0] <= b[0] <= a[1]) or (b[0] <= a[0] <= b[1]):
+            x += 1
+    return x
+
+
+def d05_1_supply_stacks(lines, part=1):
+    crate_lines = list()
+    for line in lines:
+        if '[' not in line:
+            break
+        crate_lines.append(line)
+    crates = [list() for _ in range(len(crate_lines[0])//4+1)]
+    for crate_line in crate_lines[::-1]:
+        for i in range(len(crates)):
+            crate = crate_line[4*i+1]
+            if crate != ' ':
+                crates[i].append(crate)
+
+    for line in lines[len(crate_lines)+2:]:
+        parts = line.split(' ')
+        n, src, dst = int(parts[1]), int(parts[3]), int(parts[5])
+        head, tail = crates[src-1][:-n], crates[src-1][-n:]
+        crates[src-1] = head
+        if part == 1:
+            crates[dst-1].extend(tail[::-1])
+        else:
+            crates[dst-1].extend(tail)
+    return ''.join(crate[-1] for crate in crates)
+
+
+def d05_2_supply_stacks(lines):
+    return d05_1_supply_stacks(lines, part=2)
+
+
+def d06_1_tuning_trouble(lines, k=4):
+    s = lines[0]
+    for i in range(k, len(s)):
+        if len(set(s[i-k:i])) == k:
+            return i
+    return -1
+
+
+def d06_2_tuning_trouble(lines):
+    return d06_1_tuning_trouble(lines, k=14)
+
+
+SOLVERS = {
+    '1-1': d01_1_calorie_counting,
+    '1-2': d01_2_calorie_counting,
+    '2-1': d02_1_rock_paper_scissors,
+    '2-2': d02_2_rock_paper_scissors,
+    '3-1': d03_1_rucksack_reorganization,
+    '3-2': d03_2_rucksack_reorganization,
+    '4-1': d04_1_camp_cleanup,
+    '4-2': d04_2_camp_cleanup,
+    '5-1': d05_1_supply_stacks,
+    '5-2': d05_2_supply_stacks,
+    '6-1': d06_1_tuning_trouble,
+    '6-2': d06_2_tuning_trouble,
+}
+
+
+if __name__ == '__main__':
+    main()
