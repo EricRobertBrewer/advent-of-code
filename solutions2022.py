@@ -189,6 +189,76 @@ def d06_2_tuning_trouble(lines):
     return d06_1_tuning_trouble(lines, k=14)
 
 
+def d07_no_space_left_on_device(lines):
+    # Parse file structure.
+    root = dict()
+    dirs = [root]
+    ls = False
+    for line in lines:
+        parts = line.split(' ')
+        if parts[0] == '$':
+            cmd = parts[1]
+            if cmd == 'cd':
+                dst = parts[2]
+                if dst == '/':
+                    dirs = [root]
+                elif dst == '..':
+                    if len(dirs) == 1:
+                        raise ValueError('Cannot `cd` out of `/`.')
+                    dirs = dirs[:-1]
+                else:
+                    wd = dirs[-1]
+                    if dst not in wd.keys():
+                        raise ValueError('Directory `{}` not found.'.format(dst))
+                    dirs.append(wd[dst])
+                ls = False
+            elif cmd == 'ls':
+                ls = True
+            else:
+                raise ValueError('Unknown command `{}`.'.format(cmd))
+        elif ls:
+            wd = dirs[-1]
+            name = parts[1]
+            if name not in wd.keys():
+                if parts[0] == 'dir':
+                    wd[name] = dict()
+                else:
+                    wd[name] = int(parts[0])
+        else:
+            raise ValueError('Unexpected file listing without `ls` command `{}`.'.format(line))
+
+    # Calculate sizes.
+    def get_size(dir_: dict, path: str, sizes_: dict):
+        if path in sizes_.keys():
+            return sizes_[path]
+        size = 0
+        for k, v in dir_.items():
+            if type(v) == int:
+                size += v
+            else:
+                size += get_size(v, path + k + '/', sizes_)
+        sizes_[path] = size
+        return size
+    sizes = dict()
+    _ = get_size(root, '/', sizes)
+    return sizes
+
+
+def d07_1_no_space_left_on_device(lines):
+    sizes = d07_no_space_left_on_device(lines)
+    return sum(size for size in sizes.values() if size < 100000)
+
+
+def d07_2_no_space_left_on_device(lines):
+    sizes = d07_no_space_left_on_device(lines)
+    target = 30000000 - (70000000 - sizes['/'])
+    # TODO Binary search.
+    for size in sorted(list(sizes.values())):
+        if size >= target:
+            return size
+    raise ValueError('No directory found with size `{:d}`.'.format(target))
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -202,6 +272,8 @@ SOLVERS = {
     '5-2': d05_2_supply_stacks,
     '6-1': d06_1_tuning_trouble,
     '6-2': d06_2_tuning_trouble,
+    '7-1': d07_1_no_space_left_on_device,
+    '7-2': d07_2_no_space_left_on_device,
 }
 
 
