@@ -259,6 +259,59 @@ def d07_2_no_space_left_on_device(lines):
     raise ValueError('No directory found with size `{:d}`.'.format(target))
 
 
+def d08_1_treetop_tree_house(lines):
+    grid = [list(map(int, line)) for line in lines]
+    assert all(len(grid[i]) == len(grid[0]) for i in range(1, len(grid)))
+    h, w = len(grid), len(grid[0])
+
+    max_top, max_bottom, max_left, max_right =\
+        [[[grid[i][j] for j in range(w)] for i in range(h)] for _ in range(4)]
+    for i in range(1, h-2):
+        for j in range(w):
+            max_top[i][j] = max(max_top[i][j], max_top[i-1][j])
+    for i in range(h-2, 1, -1):
+        for j in range(w):
+            max_bottom[i][j] = max(max_bottom[i][j], max_bottom[i+1][j])
+    for j in range(1, w-2):
+        for i in range(h):
+            max_left[i][j] = max(max_left[i][j], max_left[i][j-1])
+    for j in range(w-2, 1, -1):
+        for i in range(h):
+            max_right[i][j] = max(max_right[i][j], max_right[i][j+1])
+
+    x = 2 * h + 2 * w - 4  # Visible trees.
+    for i in range(1, h-1):
+        for j in range(1, w-1):
+            v = grid[i][j]
+            if max_top[i-1][j] < v or max_bottom[i+1][j] < v or max_left[i][j-1] < v or max_right[i][j+1] < v:
+                x += 1
+    return x
+
+
+def d08_2_treetop_tree_house(lines):
+    grid = [list(map(int, line)) for line in lines]
+    assert all(len(grid[i]) == len(grid[0]) for i in range(1, len(grid)))
+    h, w = len(grid), len(grid[0])
+
+    s_max = None
+    for i in range(1, h-1):
+        for j in range(1, w-1):
+            up, down, left, right = 1, 1, 1, 1
+            v = grid[i][j]
+            while i-up-1 >= 0 and grid[i-up][j] < v:
+                up += 1
+            while i+down+1 < h and grid[i+down][j] < v:
+                down += 1
+            while j-left-1 >= 0 and grid[i][j-left] < v:
+                left += 1
+            while j+right+1 < w and grid[i][j+right] < v:
+                right += 1
+            s = up * down * left * right
+            if s_max is None or s > s_max:
+                s_max = s
+    return s_max
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -274,6 +327,8 @@ SOLVERS = {
     '6-2': d06_2_tuning_trouble,
     '7-1': d07_1_no_space_left_on_device,
     '7-2': d07_2_no_space_left_on_device,
+    '8-1': d08_1_treetop_tree_house,
+    '8-2': d08_2_treetop_tree_house,
 }
 
 
