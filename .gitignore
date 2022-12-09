@@ -1,1 +1,6 @@
 input/
+
+.idea/
+*.iml
+
+__pycache__/

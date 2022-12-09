@@ -312,6 +312,50 @@ def d08_2_treetop_tree_house(lines):
     return s_max
 
 
+def d09_1_rope_bridge(lines, k=2):
+    knots = [[0, 0] for _ in range(k)]
+    head = knots[0]
+    tail = knots[-1]
+    coords = {tuple(tail)}
+    for line in lines:
+        direction, steps = line.split(' ')
+        sx, sy = 0, 0
+        if direction == 'U':
+            sy = 1
+        elif direction == 'D':
+            sy = -1
+        elif direction == 'L':
+            sx = -1
+        elif direction == 'R':
+            sx = 1
+        else:
+            raise ValueError('Unexpected direction: {}'.format(direction))
+        for _ in range(int(steps)):
+            head[0] += sx
+            head[1] += sy
+            for i in range(1, len(knots)):
+                prev = knots[i-1]
+                knot = knots[i]
+                dx, dy = prev[0] - knot[0], prev[1] - knot[1]
+                if abs(dx) == 2 and abs(dy) == 2:
+                    knot[0] += dx // 2
+                    knot[1] += dy // 2
+                elif abs(dx) == 2:
+                    knot[0] += dx // 2
+                    knot[1] += dy
+                elif abs(dy) == 2:
+                    knot[0] += dx
+                    knot[1] += dy // 2
+                else:
+                    break
+            coords.add(tuple(tail))
+    return len(coords)
+
+
+def d09_2_rope_bridge(lines):
+    return d09_1_rope_bridge(lines, k=10)
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -329,6 +373,8 @@ SOLVERS = {
     '7-2': d07_2_no_space_left_on_device,
     '8-1': d08_1_treetop_tree_house,
     '8-2': d08_2_treetop_tree_house,
+    '9-1': d09_1_rope_bridge,
+    '9-2': d09_2_rope_bridge,
 }
 
 
