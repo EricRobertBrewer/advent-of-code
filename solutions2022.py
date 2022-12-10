@@ -1,4 +1,6 @@
 import argparse
+import os
+import time
 
 import aoc_util
 
@@ -20,15 +22,28 @@ def main():
         type=int,
         help='Part (1 or 2) of the daily problem.'
     )
-
+    parser.add_argument(
+        '--example',
+        action='store_true',
+        help='Use example file instead of daily input. Default is false.'
+    )
     args = parser.parse_args()
     day = args.day
     part = args.part
-    solve(day, part)
+    example = args.example
+
+    start = time.time()
+    answer = solve(day, part, example=example)
+    duration = time.time() - start
+    print(answer)
+    print('Time: {:.3f} s'.format(duration))
 
 
-def solve(day: int, part: int):
-    day_path = aoc_util.download_input_if_needed(YEAR, day)
+def solve(day: int, part: int, example: bool = False):
+    if example:
+        day_path = aoc_util.get_example_day_path(YEAR, day)
+    else:
+        day_path = aoc_util.download_input_if_needed(YEAR, day)
     with open(day_path, 'r') as fd:
         lines = [line.strip('\n') for line in fd.readlines()]
 
@@ -36,8 +51,7 @@ def solve(day: int, part: int):
     if key not in SOLVERS:
         raise ValueError('No solution for day `{:d}` part `{:d}`'.format(day, part))
     solver = SOLVERS[key]
-    answer = solver(lines)
-    print(answer)
+    return solver(lines)
 
 
 def d01_1_calorie_counting(lines):
@@ -356,6 +370,77 @@ def d09_2_rope_bridge(lines):
     return d09_1_rope_bridge(lines, k=10)
 
 
+def d10_1_cathode_ray_tube(lines):
+    sum_ = 0
+    signals = (20, 60, 100, 140, 180, 220)
+    j = 0
+    cycle = 1
+    wait = 0
+    x = 1
+    v = None
+    i = 0
+    while j < len(signals):
+        if wait == 0:
+            if v is not None:
+                x += v
+                v = None
+            line = lines[i]
+            parts = line.split(' ')
+            cmd = parts[0]
+            if cmd == 'addx':
+                v = int(parts[1])
+                wait = 1
+            elif cmd == 'noop':
+                pass
+            i += 1
+        else:
+            wait -= 1
+
+        if cycle == signals[j]:
+            sum_ += x * cycle
+            j += 1
+        cycle += 1
+    return sum_
+
+
+def d10_2_cathode_ray_tube(lines):
+    width = 40
+    height = 6
+    pixels = [['.' for _ in range(width)] for _ in range(height)]
+    cycle = 1
+    wait = 0
+    x = 1
+    v = None
+    i = 0
+    while cycle <= width * height:
+        if wait == 0:
+            if v is not None:
+                x += v
+                v = None
+            line = lines[i]
+            parts = line.split(' ')
+            cmd = parts[0]
+            if cmd == 'addx':
+                v = int(parts[1])
+                wait = 1
+            elif cmd == 'noop':
+                pass
+            i += 1
+        else:
+            wait -= 1
+
+        px = (cycle-1) % width
+        if abs(x - px) <= 1:
+            py = (cycle-1) // width
+            pixels[py][px] = '#'
+
+        cycle += 1
+    rows = [''.join(row) for row in pixels]
+    for row in rows:
+        print(row)
+    return None
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -375,6 +460,8 @@ SOLVERS = {
     '8-2': d08_2_treetop_tree_house,
     '9-1': d09_1_rope_bridge,
     '9-2': d09_2_rope_bridge,
+    '10-1': d10_1_cathode_ray_tube,
+    '10-2': d10_2_cathode_ray_tube,
 }
 
 
