@@ -2,7 +2,7 @@ import argparse
 import time
 
 import aoc_util
-
+import cs_util
 
 YEAR = '2022'
 
@@ -538,6 +538,54 @@ def d11_2_monkey_in_the_middle(lines):
     return top_counts[0] * top_counts[1]
 
 
+def d12_hill_climbing_algorithm(lines):
+    assert all(len(line) == len(lines[0]) for line in lines[1:])
+    n, m = len(lines), len(lines[0])
+    letter_to_elevation = {letter: i + 1
+                           for i, letter in enumerate('abcdefghijklmnopqrstuvwxyz')}
+    letter_to_elevation['S'] = letter_to_elevation['a']
+    letter_to_elevation['E'] = letter_to_elevation['z']
+    si, sj, ei, ej = None, None, None, None
+    for i, line in enumerate(lines):
+        for j, c in enumerate(line):
+            if c == 'S':
+                si, sj = i, j
+            elif c == 'E':
+                ei, ej = i, j
+    assert all(v is not None for v in (si, sj, ei, ej))
+
+    return n, m, si, sj, ei, ej, letter_to_elevation
+
+
+def d12_1_hill_climbing_algorithm(lines):
+    n, m, si, sj, ei, ej, letter_to_elevation = d12_hill_climbing_algorithm(lines)
+
+    def is_neighbor_fn(i_, j_, oi_, oj_):
+        elevation_change = letter_to_elevation[lines[oi_][oj_]] - letter_to_elevation[lines[i_][j_]]
+        return elevation_change <= 1  # Invalid (edge does not exist, according to problem).
+
+    return cs_util.dijkstra_grid(n, m, si, sj, ei, ej, is_neighbor_fn=is_neighbor_fn)
+
+
+def d12_2_hill_climbing_algorithm(lines):
+    n, m, si, sj, ei, ej, letter_to_elevation = d12_hill_climbing_algorithm(lines)
+
+    def is_neighbor_fn(i_, j_, oi_, oj_):
+        elevation_change = letter_to_elevation[lines[i_][j_]] - letter_to_elevation[lines[oi_][oj_]]
+        return elevation_change <= 1  # Flipped from previous; starting from `E`.
+
+    d = cs_util.dijkstra_grid(n, m, ei, ej, ei=None, ej=None, is_neighbor_fn=is_neighbor_fn)
+    z_min = None
+    for i in range(n):
+        for j in range(m):
+            if lines[i][j] == 'S' or lines[i][j] == 'a':
+                if d[i][j] == -1:
+                    continue
+                if z_min is None or d[i][j] < z_min:
+                    z_min = d[i][j]
+    return z_min
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -561,6 +609,8 @@ SOLVERS = {
     '10-2': d10_2_cathode_ray_tube,
     '11-1': d11_1_monkey_in_the_middle,
     '11-2': d11_2_monkey_in_the_middle,
+    '12-1': d12_1_hill_climbing_algorithm,
+    '12-2': d12_2_hill_climbing_algorithm,
 }
 
 
