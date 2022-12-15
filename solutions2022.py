@@ -23,6 +23,7 @@ def main():
     )
     parser.add_argument(
         '--example',
+        '-x',
         action='store_true',
         help='Use example file instead of daily input. Default is false.'
     )
@@ -436,6 +437,107 @@ def d10_2_cathode_ray_tube(lines):
     return None
 
 
+def d11_monkey_in_the_middle(lines):
+    monkey_items = list()
+    operations = list()
+    tests = list()
+    monkey_targets = list()
+
+    monkey_prefix = 'Monkey '
+    monkey_suffix = ':'
+    items_prefix = '  Starting items: '
+    operation_prefix = '  Operation: new = old '
+    test_prefix = '  Test: divisible by '
+    target_true_prefix = '    If true: throw to monkey '
+    target_false_prefix = '    If false: throw to monkey '
+    i = 0
+    while i < len(lines):
+        if len(lines[i]) == 0:
+            i += 1
+            continue
+
+        line_monkey = lines[i]
+        assert line_monkey.startswith(monkey_prefix) and line_monkey.endswith(monkey_suffix)
+        assert int(line_monkey[len(monkey_prefix):-len(monkey_suffix)]) == len(monkey_items)
+
+        line_items = lines[i+1]
+        assert line_items.startswith(items_prefix)
+        monkey_items.append(list(map(int, line_items[len(items_prefix):].split(', '))))
+
+        line_operation = lines[i+2]
+        assert line_operation.startswith(operation_prefix)
+        op, operand = line_operation[len(operation_prefix):].split(' ')
+        assert op in {'+', '*'}
+        operations.append((op, operand))
+
+        line_test = lines[i+3]
+        assert line_test.startswith(test_prefix)
+        tests.append(int(line_test[len(test_prefix):]))
+
+        line_target_true = lines[i+4]
+        assert line_target_true.startswith(target_true_prefix)
+        target_true = int(line_target_true[len(target_true_prefix):])
+        line_target_false = lines[i+5]
+        assert line_target_false.startswith(target_false_prefix)
+        target_false = int(line_target_false[len(target_false_prefix):])
+        monkey_targets.append((target_true, target_false))
+
+        i += 6
+
+    return monkey_items, operations, tests, monkey_targets
+
+
+def d11_1_monkey_in_the_middle(lines):
+    monkey_items, operations, tests, monkey_targets = d11_monkey_in_the_middle(lines)
+    inspection_counts = [0 for _ in monkey_items]
+    for _ in range(20):
+        for monkey, items in enumerate(monkey_items):
+            while len(items) > 0:
+                item = items.pop(0)
+                op, operand = operations[monkey]
+                operand_ = item if operand == 'old' else int(operand)
+                if op == '+':
+                    item += operand_
+                else:  # op == '*'
+                    item *= operand_
+                item //= 3
+                if item % tests[monkey] == 0:
+                    target = monkey_targets[monkey][0]
+                else:
+                    target = monkey_targets[monkey][1]
+                monkey_items[target].append(item)
+                inspection_counts[monkey] += 1
+    top_counts = sorted(inspection_counts)[-2:]
+    return top_counts[0] * top_counts[1]
+
+
+def d11_2_monkey_in_the_middle(lines):
+    monkey_items, operations, tests, monkey_targets = d11_monkey_in_the_middle(lines)
+    monkey_item_mods = [[{test: item % test for test in set(tests)}
+                         for item in items]
+                        for items in monkey_items]
+    inspection_counts = [0 for _ in monkey_item_mods]
+    for _ in range(10000):
+        for monkey, item_mods in enumerate(monkey_item_mods):
+            while len(item_mods) > 0:
+                item_mod = item_mods.pop(0)
+                op, operand = operations[monkey]
+                for test, value in item_mod.items():
+                    operand_ = value if operand == 'old' else int(operand)
+                    if op == '+':
+                        item_mod[test] = (value + operand_) % test
+                    else:  # op == '*'
+                        item_mod[test] = (value * (operand_ % test)) % test
+                if item_mod[tests[monkey]] == 0:
+                    target = monkey_targets[monkey][0]
+                else:
+                    target = monkey_targets[monkey][1]
+                monkey_item_mods[target].append(item_mod)
+                inspection_counts[monkey] += 1
+    top_counts = sorted(inspection_counts)[-2:]
+    return top_counts[0] * top_counts[1]
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -457,6 +559,8 @@ SOLVERS = {
     '9-2': d09_2_rope_bridge,
     '10-1': d10_1_cathode_ray_tube,
     '10-2': d10_2_cathode_ray_tube,
+    '11-1': d11_1_monkey_in_the_middle,
+    '11-2': d11_2_monkey_in_the_middle,
 }
 
 
