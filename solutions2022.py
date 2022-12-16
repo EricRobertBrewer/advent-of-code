@@ -1,4 +1,5 @@
 import argparse
+import functools
 import time
 
 import aoc_util
@@ -203,7 +204,7 @@ def d06_2_tuning_trouble(lines):
     return d06_1_tuning_trouble(lines, k=14)
 
 
-def d07_no_space_left_on_device(lines):
+def _d07_no_space_left_on_device(lines):
     # Parse file structure.
     root = dict()
     dirs = [root]
@@ -242,29 +243,30 @@ def d07_no_space_left_on_device(lines):
             raise ValueError('Unexpected file listing without `ls` command `{}`.'.format(line))
 
     # Calculate sizes.
-    def get_size(dir_: dict, path: str, sizes_: dict):
-        if path in sizes_.keys():
-            return sizes_[path]
-        size = 0
-        for k, v in dir_.items():
+    def _get_size(_dir: dict, _path: str, _sizes: dict):
+        if _path in _sizes.keys():
+            return _sizes[_path]
+        _size = 0
+        for _k, _v in _dir.items():
             if type(v) == int:
-                size += v
+                _size += _v
             else:
-                size += get_size(v, path + k + '/', sizes_)
-        sizes_[path] = size
-        return size
+                _size += _get_size(_v, _path + _k + '/', _sizes)
+        _sizes[_path] = _size
+        return _size
+
     sizes = dict()
-    _ = get_size(root, '/', sizes)
+    _ = _get_size(root, '/', sizes)
     return sizes
 
 
 def d07_1_no_space_left_on_device(lines):
-    sizes = d07_no_space_left_on_device(lines)
+    sizes = _d07_no_space_left_on_device(lines)
     return sum(size for size in sizes.values() if size < 100000)
 
 
 def d07_2_no_space_left_on_device(lines):
-    sizes = d07_no_space_left_on_device(lines)
+    sizes = _d07_no_space_left_on_device(lines)
     target = 30000000 - (70000000 - sizes['/'])
     # TODO Binary search.
     for size in sorted(list(sizes.values())):
@@ -370,7 +372,7 @@ def d09_2_rope_bridge(lines):
     return d09_1_rope_bridge(lines, k=10)
 
 
-def d10_cathode_ray_tube(lines, while_cond, exec_fn):
+def _d10_cathode_ray_tube(lines, while_cond, exec_fn):
     cycle = 1
     wait = 0
     x = 1
@@ -403,16 +405,16 @@ def d10_1_cathode_ray_tube(lines):
     signals = (20, 60, 100, 140, 180, 220)
     j = 0
 
-    def while_cond(_):
+    def _while_cond(_):
         return j < len(signals)
 
-    def exec_fn(cycle, x):
-        nonlocal j, sum_  # Needed because these variables are MUTATED!!
-        if cycle == signals[j]:
-            sum_ += x * cycle
+    def _exec_fn(_cycle, _x):
+        nonlocal j, sum_  # Needed because these variables are ASSIGNED!!
+        if _cycle == signals[j]:
+            sum_ += _x * _cycle
             j += 1
 
-    d10_cathode_ray_tube(lines, while_cond, exec_fn)
+    _d10_cathode_ray_tube(lines, _while_cond, _exec_fn)
     return sum_
 
 
@@ -421,23 +423,23 @@ def d10_2_cathode_ray_tube(lines):
     height = 6
     pixels = [['.' for _ in range(width)] for _ in range(height)]
 
-    def while_cond(cycle):
-        return cycle <= width * height
+    def _while_cond(_cycle):
+        return _cycle <= width * height
 
-    def exec_fn(cycle, x):
-        px = (cycle-1) % width
-        if abs(x - px) <= 1:
-            py = (cycle-1) // width
-            pixels[py][px] = '#'
+    def _exec_fn(_cycle, _x):
+        _px = (_cycle-1) % width
+        if abs(_x - _px) <= 1:
+            _py = (_cycle-1) // width
+            pixels[_py][_px] = '#'
 
-    d10_cathode_ray_tube(lines, while_cond, exec_fn)
+    _d10_cathode_ray_tube(lines, _while_cond, _exec_fn)
     rows = [''.join(row) for row in pixels]
     for row in rows:
         print(row)
     return None
 
 
-def d11_monkey_in_the_middle(lines):
+def _d11_monkey_in_the_middle(lines):
     monkey_items = list()
     operations = list()
     tests = list()
@@ -488,7 +490,7 @@ def d11_monkey_in_the_middle(lines):
 
 
 def d11_1_monkey_in_the_middle(lines):
-    monkey_items, operations, tests, monkey_targets = d11_monkey_in_the_middle(lines)
+    monkey_items, operations, tests, monkey_targets = _d11_monkey_in_the_middle(lines)
     inspection_counts = [0 for _ in monkey_items]
     for _ in range(20):
         for monkey, items in enumerate(monkey_items):
@@ -512,7 +514,7 @@ def d11_1_monkey_in_the_middle(lines):
 
 
 def d11_2_monkey_in_the_middle(lines):
-    monkey_items, operations, tests, monkey_targets = d11_monkey_in_the_middle(lines)
+    monkey_items, operations, tests, monkey_targets = _d11_monkey_in_the_middle(lines)
     monkey_item_mods = [[{test: item % test for test in set(tests)}
                          for item in items]
                         for items in monkey_items]
@@ -538,7 +540,7 @@ def d11_2_monkey_in_the_middle(lines):
     return top_counts[0] * top_counts[1]
 
 
-def d12_hill_climbing_algorithm(lines):
+def _d12_hill_climbing_algorithm(lines):
     assert all(len(line) == len(lines[0]) for line in lines[1:])
     n, m = len(lines), len(lines[0])
     letter_to_elevation = {letter: i + 1
@@ -558,23 +560,23 @@ def d12_hill_climbing_algorithm(lines):
 
 
 def d12_1_hill_climbing_algorithm(lines):
-    n, m, si, sj, ei, ej, letter_to_elevation = d12_hill_climbing_algorithm(lines)
+    n, m, si, sj, ei, ej, letter_to_elevation = _d12_hill_climbing_algorithm(lines)
 
-    def is_neighbor_fn(i_, j_, oi_, oj_):
-        elevation_change = letter_to_elevation[lines[oi_][oj_]] - letter_to_elevation[lines[i_][j_]]
-        return elevation_change <= 1  # Invalid (edge does not exist, according to problem).
+    def _is_neighbor_fn(_i, _j, _oi, _oj):
+        _elevation_change = letter_to_elevation[lines[_oi][_oj]] - letter_to_elevation[lines[_i][_j]]
+        return _elevation_change <= 1  # Invalid (edge does not exist, according to problem).
 
-    return cs_util.dijkstra_grid(n, m, si, sj, ei, ej, is_neighbor_fn=is_neighbor_fn)
+    return cs_util.dijkstra_grid(n, m, si, sj, ei, ej, is_neighbor_fn=_is_neighbor_fn)
 
 
 def d12_2_hill_climbing_algorithm(lines):
-    n, m, si, sj, ei, ej, letter_to_elevation = d12_hill_climbing_algorithm(lines)
+    n, m, si, sj, ei, ej, letter_to_elevation = _d12_hill_climbing_algorithm(lines)
 
-    def is_neighbor_fn(i_, j_, oi_, oj_):
-        elevation_change = letter_to_elevation[lines[i_][j_]] - letter_to_elevation[lines[oi_][oj_]]
-        return elevation_change <= 1  # Flipped from previous; starting from `E`.
+    def _is_neighbor_fn(_i, _j, _oi, _oj):
+        _elevation_change = letter_to_elevation[lines[_i][_j]] - letter_to_elevation[lines[_oi][_oj]]
+        return _elevation_change <= 1  # Flipped from previous; starting from `E`.
 
-    d = cs_util.dijkstra_grid(n, m, ei, ej, ei=None, ej=None, is_neighbor_fn=is_neighbor_fn)
+    d = cs_util.dijkstra_grid(n, m, ei, ej, ei=None, ej=None, is_neighbor_fn=_is_neighbor_fn)
     z_min = None
     for i in range(n):
         for j in range(m):
@@ -584,6 +586,102 @@ def d12_2_hill_climbing_algorithm(lines):
                 if z_min is None or d[i][j] < z_min:
                     z_min = d[i][j]
     return z_min
+
+
+def _d13_distress_signal(lines):
+    pairs = list()
+
+    def _parse_line(_line):
+        if _line[0] != '[':
+            raise ValueError()
+
+        def __parse_list(__s):
+            __a = list()
+            __i = 0
+            __last = None
+            while __i < len(__s):
+                __c = __s[__i]
+                if __c == ']':
+                    return __a, __i + 1
+                if __c == '[':
+                    __list, __n = __parse_list(__s[__i + 1:])
+                    __a.append(__list)
+                    __i += __n
+                elif __c == ',':
+                    pass
+                elif __last is None or __last == ',':
+                    __a.append(int(__c))
+                else:
+                    __a[-1] = __a[-1] * 10 + int(__c)
+                __last = __c
+                __i += 1
+
+        _list, _n = __parse_list(_line[1:])
+        assert _n == len(_line) - 1
+        return _list
+
+    i = 0
+    while i < len(lines):
+        if len(lines[i]) == 0:
+            i += 1
+            continue
+        assert len(lines[i+1]) > 0
+        pairs.append((_parse_line(lines[i]), _parse_line(lines[i+1])))
+        i += 2
+
+    def _compare(_left, _right):
+        if type(_left) == int and type(_right) == int:
+            if _left < _right:
+                return -1
+            elif _left > _right:
+                return 1
+            return 0
+
+        if type(_left) == int and type(_right) == list:
+            return _compare([_left], _right)
+
+        if type(_left) == list and type(_right) == int:
+            return _compare(_left, [_right])
+
+        if type(_left) == list and type(_right) == list:
+            _i = 0
+            while _i < len(_left):
+                if _i >= len(_right):
+                    return 1
+                v = _compare(_left[_i], _right[_i])
+                if v != 0:
+                    return v
+                _i += 1
+            if _i < len(_right):
+                return -1
+            return 0
+
+        return 0
+
+    return pairs, _compare
+
+
+def d13_1_distress_signal(lines):
+    pairs, _compare = _d13_distress_signal(lines)
+    x = 0
+    for index, (left, right) in enumerate(pairs):
+        if _compare(left, right) == -1:
+            x += (index + 1)
+    return x
+
+
+def d13_2_distress_signal(lines):
+    pairs, _compare = _d13_distress_signal(lines)
+    packets = list()
+    for left, right in pairs:
+        packets.append(left)
+        packets.append(right)
+    two, six = [[2]], [[6]]
+    packets.append(two)
+    packets.append(six)
+    packets.sort(key=functools.cmp_to_key(_compare))
+    i2, i6 = packets.index(two), packets.index(six)
+    return (i2 + 1) * (i6 + 1)
 
 
 SOLVERS = {
@@ -611,6 +709,8 @@ SOLVERS = {
     '11-2': d11_2_monkey_in_the_middle,
     '12-1': d12_1_hill_climbing_algorithm,
     '12-2': d12_2_hill_climbing_algorithm,
+    '13-1': d13_1_distress_signal,
+    '13-2': d13_2_distress_signal,
 }
 
 
