@@ -1,5 +1,6 @@
 import argparse
 import functools
+import operator
 import time
 
 import aoc_util
@@ -800,6 +801,97 @@ def d14_2_regolith_reservoir(lines):
     return sand
 
 
+def _d15_beacon_exclusion_zone(lines):
+    sensor_beacons = list()
+    sensor_prefix = 'Sensor at '
+    beacon_prefix = ' closest beacon is at '
+    for line in lines:
+        sensor, beacon = line.split(':')
+        assert sensor.startswith(sensor_prefix)
+        sxq, syq = sensor[len(sensor_prefix):].split(', ')
+        sx, sy = tuple(map(int, map(operator.itemgetter(1), [q.split('=') for q in (sxq, syq)])))
+        assert beacon.startswith(beacon_prefix)
+        bxq, byq = beacon[len(beacon_prefix):].split(', ')
+        bx, by = tuple(map(int, map(operator.itemgetter(1), [q.split('=') for q in (bxq, byq)])))
+        sensor_beacons.append((sx, sy, bx, by))
+    return sensor_beacons
+
+
+def d15_1_beacon_exclusion_zone(lines):
+    sensor_beacons = _d15_beacon_exclusion_zone(lines)
+    y = 2_000_000  # 10 (example).
+    x_ranges = list()
+    for sx, sy, bx, by in sensor_beacons:
+        dist = abs(sx - bx) + abs(sy - by)  # Manhattan.
+        if sy < y:
+            if y - sy > dist:
+                continue
+            radius = dist - (y - sy)
+            xl, xr = sx - radius, sx + radius
+        elif sy > y:
+            if sy - y > dist:
+                continue
+            radius = dist - (sy - y)
+            xl, xr = sx - radius, sx + radius
+        else:
+            xl, xr = sx - dist, sx + dist
+        # Exclude beacons lying on the lateral.
+        if by == y:
+            if xl == bx and xr == bx:
+                continue
+            elif xl == bx:
+                xl += 1
+            elif xr == bx:
+                xr -= 1
+        x_ranges.append((xl, xr))
+    # Merge overlapping ranges.
+    x_ranges.sort()
+    i = 1
+    while i < len(x_ranges):
+        (x1l, x1r), (x2l, x2r) = x_ranges[i-1], x_ranges[i]
+        if x1r >= x2l:
+            x_ranges = x_ranges[:i-1] + [(x1l, max(x1r, x2r))] + x_ranges[i+1:]
+        else:
+            i += 1
+    return sum(xr - xl + 1 for xl, xr in x_ranges)
+
+
+def d15_2_beacon_exclusion_zone(lines):
+    sensor_beacons = _d15_beacon_exclusion_zone(lines)
+    y_max = x_max = 4_000_000
+    y_x_ranges = [list() for _ in range(y_max + 1)]
+    for sx, sy, bx, by in sensor_beacons:
+        dist = abs(sx - bx) + abs(sy - by)  # Manhattan.
+        for y, x_ranges in enumerate(y_x_ranges):
+            if sy < y:
+                if y - sy > dist:
+                    continue
+                radius = dist - (y - sy)
+                xl, xr = sx - radius, sx + radius
+            elif sy > y:
+                if sy - y > dist:
+                    continue
+                radius = dist - (sy - y)
+                xl, xr = sx - radius, sx + radius
+            else:
+                xl, xr = sx - dist, sx + dist
+            x_ranges.append((xl, xr))
+    # Merge overlapping ranges.
+    for y, x_ranges in enumerate(y_x_ranges):
+        x_ranges.sort()
+        i = 1
+        while i < len(x_ranges):
+            (x1l, x1r), (x2l, x2r) = x_ranges[i-1], x_ranges[i]
+            if x1r >= x2l:
+                x_ranges = x_ranges[:i-1] + [(x1l, max(x1r, x2r))] + x_ranges[i+1:]
+            else:
+                i += 1
+        for xl, xr in x_ranges:
+            if 0 <= xr <= x_max:
+                return 4_000_000 * (xr + 1) + y
+    raise ValueError()
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -829,6 +921,8 @@ SOLVERS = {
     '13-2': d13_2_distress_signal,
     '14-1': d14_1_regolith_reservoir,
     '14-2': d14_2_regolith_reservoir,
+    '15-1': d15_1_beacon_exclusion_zone,
+    '15-2': d15_2_beacon_exclusion_zone,
 }
 
 
