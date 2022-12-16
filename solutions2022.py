@@ -248,7 +248,7 @@ def _d07_no_space_left_on_device(lines):
             return _sizes[_path]
         _size = 0
         for _k, _v in _dir.items():
-            if type(v) == int:
+            if type(_v) == int:
                 _size += _v
             else:
                 _size += _get_size(_v, _path + _k + '/', _sizes)
@@ -684,6 +684,122 @@ def d13_2_distress_signal(lines):
     return (i2 + 1) * (i6 + 1)
 
 
+def _d14_regolith_reservoir(lines):
+    rock_paths = list()
+    x_min, x_max, y_max = None, None, None
+    for line in lines:
+        path = [tuple(map(int, x_y.split(','))) for x_y in line.split(' -> ')]
+        if x_min is None:
+            x_max, y_max = path[0]
+            x_min = x_max
+        for x, y in path[1:]:
+            x_min = min(x, x_min)
+            x_max = max(x, x_max)
+            y_max = max(y, y_max)
+        rock_paths.append(path)
+
+    n, m = y_max + 1, x_max - x_min + 1
+    cave = [['.' for _ in range(m)] for _ in range(n)]
+    for path in rock_paths:
+        x_prev, y_prev = path[0]
+        for x, y in path[1:]:
+            if x != x_prev:
+                assert y == y_prev
+                i = y
+                start = min(x, x_prev) - x_min
+                stop = max(x, x_prev) - x_min + 1
+                for j in range(start, stop):
+                    cave[i][j] = '#'
+            elif y != y_prev:
+                assert x == x_prev
+                j = x - x_min
+                start = min(y, y_prev)
+                stop = max(y, y_prev) + 1
+                for i in range(start, stop):
+                    cave[i][j] = '#'
+            x_prev, y_prev = x, y
+
+    return cave, n, m, x_min
+
+
+def d14_1_regolith_reservoir(lines):
+    cave, n, m, x_min = _d14_regolith_reservoir(lines)
+    sand = 0
+    while True:
+        coords = 500, 0
+        while True:
+            x, y = coords
+            i, j = y, x - x_min
+            if i + 1 == n:
+                coords = None  # Bottom boundary.
+                break
+            if cave[i+1][j] == '.':
+                coords = x, y + 1
+                continue
+            if j == 0:
+                coords = None  # Left boundary.
+                break
+            if cave[i+1][j-1] == '.':
+                coords = x - 1, y + 1
+                continue
+            if j == m - 1:
+                coords = None  # Right boundary.
+                break
+            if cave[i+1][j+1] == '.':
+                coords = x + 1, y + 1
+                continue
+            break  # Sand rests.
+        if coords is None:
+            break
+        x, y = coords
+        i, j = y, x - x_min
+        cave[i][j] = 'o'
+        sand += 1
+    return sand
+
+
+def d14_2_regolith_reservoir(lines):
+    cave, n, m, x_min = _d14_regolith_reservoir(lines)
+    cave.append(['.' for _ in range(m)])
+    n += 1
+    sand = 0
+    while cave[0][500-x_min] == '.':
+        coords = 500, 0
+        while True:
+            x, y = coords
+            i, j = y, x - x_min
+            if i + 1 == n:
+                break  # Rest at bottom boundary.
+            if cave[i+1][j] == '.':
+                coords = x, y + 1
+                continue
+            if j == 0:
+                # Extend left boundary.
+                for row in cave:
+                    row.insert(0, '.')
+                x_min -= 1
+                m += 1
+                continue
+            if cave[i+1][j-1] == '.':
+                coords = x - 1, y + 1
+                continue
+            if j == m - 1:
+                # Extend right boundary.
+                for row in cave:
+                    row.append('.')
+                m += 1
+                continue
+            if cave[i+1][j+1] == '.':
+                coords = x + 1, y + 1
+                continue
+            break  # Sand rests.
+        x, y = coords
+        i, j = y, x - x_min
+        cave[i][j] = 'o'
+        sand += 1
+    return sand
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -711,6 +827,8 @@ SOLVERS = {
     '12-2': d12_2_hill_climbing_algorithm,
     '13-1': d13_1_distress_signal,
     '13-2': d13_2_distress_signal,
+    '14-1': d14_1_regolith_reservoir,
+    '14-2': d14_2_regolith_reservoir,
 }
 
 
