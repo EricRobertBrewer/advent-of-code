@@ -804,9 +804,9 @@ def d14_2_regolith_reservoir(lines):
 def _d15_beacon_exclusion_zone(lines):
     sensor_beacons = list()
     sensor_prefix = 'Sensor at '
-    beacon_prefix = ' closest beacon is at '
+    beacon_prefix = 'closest beacon is at '
     for line in lines:
-        sensor, beacon = line.split(':')
+        sensor, beacon = line.split(': ')
         assert sensor.startswith(sensor_prefix)
         sxq, syq = sensor[len(sensor_prefix):].split(', ')
         sx, sy = tuple(map(int, map(operator.itemgetter(1), [q.split('=') for q in (sxq, syq)])))
@@ -892,6 +892,69 @@ def d15_2_beacon_exclusion_zone(lines):
     raise ValueError()
 
 
+def _d16_proboscidea_volcanium(lines):
+    valve_to_flow = dict()
+    valve_to_tunnels = dict()
+    valve_prefix = 'Valve '
+    valve_infix = ' has flow rate='
+    for line in lines:
+        s_valve_flow, s_tunnels = line.split('; ')
+        s_valve, s_flow = s_valve_flow.split(valve_infix)
+        assert s_valve.startswith(valve_prefix)
+        valve = s_valve[len(valve_prefix):]
+        assert valve not in valve_to_flow.keys()
+        valve_to_flow[valve] = int(s_flow)
+        tunnel0_prefixed, *tunnels_cdr = s_tunnels.split(', ')
+        tunnel0 = tunnel0_prefixed[tunnel0_prefixed.rindex(' ')+1:]
+        valve_to_tunnels[valve] = {tunnel0, *tunnels_cdr}
+    valves = sorted(list(valve_to_flow.keys()))
+    valve_to_i = {valve: i for i, valve in enumerate(valves)}
+    flows = [valve_to_flow[valve] for valve in valves]
+    g = [[-1 for _ in range(len(valves))] for _ in range(len(valves))]
+    for valve, tunnels in valve_to_tunnels.items():
+        i = valve_to_i[valve]
+        for tunnel in tunnels:
+            j = valve_to_i[tunnel]
+            g[i][j] = 1
+    return valves, flows, g
+
+
+def d16_1_proboscidea_volcanium(lines, minutes_limit=30, workers=1):
+    valves, flows, g = _d16_proboscidea_volcanium(lines)
+    n = len(valves)
+    states = {(0, tuple(valves.index('AA') for _ in range(workers)), tuple(-1 for _ in range(n)))}
+    beam = n ** (workers+1)
+    minutes = 0
+    while minutes < minutes_limit:
+        print(minutes, len(states))
+        for w in range(workers):
+            states_ = set()
+            for flow, locations, open_times in states:
+                location = locations[w]
+                # Open the valve, if applicable.
+                if open_times[location] == -1 and flows[location] > 0:
+                    flow_ = flow + flows[location] * (minutes_limit - minutes - 1)
+                    open_times_ = tuple(open_time if i != location else minutes
+                                        for i, open_time in enumerate(open_times))
+                    states_.add((flow_, locations, open_times_))
+                # Move to neighboring valve.
+                for j in range(len(g[location])):
+                    if g[location][j] == -1:
+                        continue
+                    locations_ = tuple(location_ if w_ != w else j for w_, location_ in enumerate(locations))
+                    states_.add((flow, locations_, open_times))
+            states = states_
+        # Reduce to beam size.
+        states_sorted = sorted(list(states), key=operator.itemgetter(0), reverse=True)
+        states = set(states_sorted[:beam])
+        minutes += 1
+    return max(states)[0]
+
+
+def d16_2_proboscidea_volcanium(lines):
+    return d16_1_proboscidea_volcanium(lines, minutes_limit=26, workers=2)
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -923,6 +986,8 @@ SOLVERS = {
     '14-2': d14_2_regolith_reservoir,
     '15-1': d15_1_beacon_exclusion_zone,
     '15-2': d15_2_beacon_exclusion_zone,
+    '16-1': d16_1_proboscidea_volcanium,
+    '16-2': d16_2_proboscidea_volcanium,
 }
 
 
