@@ -1102,6 +1102,55 @@ def d17_2_pyroclastic_flow(lines):
     return d17_1_pyroclastic_flow(lines, drops=1000000000000)
 
 
+def _d18_boiling_boulders(lines):
+    cubes = [tuple(map(int, line.split(','))) for line in lines]
+    assert all(len(cube) == 3 for cube in cubes)
+    return tuple(cubes)
+
+
+def d18_1_boiling_boulders(lines):
+    cubes = _d18_boiling_boulders(lines)
+    cube_set = set(cubes)
+    surface = 0
+    for x, y, z in cubes:
+        for x_, y_, z_ in ((x-1, y, z), (x+1, y, z), (x, y-1, z), (x, y+1, z), (x, y, z-1), (x, y, z+1)):
+            if (x_, y_, z_) not in cube_set:
+                surface += 1
+    return surface
+
+
+def d18_2_boiling_boulders(lines):
+    cubes = _d18_boiling_boulders(lines)
+    x_min, y_min, z_min = cubes[0]
+    x_max, y_max, z_max = cubes[0]
+    for x, y, z in cubes[1:]:
+        x_min = min(x_min, x)
+        y_min = min(y_min, y)
+        z_min = min(z_min, z)
+        x_max = max(x_max, x)
+        y_max = max(y_max, y)
+        z_max = max(z_max, z)
+
+    cube_set = set(cubes)
+    surface = 0
+    exterior = {(x_min-1, y_min-1, z_min-1)}
+    frontier = [(x_min-1, y_min-1, z_min-1)]
+    while len(frontier) > 0:
+        x, y, z = frontier.pop(0)
+        for x_, y_, z_ in ((x-1, y, z), (x+1, y, z), (x, y-1, z), (x, y+1, z), (x, y, z-1), (x, y, z+1)):
+            if x_ < x_min-1 or x_ > x_max+1 or\
+                    y_ < y_min-1 or y_ > y_max+1 or\
+                    z_ < z_min-1 or z_ > z_max+1 or \
+                    (x_, y_, z_) in exterior:
+                continue
+            if (x_, y_, z_) in cube_set:
+                surface += 1
+            else:
+                exterior.add((x_, y_, z_))
+                frontier.append((x_, y_, z_))
+    return surface
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1137,6 +1186,8 @@ SOLVERS = {
     '16-2': d16_2_proboscidea_volcanium,
     '17-1': d17_1_pyroclastic_flow,
     '17-2': d17_2_pyroclastic_flow,
+    '18-1': d18_1_boiling_boulders,
+    '18-2': d18_2_boiling_boulders,
 }
 
 
