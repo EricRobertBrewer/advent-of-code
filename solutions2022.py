@@ -1,5 +1,6 @@
 import argparse
 import functools
+import math
 import operator
 import time
 
@@ -924,8 +925,7 @@ def d16_1_proboscidea_volcanium(lines, minutes_limit=30, workers=1):
     n = len(valves)
     states = {(0, tuple(valves.index('AA') for _ in range(workers)), tuple(-1 for _ in range(n)))}
     beam = n ** (workers+1)
-    minutes = 0
-    while minutes < minutes_limit:
+    for minutes in range(minutes_limit):
         print(minutes, len(states))
         for w in range(workers):
             states_ = set()
@@ -947,12 +947,147 @@ def d16_1_proboscidea_volcanium(lines, minutes_limit=30, workers=1):
         # Reduce to beam size.
         states_sorted = sorted(list(states), key=operator.itemgetter(0), reverse=True)
         states = set(states_sorted[:beam])
-        minutes += 1
     return max(states)[0]
 
 
 def d16_2_proboscidea_volcanium(lines):
     return d16_1_proboscidea_volcanium(lines, minutes_limit=26, workers=2)
+
+
+def _d17_pyroclastic_flow(lines):
+    assert len(lines) == 1
+    jets = lines[0]
+    assert all(c == '<' or c == '>' for c in jets)
+    rocks = [
+        ['####'],
+        ['.#.',
+         '###',
+         '.#.'],
+        ['###',
+         '..#',
+         '..#'],
+        ['#',
+         '#',
+         '#',
+         '#'],
+        ['##',
+         '##']
+    ]  # Diagrams are written "upside-down" to match chamber coordinates.
+    for rock in rocks:
+        assert all(len(rock[i]) == len(rock[0]) for i in range(1, len(rock)))
+    return jets, rocks
+
+
+def d17_1_pyroclastic_flow(lines, drops=2022):
+    jets, rocks = _d17_pyroclastic_flow(lines)
+    n = len(jets)
+    jet_index = 0
+
+    rock_lefts = [[rock[i].index('#') for i in range(len(rock))] for rock in rocks]
+    rock_rights = [[rock[i].rindex('#') for i in range(len(rock))] for rock in rocks]
+    rock_bottoms = list()
+    for rock in rocks:
+        rock_bottom = list()
+        for j in range(len(rock[0])):
+            if len(rock_bottom) > j:
+                break
+            for i in range(len(rock)):
+                if rock[i][j] == '#':
+                    rock_bottom.append(i)
+                    break
+        rock_bottoms.append(rock_bottom)
+    rock_h_max = max(len(rock) for rock in rocks)
+
+    chamber_width = 7
+    chamber = list()
+
+    def _get_chamber_top(_chamber, _width=chamber_width):
+        _top = list()
+        for _j in range(_width):
+            for _i in range(len(_chamber)-1, -1, -1):
+                if _chamber[_i][_j] == '#':
+                    _top.append(_i)
+                    break
+            if _j == len(_top):
+                _top.append(-1)
+        return tuple(_top)
+
+    jet_rock_lcm = (n * len(rocks)) // math.gcd(n, len(rocks))
+    chamber_top = _get_chamber_top(chamber)
+    chamber_tops = [chamber_top]
+    chamber_top_diff_to_index = {chamber_top: 0}
+    cycle_drop_start = -1
+    cycle_drop_end = -1
+
+    drop = 0
+    while drop < drops:
+        # Add air.
+        while len(chamber) < rock_h_max or any('#' in row for row in chamber[-rock_h_max:]):
+            chamber.append('.'*chamber_width)
+        # Start drop.
+        rock_index = drop % len(rocks)
+        rock = rocks[rock_index]
+        h, w = len(rock), len(rock[0])
+        rock_left = rock_lefts[rock_index]
+        rock_right = rock_rights[rock_index]
+        rock_bottom = rock_bottoms[rock_index]
+        i, j = len(chamber) - rock_h_max + 3, 2  # Bottom-left coordinates of rock in starting place.
+        while True:
+            # Jet.
+            if jets[jet_index] == '<':
+                if j > 0 and \
+                        all(i + di >= len(chamber) or chamber[i+di][j+rock_left[di]-1] == '.'
+                            for di in range(h)):
+                    j -= 1
+            else:
+                if j + w < chamber_width and \
+                        all(i + di >= len(chamber) or chamber[i+di][j+rock_right[di]+1] == '.'
+                            for di in range(h)):
+                    j += 1
+            jet_index = (jet_index + 1) % n
+            # Move down, if possible.
+            if i > 0 and \
+                    all(chamber[i+rock_bottom[dj]-1][j+dj] == '.'
+                        for dj in range(w)):
+                i -= 1
+            else:
+                break
+        # End drop.
+        for di in range(h):
+            for dj in range(w):
+                if rock[di][dj] == '#':
+                    chamber[i+di] = chamber[i+di][:j+dj] + '#' + chamber[i+di][j+dj+1:]
+        drop += 1
+        # Handle cycles.
+        if cycle_drop_end == -1 and drop % jet_rock_lcm == 0:
+            chamber_top = _get_chamber_top(chamber)
+            chamber_tops.append(chamber_top)
+            chamber_top_max = max(chamber_top)
+            chamber_top_diff = tuple(chamber_top_max - chamber_top[j] for j in range(len(chamber_top)))
+            if chamber_top_diff not in chamber_top_diff_to_index.keys():
+                chamber_top_diff_to_index[chamber_top_diff] = len(chamber_tops) - 1
+                print(drop, chamber_top, chamber_top_diff)
+            else:
+                cycle_drop_start = chamber_top_diff_to_index[chamber_top_diff] * jet_rock_lcm
+                cycle_drop_end = drop
+                cycle_drops = cycle_drop_end - cycle_drop_start
+                drop = ((drops - cycle_drop_start) // cycle_drops) * cycle_drops + cycle_drop_start
+
+    if cycle_drop_end > -1:
+        cycle_start_height = max(chamber_tops[cycle_drop_start//jet_rock_lcm])
+        cycle_end_height = max(chamber_tops[cycle_drop_end//jet_rock_lcm])
+        cycle_height = cycle_end_height - cycle_start_height
+        cycle_drops = cycle_drop_end - cycle_drop_start
+        cycles = (drops - cycle_drop_start) // cycle_drops
+        height_before_cycles = cycle_start_height
+        height_during_cycles = cycle_height * cycles
+        height_after_cycles = max(_get_chamber_top(chamber)) + 1 - cycle_end_height
+        return height_before_cycles + height_during_cycles + height_after_cycles
+    return max(_get_chamber_top(chamber)) + 1
+
+
+def d17_2_pyroclastic_flow(lines):
+    return d17_1_pyroclastic_flow(lines, drops=1000000000000)
 
 
 SOLVERS = {
@@ -988,6 +1123,8 @@ SOLVERS = {
     '15-2': d15_2_beacon_exclusion_zone,
     '16-1': d16_1_proboscidea_volcanium,
     '16-2': d16_2_proboscidea_volcanium,
+    '17-1': d17_1_pyroclastic_flow,
+    '17-2': d17_2_pyroclastic_flow,
 }
 
 
