@@ -1001,27 +1001,39 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
     chamber_width = 7
     chamber = list()
 
-    def _get_chamber_top(_chamber, _width=chamber_width):
-        _top = list()
-        for _j in range(_width):
-            for _i in range(len(_chamber)-1, -1, -1):
-                if _chamber[_i][_j] == '#':
-                    _top.append(_i)
-                    break
-            if _j == len(_top):
-                _top.append(-1)
-        return tuple(_top)
+    def _get_chamber_top_air(_chamber):
+        _i_top = len(_chamber) - 1
+        while _i_top > -1 and '#' not in _chamber[_i_top]:
+            _i_top -= 1
+        if _i_top == -1:
+            return tuple()
+        _air = set()
+        _frontier = list()
+        for _j in range(len(_chamber[_i_top])):
+            if _chamber[_i_top][_j] == '.':
+                _air.add((_i_top, _j))
+                _frontier.append((_i_top, _j))
+        while len(_frontier) > 0:
+            _i, _j = _frontier.pop(0)
+            for _oi, _oj in ((_i+1, _j), (_i, _j+1), (_i-1, _j), (_i, _j-1)):
+                if (_oi, _oj) in _air or\
+                        _oi < 0 or _oi > _i_top or\
+                        _oj < 0 or _oj >= len(_chamber[_oi]) or\
+                        _chamber[_oi][_oj] != '.':
+                    continue
+                _air.add((_oi, _oj))
+                _frontier.append((_oi, _oj))
+        return tuple(sorted(list(_air)))
 
     jet_rock_lcm = (n * len(rocks)) // math.gcd(n, len(rocks))
-    chamber_top = _get_chamber_top(chamber)
-    chamber_tops = [chamber_top]
-    chamber_top_diff_to_index = {chamber_top: 0}
     cycle_drop_start = -1
     cycle_drop_end = -1
+    chamber_top_airs = [tuple()]
+    chamber_top_air_diff_to_index = {tuple(): 0}
 
     drop = 0
     while drop < drops:
-        # Add air.
+        # Add rows of air.
         while len(chamber) < rock_h_max or any('#' in row for row in chamber[-rock_h_max:]):
             chamber.append('.'*chamber_width)
         # Start drop.
@@ -1060,30 +1072,30 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
         drop += 1
         # Handle cycles.
         if cycle_drop_end == -1 and drop % jet_rock_lcm == 0:
-            chamber_top = _get_chamber_top(chamber)
-            chamber_tops.append(chamber_top)
-            chamber_top_max = max(chamber_top)
-            chamber_top_diff = tuple(chamber_top_max - chamber_top[j] for j in range(len(chamber_top)))
-            if chamber_top_diff not in chamber_top_diff_to_index.keys():
-                chamber_top_diff_to_index[chamber_top_diff] = len(chamber_tops) - 1
-                print(drop, chamber_top, chamber_top_diff)
+            chamber_top_air = _get_chamber_top_air(chamber)
+            chamber_top_airs.append(chamber_top_air)
+            chamber_top_i_max, _ = max(chamber_top_air)
+            chamber_top_air_diff = tuple((chamber_top_i_max - air[0], air[1]) for air in chamber_top_air)
+            if chamber_top_air_diff not in chamber_top_air_diff_to_index.keys():
+                chamber_top_air_diff_to_index[chamber_top_air_diff] = len(chamber_top_airs) - 1
+                # print(drop, chamber_top_air, chamber_top_air_diff)
             else:
-                cycle_drop_start = chamber_top_diff_to_index[chamber_top_diff] * jet_rock_lcm
+                cycle_drop_start = chamber_top_air_diff_to_index[chamber_top_air_diff] * jet_rock_lcm
                 cycle_drop_end = drop
                 cycle_drops = cycle_drop_end - cycle_drop_start
                 drop = ((drops - cycle_drop_start) // cycle_drops) * cycle_drops + cycle_drop_start
 
     if cycle_drop_end > -1:
-        cycle_start_height = max(chamber_tops[cycle_drop_start//jet_rock_lcm])
-        cycle_end_height = max(chamber_tops[cycle_drop_end//jet_rock_lcm])
+        cycle_start_height = max(chamber_top_airs[cycle_drop_start//jet_rock_lcm])[0]
+        cycle_end_height = max(chamber_top_airs[cycle_drop_end//jet_rock_lcm])[0]
         cycle_height = cycle_end_height - cycle_start_height
         cycle_drops = cycle_drop_end - cycle_drop_start
         cycles = (drops - cycle_drop_start) // cycle_drops
         height_before_cycles = cycle_start_height
         height_during_cycles = cycle_height * cycles
-        height_after_cycles = max(_get_chamber_top(chamber)) + 1 - cycle_end_height
+        height_after_cycles = max(_get_chamber_top_air(chamber))[0] + 1 - cycle_end_height
         return height_before_cycles + height_during_cycles + height_after_cycles
-    return max(_get_chamber_top(chamber)) + 1
+    return max(_get_chamber_top_air(chamber))[0] + 1
 
 
 def d17_2_pyroclastic_flow(lines):
