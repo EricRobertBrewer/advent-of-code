@@ -1091,9 +1091,9 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
         cycle_height = cycle_end_height - cycle_start_height
         cycle_drops = cycle_drop_end - cycle_drop_start
         cycles = (drops - cycle_drop_start) // cycle_drops
-        height_before_cycles = cycle_start_height
+        height_before_cycles = cycle_start_height + 1
         height_during_cycles = cycle_height * cycles
-        height_after_cycles = max(_get_chamber_top_air(chamber))[0] + 1 - cycle_end_height
+        height_after_cycles = max(_get_chamber_top_air(chamber))[0] - cycle_end_height
         return height_before_cycles + height_during_cycles + height_after_cycles
     return max(_get_chamber_top_air(chamber))[0] + 1
 
@@ -1151,6 +1151,98 @@ def d18_2_boiling_boulders(lines):
     return surface
 
 
+def _d19_not_enough_minerals(lines):
+    blueprints = list()
+    cost_fixes = (
+        ('Each ore robot costs ', ' ore'),
+        ('Each clay robot costs ', ' ore'),
+        ('Each obsidian robot costs ', ' ore and ', ' clay'),
+        ('Each geode robot costs ', ' ore and ', ' obsidian.')
+    )
+    for i, line in enumerate(lines):
+        blueprint_id, s_cost = line.split(': ')
+        _id = int(blueprint_id.split(' ')[1])
+        assert _id == i + 1
+        s_costs = s_cost.split('. ')
+        costs = list()
+        for j, s_cost in enumerate(s_costs):
+            fixes = cost_fixes[j]
+            assert s_cost.startswith(fixes[0])
+            assert s_cost.endswith(fixes[-1])
+            s_cost = s_cost[len(fixes[0]):-len(fixes[-1])]
+            if len(fixes) == 2:
+                costs.append(int(s_cost))
+            else:
+                costs.append(tuple(map(int, s_cost.split(fixes[1]))))
+        blueprints.append(((costs[0], 0, 0, 0),
+                           (costs[1], 0, 0, 0),
+                           (costs[2][0], costs[2][1], 0, 0),
+                           (costs[3][0], 0, costs[3][1], 0)))
+    return tuple(blueprints)
+
+
+def d19_1_not_enough_minerals(lines, minutes=24, head=None, beam=2**16, return_quality_sum=True):
+    blueprints = _d19_not_enough_minerals(lines)
+    if head is not None:
+        blueprints = blueprints[:head]
+
+    def _cmp_robots_resources(_a, _b):
+        _order = (
+            (1, 3),  # Geode resource.
+            (0, 3),  # Geode robot.
+            (0, 2),  # Obsidian robot.
+            (1, 2),  # Obsidian resource.
+            (0, 1),  # Clay robot.
+            (1, 1),  # Clay resource.
+            (0, 0),  # Ore robot.
+            (1, 0)   # Ore resource.
+        )
+        for _i, _j in _order:
+            if _a[_i][_j] != _b[_i][_j]:
+                return _a[_i][_j] - _b[_i][_j]
+        return 0
+
+    geodes_maxes = list()
+    for _id, costs in enumerate(blueprints, start=1):
+        print(_id)
+        robots_resources = {((1, 0, 0, 0), (0, 0, 0, 0))}
+        for minute in range(minutes):
+            print(minute, len(robots_resources), max(robots_resources, key=functools.cmp_to_key(_cmp_robots_resources)))
+            robots_resources_ = set()
+            for robots, resources in robots_resources:
+                # Find all robots to build with these resources.
+                factory_resources = [((0, 0, 0, 0), resources)]
+                for b, cost in enumerate(costs):
+                    if all(resources[s] >= cost[s] for s in range(len(cost))):
+                        factory = tuple(1 if b == b_ else 0 for b_ in range(len(robots)))
+                        resources_ = tuple(resources[s] - cost[s] for s in range(len(cost)))
+                        factory_resources.append((factory, resources_))
+                for factory, resources_ in factory_resources:
+                    robots_ = tuple(robots[b] + factory[b] for b in range(len(robots)))
+                    resources__ = tuple(resources_[s] + robots[s] for s in range(len(resources_)))
+                    robots_resources_.add((robots_, resources__))
+            robots_resources = robots_resources_
+            robots_resources_sorted = sorted(list(robots_resources),
+                                             key=functools.cmp_to_key(_cmp_robots_resources),
+                                             reverse=True)
+            robots_resources = set(robots_resources_sorted[:beam])
+        geodes_max = max(map(lambda x: x[1][3], robots_resources))
+        geodes_maxes.append(geodes_max)
+        print('geodes={:d}'.format(geodes_max))
+
+    if return_quality_sum:
+        return sum(_id * geodes_max for _id, geodes_max in enumerate(geodes_maxes))
+
+    product = 1
+    for geodes_max in geodes_maxes:
+        product *= geodes_max
+    return product
+
+
+def d19_2_not_enough_minerals(lines):
+    return d19_1_not_enough_minerals(lines, minutes=32, head=3, beam=2**18, return_quality_sum=False)
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1188,6 +1280,8 @@ SOLVERS = {
     '17-2': d17_2_pyroclastic_flow,
     '18-1': d18_1_boiling_boulders,
     '18-2': d18_2_boiling_boulders,
+    '19-1': d19_1_not_enough_minerals,
+    '19-2': d19_2_not_enough_minerals,
 }
 
 
