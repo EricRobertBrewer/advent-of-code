@@ -1281,6 +1281,111 @@ def d20_2_grove_positioning_system(lines):
     return d20_1_grove_positioning_system(lines, decryption_key=811589153, mixes=10)
 
 
+def _d21_monkey_math(lines):
+    monkey_to_expression = dict()
+    for line in lines:
+        monkey, expression = line.split(': ')
+        try:
+            number = int(expression)
+            monkey_to_expression[monkey] = number
+        except ValueError:
+            operation = tuple(expression.split(' '))
+            assert len(operation) == 3
+            assert operation[1] in {'+', '-', '*', '/'}
+            monkey_to_expression[monkey] = operation
+    return monkey_to_expression
+
+
+def d21_1_monkey_math(lines, return_root=True, ignore_key=None):
+    monkey_to_expression = _d21_monkey_math(lines)
+    if ignore_key is not None:
+        monkey_to_expression[ignore_key] = ('ignore', 'this', 'key')
+
+    monkey_to_resolutions = dict()
+    q = list()
+    for monkey, expression in monkey_to_expression.items():
+        if type(expression) == int:
+            q.append(monkey)
+        else:
+            op1, _, op2 = expression
+            for op in (op1, op2):
+                if op not in monkey_to_resolutions:
+                    monkey_to_resolutions[op] = set()
+                monkey_to_resolutions[op].add(monkey)
+    while len(q) > 0:
+        monkey = q.pop(0)
+        if monkey not in monkey_to_resolutions.keys():
+            continue
+        resolutions = monkey_to_resolutions[monkey]
+        solved = set()
+        for monkey_ in resolutions:
+            expression = monkey_to_expression[monkey_]
+            if type(expression) == int:
+                solved.add(monkey_)
+                continue
+            op1, symbol, op2 = expression
+            x1 = monkey_to_expression[op1]
+            x2 = monkey_to_expression[op2]
+            if type(x1) != int or type(x2) != int:
+                continue
+            if symbol == '+':
+                number = x1 + x2
+            elif symbol == '-':
+                number = x1 - x2
+            elif symbol == '*':
+                number = x1 * x2
+            else:
+                number = x1 // x2
+            monkey_to_expression[monkey_] = number
+            q.append(monkey_)
+            solved.add(monkey_)
+        for monkey_ in solved:
+            resolutions.remove(monkey_)
+        if len(resolutions) == 0:
+            del monkey_to_resolutions[monkey]
+
+    if return_root:
+        return monkey_to_expression['root']
+
+    return monkey_to_expression
+
+
+def d21_2_monkey_math(lines):
+    monkey_to_expression = d21_1_monkey_math(lines, return_root=False, ignore_key='humn')
+    op1, _, op2 = monkey_to_expression['root']
+    if type(monkey_to_expression[op1]) == int:
+        equals = monkey_to_expression[op1]
+        unknown = op2
+    else:
+        assert type(monkey_to_expression[op2]) == int
+        equals = monkey_to_expression[op2]
+        unknown = op1
+    while unknown != 'humn':
+        op1, symbol, op2 = monkey_to_expression[unknown]
+        if type(monkey_to_expression[op1]) == int:
+            if symbol == '+':
+                equals -= monkey_to_expression[op1]
+            elif symbol == '-':
+                equals = monkey_to_expression[op1] - equals
+            elif symbol == '*':
+                equals //= monkey_to_expression[op1]
+            else:
+                equals = monkey_to_expression[op1] // equals
+            unknown = op2
+        else:
+            assert type(monkey_to_expression[op2]) == int
+            if symbol == '+':
+                equals -= monkey_to_expression[op2]
+            elif symbol == '-':
+                equals += monkey_to_expression[op2]
+            elif symbol == '*':
+                equals //= monkey_to_expression[op2]
+            else:
+                equals *= monkey_to_expression[op2]
+            unknown = op1
+    return equals
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1322,6 +1427,8 @@ SOLVERS = {
     '19-2': d19_2_not_enough_minerals,
     '20-1': d20_1_grove_positioning_system,
     '20-2': d20_2_grove_positioning_system,
+    '21-1': d21_1_monkey_math,
+    '21-2': d21_2_monkey_math,
 }
 
 
