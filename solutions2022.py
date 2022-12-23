@@ -1204,7 +1204,7 @@ def d19_1_not_enough_minerals(lines, minutes=24, head=None, beam=2**16, return_q
 
     geodes_maxes = list()
     for _id, costs in enumerate(blueprints, start=1):
-        print(_id)
+        print('id={:d}'.format(_id))
         robots_resources = {((1, 0, 0, 0), (0, 0, 0, 0))}
         for minute in range(minutes):
             print(minute, len(robots_resources), max(robots_resources, key=functools.cmp_to_key(_cmp_robots_resources)))
@@ -1231,7 +1231,7 @@ def d19_1_not_enough_minerals(lines, minutes=24, head=None, beam=2**16, return_q
         print('geodes={:d}'.format(geodes_max))
 
     if return_quality_sum:
-        return sum(_id * geodes_max for _id, geodes_max in enumerate(geodes_maxes))
+        return sum(_id * geodes_max for _id, geodes_max in enumerate(geodes_maxes, start=1))
 
     product = 1
     for geodes_max in geodes_maxes:
@@ -1241,6 +1241,44 @@ def d19_1_not_enough_minerals(lines, minutes=24, head=None, beam=2**16, return_q
 
 def d19_2_not_enough_minerals(lines):
     return d19_1_not_enough_minerals(lines, minutes=32, head=3, beam=2**18, return_quality_sum=False)
+
+
+def _d20_grove_positioning_system(lines):
+    numbers = tuple(map(int, lines))
+    zero_index = numbers.index(0)
+    assert 0 not in numbers[zero_index+1:]
+    return numbers, zero_index
+
+
+def d20_1_grove_positioning_system(lines, decryption_key=1, mixes=1):
+    numbers, zero_index = _d20_grove_positioning_system(lines)
+    numbers = tuple(number * decryption_key for number in numbers)
+    n = len(numbers)
+    index_to_position = {i: i for i in range(n)}
+    indices = list(range(n))
+    for _ in range(mixes):
+        for index, number in enumerate(numbers):
+            position = index_to_position[index]
+            position_ = (position + number) % (n - 1)
+            if position == position_:
+                continue
+            if position < position_:
+                indices_right = indices[position+1:position_+1]
+                for index_ in indices_right:
+                    index_to_position[index_] -= 1
+                index_to_position[index] = position_
+                indices = indices[:position] + indices_right + [index] + indices[position_+1:]
+            else:
+                indices_left = indices[position_:position]
+                for index_ in indices_left:
+                    index_to_position[index_] += 1
+                index_to_position[index] = position_
+                indices = indices[:position_] + [index] + indices_left + indices[position+1:]
+    return sum(numbers[indices[(index_to_position[zero_index]+v) % n]] for v in (1000, 2000, 3000))
+
+
+def d20_2_grove_positioning_system(lines):
+    return d20_1_grove_positioning_system(lines, decryption_key=811589153, mixes=10)
 
 
 SOLVERS = {
@@ -1282,6 +1320,8 @@ SOLVERS = {
     '18-2': d18_2_boiling_boulders,
     '19-1': d19_1_not_enough_minerals,
     '19-2': d19_2_not_enough_minerals,
+    '20-1': d20_1_grove_positioning_system,
+    '20-2': d20_2_grove_positioning_system,
 }
 
 
