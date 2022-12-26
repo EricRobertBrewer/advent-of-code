@@ -1386,6 +1386,175 @@ def d21_2_monkey_math(lines):
     return equals
 
 
+def _d22_monkey_map(lines):
+    map_lines = lines[:-2]
+    m = max(len(line) for line in map_lines)
+    map_ = tuple(line + ' '*(m-len(line)) for line in map_lines)
+    assert lines[-2] == ''
+
+    s_path = lines[-1]
+    path = list()
+    x = None
+    for c in s_path:
+        if c == 'R' or c == 'L':
+            if x is not None:
+                path.append(x)
+            path.append(c)
+            x = None
+        else:
+            if x is None:
+                x = int(c)
+            else:
+                x = 10 * x + int(c)
+    if x is not None:
+        path.append(x)
+
+    return map_, path, ((-1, 0), (0, 1), (1, 0), (0, -1))
+
+
+def d22_1_monkey_map(lines=None, map_=None, path=None, directions=None, move_fn=None):
+    if map_ is None and path is None and directions is None:
+        map_, path, directions = _d22_monkey_map(lines)
+    n, m = len(map_), len(map_[0])
+    i, j = 0, 0
+    while map_[i][j] == ' ':
+        j += 1
+    d = len(directions)
+    direction_to_index = {direction: index for index, direction in enumerate(directions)}
+    di, dj = directions[1]  # Facing right.
+
+    def _move_wrap_default(_map, _n, _m, _steps, _i, _j, _di, _dj):
+        while _steps > 0:
+            _si, _sj = (_i + _di) % _n, (_j + _dj) % _m
+            while map_[_si][_sj] == ' ':
+                _si, _sj = (_si + _di) % _n, (_sj + _dj) % _m
+            if map_[_si][_sj] == '#':
+                break
+            _i, _j = _si, _sj
+            _steps -= 1
+        return _i, _j, _di, _dj
+
+    if move_fn is None:
+        move_fn = _move_wrap_default
+
+    for item in path:
+        index = direction_to_index[(di, dj)]
+        if item == 'R':
+            di, dj = directions[(index+1) % d]
+        elif item == 'L':
+            di, dj = directions[(index-1) % d]
+        else:
+            i, j, di, dj = move_fn(map_, n, m, item, i, j, di, dj)
+
+    row = 1000 * (i + 1)
+    column = 4 * (j + 1)
+    facing = direction_to_index[(di, dj)]
+    return row + column + facing
+
+
+def d22_2_monkey_map(lines):
+    map_, path, directions = _d22_monkey_map(lines)
+    n, m = len(map_), len(map_[0])
+    h, w = 50, 50
+    faces = list()
+    for i in range(0, n, h):
+        for j in range(0, m, w):
+            if map_[i][j] != ' ':
+                faces.append((i, j))
+    assert len(faces) == 6
+
+    d = len(directions)
+    direction_to_edge = {direction: edge for edge, direction in enumerate(directions)}
+    face_to_edge_to_face_edge = {face: [None for _ in range(d)] for face in faces}
+    # Collect "easy" map-oriented face transitions.
+    for face in faces:
+        i, j = face
+        for di, dj in directions:
+            face_ = (i + di*h, j + dj*w)
+            if face_ in faces:
+                edge = direction_to_edge[(di, dj)]
+                edge_ = direction_to_edge[(-di, -dj)]
+                face_to_edge_to_face_edge[face][edge] = (face_, edge_)
+    # Collect other face transitions by transitivity.
+    for face_a in sorted(faces, key=lambda face: sum(face_to_edge_to_face_edge[face][edge] is None
+                                                     for edge in range(d))):
+        for edge_ab in range(d-1):
+            if face_to_edge_to_face_edge[face_a][edge_ab] is None:
+                continue
+            face_b, edge_ba = face_to_edge_to_face_edge[face_a][edge_ab]
+            for edge_ac in range(edge_ab+1, d):
+                if edge_ac - edge_ab == 2:
+                    continue  # Linear; i.e., not transitive.
+                if face_to_edge_to_face_edge[face_a][edge_ac] is None:
+                    continue
+                face_c, edge_ca = face_to_edge_to_face_edge[face_a][edge_ac]
+                edge_bc = (edge_ba - (edge_ac - edge_ab)) % d
+                edge_cb = (edge_ca - (edge_ab - edge_ac)) % d
+                if face_to_edge_to_face_edge[face_b][edge_bc] is not None:
+                    assert face_to_edge_to_face_edge[face_b][edge_bc] == (face_c, edge_cb)
+                else:
+                    face_to_edge_to_face_edge[face_b][edge_bc] = (face_c, edge_cb)
+                if face_to_edge_to_face_edge[face_c][edge_cb] is not None:
+                    assert face_to_edge_to_face_edge[face_c][edge_cb] == (face_b, edge_bc)
+                else:
+                    face_to_edge_to_face_edge[face_c][edge_cb] = (face_b, edge_bc)
+    assert all(all(face_to_edge_to_face_edge[face][edge] is not None
+                   for edge in range(d))
+               for face in faces)
+
+    def _get_face_edges(_i, _j):
+        _face = (_i // h) * h, (_j // w) * w
+        _edges = list()
+        if _i == _face[0]:
+            _edges.append(0)
+        if _j == _face[1] + w - 1:
+            _edges.append(1)
+        if _i == _face[0] + h - 1:
+            _edges.append(2)
+        if _j == _face[1]:
+            _edges.append(3)
+        return _face, _edges
+
+    def _move_wrap_cube(_map, _n, _m, _steps, _i, _j, _di, _dj):
+        while _steps > 0:
+            _face_from, _edges_from = _get_face_edges(_i, _j)
+            _edge_direction = direction_to_edge[(_di, _dj)]
+            if _edge_direction in _edges_from:
+                if _edge_direction == 0:
+                    _k = _j - _face_from[1]
+                elif _edge_direction == 1:
+                    _k = _i - _face_from[0]
+                elif _edge_direction == 2:
+                    _k = _face_from[1] + w - 1 - _j
+                else:  # _edge_direction == 3:
+                    _k = _face_from[0] + h - 1 - _i
+                _face_to, _edge_to = face_to_edge_to_face_edge[_face_from][_edge_direction]
+                if _edge_to == 0:
+                    _si = _face_to[0]
+                    _sj = _face_to[1] + w - 1 - _k
+                elif _edge_to == 1:
+                    _si = _face_to[0] + h - 1 - _k
+                    _sj = _face_to[1] + w - 1
+                elif _edge_to == 2:
+                    _si = _face_to[0] + h - 1
+                    _sj = _face_to[1] + _k
+                else:  # _edge_to == 3:
+                    _si = _face_to[0] + _k
+                    _sj = _face_to[1]
+                _sdi, _sdj = directions[(_edge_to + 2) % d]
+            else:
+                _si, _sj = (_i + _di), (_j + _dj)
+                _sdi, _sdj = _di, _dj
+            if map_[_si][_sj] == '#':
+                break
+            _i, _j = _si, _sj
+            _di, _dj = _sdi, _sdj
+            _steps -= 1
+        return _i, _j, _di, _dj
+
+    return d22_1_monkey_map(lines=None, map_=map_, path=path, directions=directions, move_fn=_move_wrap_cube)
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1429,6 +1598,8 @@ SOLVERS = {
     '20-2': d20_2_grove_positioning_system,
     '21-1': d21_1_monkey_math,
     '21-2': d21_2_monkey_math,
+    '22-1': d22_1_monkey_map,
+    '22-2': d22_2_monkey_map,
 }
 
 
