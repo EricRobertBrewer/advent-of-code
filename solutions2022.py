@@ -1621,6 +1621,76 @@ def d23_2_unstable_diffusion(lines):
     return d23_1_unstable_diffusion(lines, rounds=None)
 
 
+def _d24_blizzard_basin(lines):
+    assert all(len(line) == len(lines[0]) for line in lines[1:])
+    n, m = len(lines), len(lines[0])
+    assert all(line[0] == '#' and line[-1] == '#' for line in lines)
+    for i in (0, -1):
+        assert lines[i].index('.') == lines[i].rindex('.')
+        assert sum(1 if c == '#' else 0 for c in lines[i]) == len(lines[i]) - 1
+    j_start = lines[0].index('.')
+    j_end = lines[-1].index('.')
+    symbols = {'^', '>', 'v', '<'}
+    blizzards = list()
+    for i in range(1, n-1):
+        for j in range(1, m-1):
+            c = lines[i][j]
+            if c == '.':
+                continue
+            assert c in symbols
+            if c == '^' or c == 'v':
+                assert j != j_start and j != j_end
+            blizzards.append((i, j, c))
+    return n, m, j_start, j_end, blizzards
+
+
+def d24_1_blizzard_basin(lines, legs=1):
+    n, m, j_start, j_end, blizzards = _d24_blizzard_basin(lines)
+    directions = ((-1, 0), (0, 1), (1, 0), (0, -1))
+    symbol_to_direction = {symbol: directions[index] for index, symbol in enumerate('^>v<')}
+    blizzard_to_symbols = defaultdict(list)
+    for i, j, symbol in blizzards:
+        blizzard_to_symbols[(i, j)].append(symbol)
+    blizzard_lcm = (n * m) // math.gcd(n, m)
+    states = {(0, j_start, 0)}
+    state_to_minute = {(0, j_start, 0): 0}
+    minute = 0
+    while (n-1, j_end, legs) not in states:
+        # Blizzards move.
+        blizzard_to_symbols_ = defaultdict(list)
+        for (i, j), symbols in blizzard_to_symbols.items():
+            for symbol in symbols:
+                di, dj = symbol_to_direction[symbol]
+                point_ = (i - 1 + di) % (n - 2) + 1, (j - 1 + dj) % (m - 2) + 1
+                blizzard_to_symbols_[point_].append(symbol)
+        blizzard_to_symbols = blizzard_to_symbols_
+        # You wait or move.
+        states_ = set()
+        for i, j, leg in states:
+            for di, dj in ((0, 0), *directions):
+                i_, j_ = i + di, j + dj
+                if (j_ != j_start and i_ < 1) or \
+                        (j_ != j_end and i_ > n - 2) or \
+                        j_ < 1 or j_ > m - 2:
+                    continue
+                if (i_, j_) in blizzard_to_symbols.keys():
+                    continue
+                if (leg % 2 == 0 and (i_, j_) == (n-1, j_end)) or (leg % 2 == 1 and (i_, j_) == (0, j_start)):
+                    leg += 1
+                if (i_, j_, leg) not in state_to_minute:
+                    state_to_minute[(i_, j_, leg)] = minute
+                    states_.add((i_, j_, leg))
+                elif minute < state_to_minute[(i_, j_, leg)] + blizzard_lcm:
+                    states_.add((i_, j_, leg))
+        states = states_
+        minute += 1
+    return minute
+
+
+def d24_2_blizzard_basin(lines):
+    return d24_1_blizzard_basin(lines, legs=3)
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1668,6 +1738,8 @@ SOLVERS = {
     '22-2': d22_2_monkey_map,
     '23-1': d23_1_unstable_diffusion,
     '23-2': d23_2_unstable_diffusion,
+    '24-1': d24_1_blizzard_basin,
+    '24-2': d24_2_blizzard_basin,
 }
 
 
