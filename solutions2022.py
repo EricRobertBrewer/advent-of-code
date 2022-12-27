@@ -3,6 +3,8 @@ import functools
 import math
 import operator
 import time
+from collections import defaultdict
+from typing import Optional
 
 import aoc_util
 import cs_util
@@ -1555,6 +1557,70 @@ def d22_2_monkey_map(lines):
     return d22_1_monkey_map(lines=None, map_=map_, path=path, directions=directions, move_fn=_move_wrap_cube)
 
 
+def _d23_unstable_diffusion(lines):
+    assert all(len(line) == len(lines[0]) for line in lines[1:])
+    assert all(all(c == '.' or c == '#' for c in line) for line in lines)
+    elves = list()
+    for i in range(len(lines)):
+        for j in range(len(lines[i])):
+            if lines[i][j] == '#':
+                elves.append((i, j))
+    return set(elves)
+
+
+def d23_1_unstable_diffusion(lines, rounds: Optional[int] = 10):
+    elves = _d23_unstable_diffusion(lines)
+    round_ = 0
+    while rounds is None or round_ < rounds:
+        # Propose.
+        proposal_to_votes = defaultdict(list)
+        stable = 0
+        for elf in elves:
+            i, j = elf
+            # Check adjacent.
+            adjacent = ((i_, j_) for i_ in range(i-1, i+2) for j_ in range(j-1, j+2) if i_ != i or j_ != j)
+            if all(elf_ not in elves for elf_ in adjacent):
+                proposal_to_votes[elf].append(elf)
+                stable += 1
+                continue
+            # Check four directions.
+            direction_checks = (
+                ((i-1, j-1), (i-1, j), (i-1, j+1)),
+                ((i+1, j-1), (i+1, j), (i+1, j+1)),
+                ((i-1, j-1), (i, j-1), (i+1, j-1)),
+                ((i-1, j+1), (i, j+1), (i+1, j+1))
+            )
+            proposed = False
+            for tick in range(4):
+                direction = (tick + round_) % 4
+                checks = direction_checks[direction]
+                if all(elf_ not in elves for elf_ in checks):
+                    proposal_to_votes[checks[1]].append(elf)
+                    proposed = True
+                    break
+            if not proposed:
+                proposal_to_votes[elf].append(elf)
+        if stable == len(elves):
+            return round_ + 1
+        # Move.
+        elves_ = set()
+        for proposal, votes in proposal_to_votes.items():
+            if len(votes) == 1:
+                elves_.add(proposal)
+            else:
+                for vote in votes:
+                    elves_.add(vote)
+        elves = elves_
+        round_ += 1
+    h = max(map(operator.itemgetter(0), elves)) - min(map(operator.itemgetter(0), elves)) + 1
+    w = max(map(operator.itemgetter(1), elves)) - min(map(operator.itemgetter(1), elves)) + 1
+    return h * w - len(elves)
+
+
+def d23_2_unstable_diffusion(lines):
+    return d23_1_unstable_diffusion(lines, rounds=None)
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1600,6 +1666,8 @@ SOLVERS = {
     '21-2': d21_2_monkey_math,
     '22-1': d22_1_monkey_map,
     '22-2': d22_2_monkey_map,
+    '23-1': d23_1_unstable_diffusion,
+    '23-2': d23_2_unstable_diffusion,
 }
 
 
