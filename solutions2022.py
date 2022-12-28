@@ -975,14 +975,12 @@ def _d17_pyroclastic_flow(lines):
         ['##',
          '##']
     ]  # Diagrams are written "upside-down" to match chamber coordinates.
-    for rock in rocks:
-        assert all(len(rock[i]) == len(rock[0]) for i in range(1, len(rock)))
     return jets, rocks
 
 
 def d17_1_pyroclastic_flow(lines, drops=2022):
     jets, rocks = _d17_pyroclastic_flow(lines)
-    n = len(jets)
+    n, m = len(jets), len(rocks)
     jet_index = 0
 
     rock_lefts = [[rock[i].index('#') for i in range(len(rock))] for rock in rocks]
@@ -1003,35 +1001,39 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
     chamber_width = 7
     chamber = list()
 
-    def _get_chamber_top_air(_chamber):
-        _i_top = len(_chamber) - 1
-        while _i_top > -1 and '#' not in _chamber[_i_top]:
-            _i_top -= 1
-        if _i_top == -1:
-            return tuple()
+    def _get_chamber_rock_i(_chamber):
+        _rock_i = len(_chamber) - 1
+        while _rock_i > -1 and '#' not in _chamber[_rock_i]:
+            _rock_i -= 1
+        return _rock_i
+
+    def _get_chamber_air_i_min(_chamber, _rock_i=None):
+        if _rock_i is None:
+            _rock_i = _get_chamber_rock_i(_chamber)
+        if _rock_i == -1 or '.' not in _chamber[_rock_i]:
+            return None
+        _min_air = _rock_i
         _air = set()
         _frontier = list()
-        for _j in range(len(_chamber[_i_top])):
-            if _chamber[_i_top][_j] == '.':
-                _air.add((_i_top, _j))
-                _frontier.append((_i_top, _j))
+        for _j in range(len(_chamber[_rock_i])):
+            if _chamber[_rock_i][_j] == '.':
+                _air.add((_rock_i, _j))
+                _frontier.append((_rock_i, _j))
         while len(_frontier) > 0:
             _i, _j = _frontier.pop(0)
-            for _oi, _oj in ((_i+1, _j), (_i, _j+1), (_i-1, _j), (_i, _j-1)):
-                if (_oi, _oj) in _air or\
-                        _oi < 0 or _oi > _i_top or\
-                        _oj < 0 or _oj >= len(_chamber[_oi]) or\
-                        _chamber[_oi][_oj] != '.':
+            for _oi, _oj in ((_i, _j+1), (_i-1, _j), (_i, _j-1)):
+                if (_oi, _oj) in _air or _oi < 0 or _oj < 0 or _oj >= len(_chamber[_oi]) or _chamber[_oi][_oj] != '.':
                     continue
+                _min_air = min(_min_air, _oi)
                 _air.add((_oi, _oj))
                 _frontier.append((_oi, _oj))
-        return tuple(sorted(list(_air)))
+        return _min_air
 
-    jet_rock_lcm = (n * len(rocks)) // math.gcd(n, len(rocks))
+    jet_rock_lcm = (n * m) // math.gcd(n, m)
     cycle_drop_start = -1
     cycle_drop_end = -1
-    chamber_top_airs = [tuple()]
-    chamber_top_air_diff_to_index = {tuple(): 0}
+    cycle_rock_is = [0]
+    air_signature_to_cycle = {'': 0}
 
     drop = 0
     while drop < drops:
@@ -1074,30 +1076,33 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
         drop += 1
         # Handle cycles.
         if cycle_drop_end == -1 and drop % jet_rock_lcm == 0:
-            chamber_top_air = _get_chamber_top_air(chamber)
-            chamber_top_airs.append(chamber_top_air)
-            chamber_top_i_max, _ = max(chamber_top_air)
-            chamber_top_air_diff = tuple((chamber_top_i_max - air[0], air[1]) for air in chamber_top_air)
-            if chamber_top_air_diff not in chamber_top_air_diff_to_index.keys():
-                chamber_top_air_diff_to_index[chamber_top_air_diff] = len(chamber_top_airs) - 1
-                # print(drop, chamber_top_air, chamber_top_air_diff)
+            rock_i = _get_chamber_rock_i(chamber)
+            air_i_min = _get_chamber_air_i_min(chamber, rock_i)
+            if air_i_min is None:
+                air_signature = ''
             else:
-                cycle_drop_start = chamber_top_air_diff_to_index[chamber_top_air_diff] * jet_rock_lcm
+                air_signature = '|'.join(chamber[air_i_min:rock_i+1])
+            cycle_rock_is.append(rock_i)
+            if air_signature not in air_signature_to_cycle.keys():
+                air_signature_to_cycle[air_signature] = len(cycle_rock_is) - 1
+            else:
+                cycle_drop_start = air_signature_to_cycle[air_signature] * jet_rock_lcm
                 cycle_drop_end = drop
                 cycle_drops = cycle_drop_end - cycle_drop_start
                 drop = ((drops - cycle_drop_start) // cycle_drops) * cycle_drops + cycle_drop_start
 
     if cycle_drop_end > -1:
-        cycle_start_height = max(chamber_top_airs[cycle_drop_start//jet_rock_lcm])[0]
-        cycle_end_height = max(chamber_top_airs[cycle_drop_end//jet_rock_lcm])[0]
-        cycle_height = cycle_end_height - cycle_start_height
+        cycle_start_rock_i = cycle_rock_is[cycle_drop_start//jet_rock_lcm]
+        cycle_end_rock_i = cycle_rock_is[cycle_drop_end//jet_rock_lcm]
+        cycle_height = cycle_end_rock_i - cycle_start_rock_i
         cycle_drops = cycle_drop_end - cycle_drop_start
         cycles = (drops - cycle_drop_start) // cycle_drops
-        height_before_cycles = cycle_start_height + 1
+        height_before_cycles = cycle_start_rock_i + 1
         height_during_cycles = cycle_height * cycles
-        height_after_cycles = max(_get_chamber_top_air(chamber))[0] - cycle_end_height
+        height_after_cycles = _get_chamber_rock_i(chamber) - cycle_end_rock_i
         return height_before_cycles + height_during_cycles + height_after_cycles
-    return max(_get_chamber_top_air(chamber))[0] + 1
+
+    return _get_chamber_rock_i(chamber) + 1
 
 
 def d17_2_pyroclastic_flow(lines):
@@ -1140,8 +1145,8 @@ def d18_2_boiling_boulders(lines):
     while len(frontier) > 0:
         x, y, z = frontier.pop(0)
         for x_, y_, z_ in ((x-1, y, z), (x+1, y, z), (x, y-1, z), (x, y+1, z), (x, y, z-1), (x, y, z+1)):
-            if x_ < x_min-1 or x_ > x_max+1 or\
-                    y_ < y_min-1 or y_ > y_max+1 or\
+            if x_ < x_min-1 or x_ > x_max+1 or \
+                    y_ < y_min-1 or y_ > y_max+1 or \
                     z_ < z_min-1 or z_ > z_max+1 or \
                     (x_, y_, z_) in exterior:
                 continue
