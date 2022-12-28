@@ -1029,11 +1029,11 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
                 _frontier.append((_oi, _oj))
         return _min_air
 
-    jet_rock_lcm = (n * m) // math.gcd(n, m)
+    cycle_air_jet_rock = None
     cycle_drop_start = -1
     cycle_drop_end = -1
     cycle_rock_is = [0]
-    air_signature_to_cycle = {'': 0}
+    air_jet_rock_to_cycle_drop = {('', 0, 0): (0, 0)}
 
     drop = 0
     while drop < drops:
@@ -1075,25 +1075,27 @@ def d17_1_pyroclastic_flow(lines, drops=2022):
                     chamber[i+di] = chamber[i+di][:j+dj] + '#' + chamber[i+di][j+dj+1:]
         drop += 1
         # Handle cycles.
-        if cycle_drop_end == -1 and drop % jet_rock_lcm == 0:
+        if cycle_air_jet_rock is None:
             rock_i = _get_chamber_rock_i(chamber)
             air_i_min = _get_chamber_air_i_min(chamber, rock_i)
             if air_i_min is None:
-                air_signature = ''
+                air = ''
             else:
-                air_signature = '|'.join(chamber[air_i_min:rock_i+1])
+                air = '|'.join(chamber[air_i_min:rock_i+1])
             cycle_rock_is.append(rock_i)
-            if air_signature not in air_signature_to_cycle.keys():
-                air_signature_to_cycle[air_signature] = len(cycle_rock_is) - 1
+            if (air, jet_index, rock_index) not in air_jet_rock_to_cycle_drop.keys():
+                air_jet_rock_to_cycle_drop[(air, jet_index, rock_index)] = (len(cycle_rock_is) - 1, drop)
             else:
-                cycle_drop_start = air_signature_to_cycle[air_signature] * jet_rock_lcm
+                cycle_air_jet_rock = air, jet_index, rock_index
+                cycle_drop_start = air_jet_rock_to_cycle_drop[cycle_air_jet_rock][1]
                 cycle_drop_end = drop
                 cycle_drops = cycle_drop_end - cycle_drop_start
                 drop = ((drops - cycle_drop_start) // cycle_drops) * cycle_drops + cycle_drop_start
 
-    if cycle_drop_end > -1:
-        cycle_start_rock_i = cycle_rock_is[cycle_drop_start//jet_rock_lcm]
-        cycle_end_rock_i = cycle_rock_is[cycle_drop_end//jet_rock_lcm]
+    if cycle_air_jet_rock is not None:
+        cycle_drop = air_jet_rock_to_cycle_drop[cycle_air_jet_rock]
+        cycle_start_rock_i = cycle_rock_is[cycle_drop[0]]
+        cycle_end_rock_i = cycle_rock_is[-1]
         cycle_height = cycle_end_rock_i - cycle_start_rock_i
         cycle_drops = cycle_drop_end - cycle_drop_start
         cycles = (drops - cycle_drop_start) // cycle_drops
