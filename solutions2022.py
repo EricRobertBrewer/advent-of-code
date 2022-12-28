@@ -1691,6 +1691,49 @@ def d24_2_blizzard_basin(lines):
     return d24_1_blizzard_basin(lines, legs=3)
 
 
+def _d25_full_of_hot_air(lines):
+    assert all(all(c in {'2', '1', '0', '-', '='} for c in line) for line in lines)
+    return lines
+
+
+def d25_1_full_of_hot_air(lines):
+    snafus = _d25_full_of_hot_air(lines)
+
+    def _snafu_to_x(_snafu):
+        _x = 0
+        _n = len(_snafu)
+        for _i, _c in enumerate(_snafu):
+            _p = _n - _i - 1
+            if _c == '=':
+                _x -= 2 * (5 ** _p)
+            elif _c == '-':
+                _x -= 5 ** _p
+            else:
+                _x += int(_c) * (5 ** _p)
+        return _x
+
+    def _x_to_snafu(_x):
+        assert _x > -1
+        if _x == 0:
+            return '0'
+        _s = ''
+        while _x > 0:
+            _digit = _x % 5
+            if _digit < 3:
+                _carry = 0
+                _s = str(_digit) + _s
+            elif _digit == 3:
+                _carry = 1
+                _s = '=' + _s
+            else:
+                _carry = 1
+                _s = '-' + _s
+            _x = _x // 5 + _carry
+        return _s
+
+    return _x_to_snafu(sum(_snafu_to_x(snafu) for snafu in snafus))
+
+
 SOLVERS = {
     '1-1': d01_1_calorie_counting,
     '1-2': d01_2_calorie_counting,
@@ -1740,6 +1783,7 @@ SOLVERS = {
     '23-2': d23_2_unstable_diffusion,
     '24-1': d24_1_blizzard_basin,
     '24-2': d24_2_blizzard_basin,
+    '25-1': d25_1_full_of_hot_air,
 }
 
 
