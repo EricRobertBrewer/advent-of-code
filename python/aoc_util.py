@@ -1,7 +1,7 @@
 import os
 from urllib import request
 
-INPUT_DIR = 'input'
+INPUT_DIR = '../input'
 ENV_VAR = 'AOC_SESSION'
 
 
