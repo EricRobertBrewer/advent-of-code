@@ -25,5 +25,5 @@ def download_input_if_needed(year: str, day: int):
     return day_path
 
 
-def get_example_day_path(year: str, day: int):
+def get_example_path(year: str, day: int):
     return os.path.join(INPUT_DIR, year, '{:d}-example.txt'.format(day))

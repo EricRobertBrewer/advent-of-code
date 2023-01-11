@@ -37,19 +37,20 @@ def main():
     part = args.part
     example = args.example
 
+    if example:
+        input_path = aoc_util.get_example_path(YEAR, day)
+    else:
+        input_path = aoc_util.download_input_if_needed(YEAR, day)
+
     start = time.time()
-    answer = solve(day, part, example=example)
+    answer = solve(day, part, input_path)
     duration = time.time() - start
     print(answer)
     print('Time: {:.3f} s'.format(duration))
 
 
-def solve(day: int, part: int, example: bool = False):
-    if example:
-        day_path = aoc_util.get_example_day_path(YEAR, day)
-    else:
-        day_path = aoc_util.download_input_if_needed(YEAR, day)
-    with open(day_path, 'r') as fd:
+def solve(day: int, part: int, input_path: str):
+    with open(input_path, 'r') as fd:
         lines = [line.strip('\n') for line in fd.readlines()]
 
     key = str(day) + '-' + str(part)
