@@ -8,6 +8,6 @@
 
 long solve(int day, int part, char *input_path);
 
-long d_01_1_not_quite_lisp(char **lines);
+long d_01_not_quite_lisp(int line_count, char *lines[], int part);
 
 #endif

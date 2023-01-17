@@ -5,7 +5,6 @@
 
 char *aoc_download_input_if_needed(const char *year, int day) {
     // Create year directory.
-    printf("Making year directory: `%s`\n", year);
     char *year_dir_name = malloc((strlen(INPUT_DIR) + strlen(year) + 2) * sizeof(char));
     sprintf(year_dir_name, "%s/%s", INPUT_DIR, year);
     if (mkdir(year_dir_name, 0777) != 0 && errno != EEXIST) {
@@ -16,7 +15,6 @@ char *aoc_download_input_if_needed(const char *year, int day) {
     char *day_path = malloc((strlen(year_dir_name) + 8) * sizeof(char));
     sprintf(day_path, "%s/%02d.txt", year_dir_name, day);
     free(year_dir_name);
-    printf("Accessing file `%s`...", day_path);
     if (access(day_path, F_OK) != 0) {
         // Download input file.
         // https://curl.se/libcurl/c/https.html
