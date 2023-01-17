@@ -1,5 +1,6 @@
 #include "solutions2015.h"
 #include "aoc.h"
+#include "cs.h"
 
 #define YEAR "2015"
 
@@ -66,7 +67,9 @@ long solve(int day, int part, char *input_path) {
 
     long answer;
     if (day == 1) {
-        answer = d_01_not_quite_lisp(line_count, lines, part);
+        answer = d01_not_quite_lisp(line_count, lines, part);
+    } else if (day == 2) {
+        answer = d02_i_was_told_there_would_be_no_math(line_count, lines, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -80,7 +83,7 @@ long solve(int day, int part, char *input_path) {
     return answer;
 }
 
-long d_01_not_quite_lisp(int line_count, char *lines[], int part) {
+long d01_not_quite_lisp(int line_count, char *lines[], int part) {
     if (line_count != 1) {
         fprintf(stderr, "Unexpected lines: %d\n", line_count);
         exit(EXIT_FAILURE);
@@ -102,4 +105,51 @@ long d_01_not_quite_lisp(int line_count, char *lines[], int part) {
         }
     }
     return floor;
+}
+
+long d02_i_was_told_there_would_be_no_math(int line_count, char *lines[], int part) {
+    int x = 0;
+    const int N_SIDES = 3;
+    for (int i = 0; i < line_count; i++) {
+        char *line = lines[i];
+        int sides[N_SIDES];
+        int s = 0;
+        int v = 0;
+        for (int j = 0; j < strlen(line)-1; j++) {
+            if (line[j] == 'x') {
+                sides[s] = v;
+                s++;
+                v = 0;
+            } else {
+                v = 10 * v + (line[j] - '0');
+            }
+        }
+        sides[s] = v;
+
+        int s_max = cs_max(sides, N_SIDES);
+        if (part == 1) {
+            int area = 2*sides[0]*sides[1] + 2*sides[0]*sides[2] + 2*sides[1]*sides[2];
+            int slack;
+            if (s_max == 0) {
+                slack = sides[1]*sides[2];
+            } else if (s_max == 1) {
+                slack = sides[0]*sides[2];
+            } else {
+                slack = sides[0]*sides[1];
+            }
+            x += area + slack;
+        } else {
+            int ribbon;
+            if (s_max == 0) {
+                ribbon = 2*sides[1] + 2*sides[2];
+            } else if (s_max == 1) {
+                ribbon = 2*sides[0] + 2*sides[2];
+            } else {
+                ribbon = 2*sides[0] + 2*sides[1];
+            }
+            int bow = sides[0]*sides[1]*sides[2];
+            x += ribbon + bow;
+        }
+    }
+    return x;
 }
