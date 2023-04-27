@@ -2,6 +2,19 @@
 
 [Advent of Code](https://adventofcode.com/) solutions
 
-## Years
+```sh
+export AOC_SESSION=<value-of-session-cookie-in-browser>
+```
 
-- 2022
+## 2015 (C)
+
+```sh
+make -C 2015
+./2015/solutions.x <problem> <part>
+```
+
+## 2022 (Python)
+
+```sh
+python 2022/solutions.py <problem> <part>
+```

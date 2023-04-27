@@ -1,4 +1,4 @@
-#include "solutions2015.h"
+#include "solutions.h"
 #include "aoc.h"
 #include "cs.h"
 
@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
     long answer = solve(day, part, input_path);
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    uint64_t duration_ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
-    fprintf(stdout, "Time: %llu ms\n", duration_ms);
 
     fprintf(stdout, "%ld\n", answer);
+    uint64_t duration_ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
+    fprintf(stdout, "Time: %llu ms\n", duration_ms);
 
     free(input_path);
     return 0;
@@ -152,4 +152,9 @@ long d02_i_was_told_there_would_be_no_math(int line_count, char *lines[], int pa
         }
     }
     return x;
+}
+
+long d03_perfectly_spherical_houses_in_a_vacuum(int line_count, char *lines[], int part) {
+    // TODO: Implement `cs_hash_set` data structure; hash function, table-doubling
+    return 0;
 }

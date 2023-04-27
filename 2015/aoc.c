@@ -1,6 +1,6 @@
 #include "aoc.h"
 
-#define INPUT_DIR "../input"
+#define INPUT_DIR "./input"
 #define ENV_VAR "AOC_SESSION"
 
 char *aoc_download_input_if_needed(const char *year, int day) {
