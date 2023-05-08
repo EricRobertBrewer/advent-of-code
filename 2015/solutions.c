@@ -20,10 +20,10 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Unexpected part: %d\n", part);
         exit(EXIT_FAILURE);
     }
-    int example = 0;
+    bool example = false;
     if (argc > 3) {
         if (strcmp(argv[3], "-x") == 0 || strcmp(argv[3], "--example") == 0) {
-            example = 1;
+            example = true;
         } else {
             fprintf(stderr, "Unexpected argument: %s\n", argv[3]);
             exit(EXIT_FAILURE);
@@ -67,9 +67,11 @@ long solve(int day, int part, char *input_path) {
 
     long answer;
     if (day == 1) {
-        answer = d01_not_quite_lisp(line_count, lines, part);
+        answer = d01_not_quite_lisp(lines, line_count, part);
     } else if (day == 2) {
-        answer = d02_i_was_told_there_would_be_no_math(line_count, lines, part);
+        answer = d02_i_was_told_there_would_be_no_math(lines, line_count, part);
+    } else if (day == 3) {
+        answer = d03_perfectly_spherical_houses_in_a_vacuum(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -83,7 +85,7 @@ long solve(int day, int part, char *input_path) {
     return answer;
 }
 
-long d01_not_quite_lisp(int line_count, char *lines[], int part) {
+long d01_not_quite_lisp(char *lines[], int line_count, int part) {
     if (line_count != 1) {
         fprintf(stderr, "Unexpected lines: %d\n", line_count);
         exit(EXIT_FAILURE);
@@ -107,7 +109,7 @@ long d01_not_quite_lisp(int line_count, char *lines[], int part) {
     return floor;
 }
 
-long d02_i_was_told_there_would_be_no_math(int line_count, char *lines[], int part) {
+long d02_i_was_told_there_would_be_no_math(char *lines[], int line_count, int part) {
     int x = 0;
     const int N_SIDES = 3;
     for (int i = 0; i < line_count; i++) {
@@ -154,7 +156,36 @@ long d02_i_was_told_there_would_be_no_math(int line_count, char *lines[], int pa
     return x;
 }
 
-long d03_perfectly_spherical_houses_in_a_vacuum(int line_count, char *lines[], int part) {
-    // TODO: Implement `cs_hash_set` data structure; hash function, table-doubling
-    return 0;
+long d03_perfectly_spherical_houses_in_a_vacuum(char *lines[], int line_count, int part) {
+    CSDict *dict = cs_dict_new();
+    cs_dict_put(dict, "++00000000", NULL);
+    int x[2];
+    x[0] = 0; x[1] = 0;
+    int y[2];
+    y[0] = 0; y[1] = 0;
+    char code[11];
+    char *moves = lines[0];
+    for (int i = 0; i < strlen(moves); i++) {
+        char move = moves[i];
+        int robo = part == 1 || i % 2 == 0 ? 0 : 1;
+        if (move == '^') {
+            y[robo]++;
+        } else if (move == 'v') {
+            y[robo]--;
+        } else if (move == '>') {
+            x[robo]++;
+        } else if (move == '<') {
+            x[robo]--;
+        } else {
+            fprintf(stderr, "Unexpected character: %c\n", move);
+            exit(EXIT_FAILURE);
+        }
+        code[0] = x[robo] < 0 ? '-' : '+';
+        code[1] = y[robo] < 0 ? '-' : '+';
+        sprintf(code + 2, "%04d%04d", abs(x[robo]), abs(y[robo]));
+        cs_dict_put(dict, code, NULL);
+    }
+    unsigned int answer = cs_dict_size(dict);
+    free(dict);
+    return answer;
 }
