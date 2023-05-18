@@ -60,6 +60,10 @@ long solve(int day, int part, char *input_path) {
     size_t len = 0;
     ssize_t nread;
     while ((nread = getline(&line, &len, fp)) != -1) {
+        // Remove newline.
+        if (line[strlen(line) - 1] == '\n') {
+            line[strlen(line) - 1] = '\0';
+        }
         lines[line_count++] = line;
         line = NULL;
     }
@@ -74,6 +78,8 @@ long solve(int day, int part, char *input_path) {
         answer = d03_perfectly_spherical_houses_in_a_vacuum(lines, line_count, part);
     } else if (day == 4) {
         answer = d04_the_ideal_stocking_stuffer(lines, line_count, part);
+    } else if (day == 5) {
+        answer = d05_doesnt_he_have_intern_elves_for_this(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -194,10 +200,6 @@ long d03_perfectly_spherical_houses_in_a_vacuum(char *lines[], int line_count, i
 
 long d04_the_ideal_stocking_stuffer(char *lines[], int line_count, int part) {
     char *key = lines[0];
-    // Remove newline.
-    if (key[strlen(key) - 1] == '\n') {
-        key[strlen(key) - 1] = '\0';
-    }
 
     int answer = 1;
     unsigned char digest[17];
@@ -223,4 +225,69 @@ long d04_the_ideal_stocking_stuffer(char *lines[], int line_count, int part) {
     }
     printf("\n");
     return answer;
+}
+
+long d05_doesnt_he_have_intern_elves_for_this(char *lines[], int line_count, int part) {
+    int n = 0;
+    for (int i = 0; i < line_count; i++) {
+        char *s = lines[i];
+        if (part == 1) {
+            bool nice = true;
+            int vowels = 0;
+            bool double_letter = false;
+            for (int j = 0; j < strlen(s) && nice; j++) {
+                if (s[j] == 'a' || s[j] == 'e' || s[j] == 'i' || s[j] == 'o' || s[j] == 'u') {
+                    vowels++;
+                }
+                if (j > 0) {
+                    if (s[j] == s[j - 1]) {
+                        double_letter = true;
+                    }
+                    if ((s[j - 1] == 'a' && s[j] == 'b') || (s[j - 1] == 'c' && s[j] == 'd') ||
+                        (s[j - 1] == 'p' && s[j] == 'q') || (s[j - 1] == 'x' && s[j] == 'y')) {
+                        nice = false;
+                    }
+                }
+            }
+            if (nice && vowels >= 3 && double_letter) {
+                n++;
+            }
+        } else if (part == 2) {
+            bool two_pair = false;
+            CS_Dict *pair_to_index = cs_dict_new();
+            char pair[3];
+            char **index_strs = malloc((strlen(s) - 1) * sizeof(char *));
+            for (int j = 1; j < strlen(s); j++) {
+                index_strs[j - 1] = malloc(3 * sizeof(char));
+            }
+            bool between = false;
+            for (int j = 1; j < strlen(s) && (!two_pair || !between); j++) {
+                if (!two_pair) {
+                    pair[0] = s[j - 1];
+                    pair[1] = s[j];
+                    if (cs_dict_contains(pair_to_index, pair)) {
+                        int index = (int) strtol(cs_dict_get(pair_to_index, pair), NULL, 10);
+                        if (j - index > 1) {
+                            two_pair = true;
+                        }
+                    } else {
+                        sprintf(index_strs[j - 1], "%d", j);
+                        cs_dict_put(pair_to_index, pair, index_strs[j - 1]);
+                    }
+                }
+                if (!between && j > 1 && s[j] == s[j - 2]) {
+                    between = true;
+                }
+            }
+            if (two_pair && between) {
+                n++;
+            }
+            for (int j = 1; j < strlen(s); j++) {
+                free(index_strs[j - 1]);
+            }
+            free(index_strs);
+            free(pair_to_index);
+        }
+    }
+    return n;
 }
