@@ -50,8 +50,8 @@ BucketNode *cs_dict_bucket_new(const char *key, void *value) {
 }
 
 // create a new dictionary
-CSDict *cs_dict_new() {
-    CSDict *dict = (CSDict *)malloc(sizeof(CSDict));
+CS_Dict *cs_dict_new() {
+    CS_Dict *dict = (CS_Dict *)malloc(sizeof(CS_Dict));
     if (dict == NULL) {
         fprintf(stderr, "Error: Unable to allocate memory.\n");
         exit(EXIT_FAILURE);
@@ -62,7 +62,7 @@ CSDict *cs_dict_new() {
 }
 
 // set a key-value pair in the dictionary
-void cs_dict_put(CSDict *dict, const char *key, void *value) {
+void cs_dict_put(CS_Dict *dict, const char *key, void *value) {
     unsigned long index = cs_hash(key) % MAX_BUCKETS;
     BucketNode *node = dict->buckets[index];
 
@@ -83,7 +83,7 @@ void cs_dict_put(CSDict *dict, const char *key, void *value) {
 }
 
 // get a value for a key in the dictionary
-void *cs_dict_get(CSDict *dict, const char *key) {
+void *cs_dict_get(CS_Dict *dict, const char *key) {
     unsigned long index = cs_hash(key) % MAX_BUCKETS;
     BucketNode *node = dict->buckets[index];
 
@@ -98,7 +98,7 @@ void *cs_dict_get(CSDict *dict, const char *key) {
 }
 
 // check if a key is in the dictionary
-bool cs_dict_contains(CSDict *dict, const char *key) {
+bool cs_dict_contains(CS_Dict *dict, const char *key) {
     unsigned long index = cs_hash(key) % MAX_BUCKETS;
     BucketNode *node = dict->buckets[index];
 
@@ -113,7 +113,7 @@ bool cs_dict_contains(CSDict *dict, const char *key) {
 }
 
 // remove a key-value pair from the dictionary
-bool cs_dict_remove(CSDict *dict, const char *key) {
+bool cs_dict_remove(CS_Dict *dict, const char *key) {
     unsigned long index = cs_hash(key) % MAX_BUCKETS;
     BucketNode *prev = NULL;
     BucketNode *node = dict->buckets[index];
@@ -137,6 +137,6 @@ bool cs_dict_remove(CSDict *dict, const char *key) {
     return false;
 }
 
-unsigned int cs_dict_size(CSDict *dict) {
+unsigned int cs_dict_size(CS_Dict *dict) {
     return dict->size;
 }

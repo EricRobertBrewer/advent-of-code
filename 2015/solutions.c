@@ -157,7 +157,7 @@ long d02_i_was_told_there_would_be_no_math(char *lines[], int line_count, int pa
 }
 
 long d03_perfectly_spherical_houses_in_a_vacuum(char *lines[], int line_count, int part) {
-    CSDict *dict = cs_dict_new();
+    CS_Dict *dict = cs_dict_new();
     cs_dict_put(dict, "++00000000", NULL);
     int x[2];
     x[0] = 0; x[1] = 0;
