@@ -1,6 +1,7 @@
 #ifndef CS_H
 #define CS_H
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -30,5 +31,7 @@ void *cs_dict_get(CS_Dict *dict, const char *key);
 bool cs_dict_contains(CS_Dict *dict, const char *key);
 bool cs_dict_remove(CS_Dict *dict, const char *key);
 unsigned int cs_dict_size(CS_Dict *dict);
+
+void cs_md5(const char *key, unsigned char *digest);
 
 #endif

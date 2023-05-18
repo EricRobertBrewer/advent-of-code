@@ -72,6 +72,8 @@ long solve(int day, int part, char *input_path) {
         answer = d02_i_was_told_there_would_be_no_math(lines, line_count, part);
     } else if (day == 3) {
         answer = d03_perfectly_spherical_houses_in_a_vacuum(lines, line_count, part);
+    } else if (day == 4) {
+        answer = d04_the_ideal_stocking_stuffer(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -187,5 +189,38 @@ long d03_perfectly_spherical_houses_in_a_vacuum(char *lines[], int line_count, i
     }
     unsigned int answer = cs_dict_size(dict);
     free(dict);
+    return answer;
+}
+
+long d04_the_ideal_stocking_stuffer(char *lines[], int line_count, int part) {
+    char *key = lines[0];
+    // Remove newline.
+    if (key[strlen(key) - 1] == '\n') {
+        key[strlen(key) - 1] = '\0';
+    }
+
+    int answer = 1;
+    unsigned char digest[17];
+    while (true) {
+        int digits = (int) floor(log10(answer));
+        char *message = malloc((strlen(key) + digits + 1) * sizeof(char));
+        sprintf(message, "%s%d", key, answer);
+        cs_md5(message, digest);
+        free(message);
+        if (part == 1 && digest[0] == 0x00 && digest[1] == 0x00 && (digest[2] & 0xf0) == 0x00) {
+            break;
+        } else if (part == 2 && digest[0] == 0x00 && digest[1] == 0x00 && digest[2] == 0x00) {
+            break;
+        }
+        answer++;
+    }
+    printf("digest:");
+    for (int i = 0; i < 16; i++) {
+        if (i % 4 == 0) {
+            printf(" ");
+        }
+        printf("%02x", digest[i]);
+    }
+    printf("\n");
     return answer;
 }
