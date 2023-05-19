@@ -80,6 +80,8 @@ long solve(int day, int part, char *input_path) {
         answer = d04_the_ideal_stocking_stuffer(lines, line_count, part);
     } else if (day == 5) {
         answer = d05_doesnt_he_have_intern_elves_for_this(lines, line_count, part);
+    } else if (day == 6) {
+        answer = d06_probably_a_fire_hazard(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -287,6 +289,77 @@ long d05_doesnt_he_have_intern_elves_for_this(char *lines[], int line_count, int
             }
             free(index_strs);
             free(pair_to_index);
+        }
+    }
+    return n;
+}
+
+long d06_probably_a_fire_hazard(char *lines[], int line_count, int part) {
+    const int N = 1000, M = 1000;
+    unsigned char lights[N][M];
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            lights[i][j] = 0;
+        }
+    }
+
+    for (int k = 0; k < line_count; k++) {
+        char *line = lines[k];
+        char *instruction, *a, *b;
+        const char *space = " ";
+        int ia, ja, ib, jb;
+        const char *comma = ",";
+        instruction = strtok(line, space);
+        if (strcmp(instruction, "turn") == 0) {
+            instruction = strtok(NULL, space);
+        }
+        a = strtok(NULL, space);
+        strtok(NULL, space); // Skip 'through'.
+        b = strtok(NULL, space);
+        ia = (int) strtol(strtok(a, comma), NULL, 10);
+        ja = (int) strtol(strtok(NULL, comma), NULL, 10);
+        ib = (int) strtol(strtok(b, comma), NULL, 10);
+        jb = (int) strtol(strtok(NULL, comma), NULL, 10);
+        if (strcmp(instruction, "on") == 0) {
+            for (int i = ia; i <= ib; i++) {
+                for (int j = ja; j <= jb; j++) {
+                    if (part == 1) {
+                        lights[i][j] = 1;
+                    } else {
+                        lights[i][j] += 1;
+                    }
+                }
+            }
+        } else if (strcmp(instruction, "off") == 0) {
+            for (int i = ia; i <= ib; i++) {
+                for (int j = ja; j <= jb; j++) {
+                    if (part == 1) {
+                        lights[i][j] = 0;
+                    } else if (lights[i][j] > 0) {
+                        lights[i][j] -= 1;
+                    }
+                }
+            }
+        } else if (strcmp(instruction, "toggle") == 0) {
+            for (int i = ia; i <= ib; i++) {
+                for (int j = ja; j <= jb; j++) {
+                    if (part == 1) {
+                        lights[i][j] = lights[i][j] == 1 ? 0 : 1;
+                    } else {
+                        lights[i][j] += 2;
+                    }
+                }
+            }
+        } else {
+            fprintf(stderr, "Unexpected instruction: %s\n", instruction);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    int n = 0;
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < M; j++) {
+            n += lights[i][j];
         }
     }
     return n;
