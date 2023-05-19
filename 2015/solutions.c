@@ -82,6 +82,8 @@ long solve(int day, int part, char *input_path) {
         answer = d05_doesnt_he_have_intern_elves_for_this(lines, line_count, part);
     } else if (day == 6) {
         answer = d06_probably_a_fire_hazard(lines, line_count, part);
+    } else if (day == 7) {
+        answer = d07_some_assembly_required(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -306,9 +308,9 @@ long d06_probably_a_fire_hazard(char *lines[], int line_count, int part) {
     for (int k = 0; k < line_count; k++) {
         char *line = lines[k];
         char *instruction, *a, *b;
-        const char *space = " ";
+        const char space[] = " ";
         int ia, ja, ib, jb;
-        const char *comma = ",";
+        const char comma[] = ",";
         instruction = strtok(line, space);
         if (strcmp(instruction, "turn") == 0) {
             instruction = strtok(NULL, space);
@@ -363,4 +365,77 @@ long d06_probably_a_fire_hazard(char *lines[], int line_count, int part) {
         }
     }
     return n;
+}
+
+unsigned short _d07_circuit_value(CS_Dict *circuit, const char *wire, CS_Dict *memo) {
+    if (!cs_dict_contains(circuit, wire)) { // Numeric literal.
+        return (unsigned short) strtol(wire, NULL, 10);
+    }
+    if (cs_dict_contains(memo, wire)) { // Cached.
+        return (unsigned short) strtol(cs_dict_get(memo, wire), NULL, 10);
+    }
+    unsigned short value;
+    char *value_str;
+    char *token, *a, *op, *b;
+    unsigned short a_value, b_value;
+    const char space[] = " ";
+    char *input = cs_dict_get(circuit, wire);
+    token = strtok(input, space);
+    if (strcmp(token, "NOT") == 0) { // Unary operator NOT.
+        a = strtok(NULL, space);
+        a_value = _d07_circuit_value(circuit, a, memo);
+        value = ~a_value;
+    } else {
+        a = token;
+        op = strtok(NULL, space);
+        if (op == NULL) { // Identity.
+            value = _d07_circuit_value(circuit, a, memo);
+        } else { // Binary operator.
+            b = strtok(NULL, space);
+            a_value = _d07_circuit_value(circuit, a, memo);
+            b_value = _d07_circuit_value(circuit, b, memo);
+            if (strcmp(op, "AND") == 0) {
+                value = a_value & b_value;
+            } else if (strcmp(op, "OR") == 0) {
+                value = a_value | b_value;
+            } else if (strcmp(op, "LSHIFT") == 0) {
+                value = a_value << b_value;
+            } else if (strcmp(op, "RSHIFT") == 0) {
+                value = a_value >> b_value;
+            } else {
+                fprintf(stderr, "Unrecognized operator: %s\n", op);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    value_str = malloc(((value > 0 ? (int) floor(log10(value)) : 1) + 1) * sizeof(char));
+    sprintf(value_str, "%d", value);
+    cs_dict_put(memo, wire, value_str);
+    return value;
+}
+
+long d07_some_assembly_required(char *lines[], int line_count, int part) {
+    CS_Dict *circuit = cs_dict_new();
+    for (int i = 0; i < line_count; i++) {
+        char *line = lines[i];
+        char *input, *wire;
+        char *arrow = strstr(line, " -> ");
+        input = malloc((arrow - line + 1) * sizeof(char));
+        strncpy(input, line, arrow - line);
+        wire = arrow + 4;
+        cs_dict_put(circuit, wire, input);
+    }
+    if (part == 2) {
+        unsigned short a_value = d07_some_assembly_required(lines, line_count, 1);
+        printf("a_value: %d\n", a_value);
+        char *a_value_str = malloc(((int) floor(log10(a_value)) + 1) * sizeof(char));
+        sprintf(a_value_str, "%d", a_value);
+        cs_dict_put(circuit, "b", a_value_str);
+        printf("new b: %s\n", cs_dict_get(circuit, "b"));
+    }
+    CS_Dict *memo = cs_dict_new();
+    unsigned short answer = _d07_circuit_value(circuit, "a", memo);
+    free(memo);
+    free(circuit);
+    return answer;
 }
