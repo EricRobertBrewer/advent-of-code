@@ -84,6 +84,8 @@ long solve(int day, int part, char *input_path) {
         answer = d06_probably_a_fire_hazard(lines, line_count, part);
     } else if (day == 7) {
         answer = d07_some_assembly_required(lines, line_count, part);
+    } else if (day == 8) {
+        answer = d08_matchsticks(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -438,4 +440,43 @@ long d07_some_assembly_required(char *lines[], int line_count, int part) {
     free(memo);
     free(circuit);
     return answer;
+}
+
+long d08_matchsticks(char *lines[], int line_count, int part) {
+    int n = 0;
+    for (int i = 0; i < line_count; i++) {
+        char *line = lines[i];
+        int code_len = strlen(line);
+        if (line[0] != '"' || line[code_len - 1] != '"') {
+            fprintf(stderr, "Unexpected string: %s\n", line);
+            exit(EXIT_FAILURE);
+        }
+        if (part == 1) {
+            int mem_len = 0;
+            for (int j = 1; j < code_len - 1; j++) {
+                if (line[j] != '\\') {
+                    mem_len++;
+                } else if (line[j + 1] == '\\' || line[j + 1] == '"') {
+                    mem_len++;
+                    j++;
+                } else if (line[j + 1] == 'x') {
+                    mem_len++;
+                    j += 3;
+                } else {
+                    fprintf(stderr, "Unexpected string: %s\n", line);
+                    exit(EXIT_FAILURE);
+                }
+            }
+            n += code_len - mem_len;
+        } else {
+            int encoded_len = 2 + code_len;
+            for (int j = 0; j < code_len; j++) {
+                if (line[j] == '\\' || line[j] == '"') {
+                    encoded_len++;
+                }
+            }
+            n += encoded_len - code_len;
+        }
+    }
+    return n;
 }
