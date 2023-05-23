@@ -34,4 +34,6 @@ unsigned int cs_dict_size(CS_Dict *dict);
 
 void cs_md5(const char *key, unsigned char *digest);
 
+char ***cs_permutations(char **a, int a_len, int *len);
+
 #endif

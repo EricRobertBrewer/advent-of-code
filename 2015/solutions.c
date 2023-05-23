@@ -86,6 +86,8 @@ long solve(int day, int part, char *input_path) {
         answer = d07_some_assembly_required(lines, line_count, part);
     } else if (day == 8) {
         answer = d08_matchsticks(lines, line_count, part);
+    } else if (day == 9) {
+        answer = d09_all_in_a_single_night(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -479,4 +481,72 @@ long d08_matchsticks(char *lines[], int line_count, int part) {
         }
     }
     return n;
+}
+
+long d09_all_in_a_single_night(char *lines[], int line_count, int part) {
+    const int n = (int) ceil(sqrt(2 * line_count));
+    if (n * (n - 1) / 2 != line_count) {
+        fprintf(stderr, "Unexpected number of lines: %d\n", line_count);
+        exit(EXIT_FAILURE);
+    }
+
+    // Collect distances in square matrix.
+    int d[n][n];
+    CS_Dict *locations = cs_dict_new();
+    char *index_strs[n];
+    for (int i = 0; i < line_count; i++) {
+        char *line = lines[i];
+        char *a_str, *to, *b_str, *equal;
+        int a, b, dist;
+        to = strstr(line, " to ");
+        equal = strstr(line, " = ");
+        to[0] = '\0';
+        equal[0] = '\0';
+        a_str = line;
+        if (!cs_dict_contains(locations, a_str)) {
+            int index = cs_dict_size(locations);
+            char *index_str = malloc(3 * sizeof(char));
+            sprintf(index_str, "%02d", index);
+            cs_dict_put(locations, a_str, index_str);
+            index_strs[index] = index_str;
+        }
+        a = (int) strtol(cs_dict_get(locations, a_str), NULL, 10);
+        b_str = to + 4;
+        if (!cs_dict_contains(locations, b_str)) {
+            int index = cs_dict_size(locations);
+            char *index_str = malloc(3 * sizeof(char));
+            sprintf(index_str, "%02d", index);
+            cs_dict_put(locations, b_str, index_str);
+            index_strs[index] = index_str;
+        }
+        b = (int) strtol(cs_dict_get(locations, b_str), NULL, 10);
+        dist = (int) strtol(equal + 3, NULL, 10);
+        d[a][b] = dist;
+        d[b][a] = dist;
+    }
+    free(locations);
+
+    // Try all permutations of locations.
+    int polar_dist = -1;
+    int len;
+    char ***permutations = cs_permutations(index_strs, n, &len);
+    for (int i = 0; i < len; i++) {
+        char **permutation = permutations[i];
+        // Calculate sum of distances between locations for this permutation.
+        int dist = 0;
+        int a, b;
+        a = (int) strtol(permutation[0], NULL, 10);
+        for (int j = 1; j < n; j++) {
+            b = (int) strtol(permutation[j], NULL, 10);
+            dist += d[a][b];
+            a = b;
+        }
+        if (part == 1 && (polar_dist == -1 || dist < polar_dist)) {
+            polar_dist = dist;
+        } else if (part == 2 && (polar_dist == -1 || dist > polar_dist)) {
+            polar_dist = dist;
+        }
+    }
+    free(permutations);
+    return polar_dist;
 }

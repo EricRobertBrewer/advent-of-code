@@ -243,3 +243,40 @@ void cs_md5(const char *message, unsigned char *digest) {
         digest[12 + i] = (d0 >> (8 * i)) & 0xff;
     }
 }
+
+char ***cs_permutations(char **a, int a_len, int *len) {
+    char ***permutations = NULL;
+    int n = 0;
+    if (a_len == 1) {
+        // Return atomic sequence.
+        permutations = malloc(sizeof(char **));
+        permutations[0] = a;
+        n = 1;
+    } else {
+        // TODO: Add set (dict) here to exclude repetitions (should implement table doubling/halving in CS_Dict).
+        for (int i = 0; i < a_len; i++) {
+            // Recursively get permutations of tail (elements excluding a[i]).
+            int tail_len = a_len - 1;
+            char **tail = malloc(tail_len * sizeof(char *));
+            memcpy(tail, a, i * sizeof(char *));
+            memcpy(tail + i, a + i + 1, (a_len - i - 1) * sizeof(char *));
+            int tail_permutations_len;
+            char ***tail_permutations = cs_permutations(tail, tail_len, &tail_permutations_len);
+            // Concatenate a[i] with all tail permutations and append to answer.
+            permutations = realloc(permutations, (n + tail_permutations_len) * sizeof(char **));
+            for (int k = 0; k < tail_permutations_len; k++) {
+                char **tail_permutation = tail_permutations[k];
+                char **permutation = malloc(a_len * sizeof(char *));
+                permutation[0] = a[i];
+                memcpy(permutation + 1, tail_permutation, tail_len * sizeof(char *));
+                permutations[n] = permutation;
+                n++;
+            }
+            free(tail_permutations);
+            free(tail);
+        }
+    }
+
+    *len = n;
+    return permutations;
+}
