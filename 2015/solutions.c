@@ -90,6 +90,8 @@ long solve(int day, int part, char *input_path) {
         answer = d09_all_in_a_single_night(lines, line_count, part);
     } else if (day == 10) {
         answer = d10_elves_look_elves_say(lines, line_count, part);
+    } else if (day == 11) {
+        answer = d11_corporate_policy(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -589,4 +591,55 @@ long d10_elves_look_elves_say(char *lines[], int line_count, int part) {
     long answer = strlen(seq);
     free(seq);
     return answer;
+}
+
+long d11_corporate_policy(char *lines[], int line_count, int part) {
+    const int len = strlen(lines[0]);
+    char password[len + 1];
+    strcpy(password, lines[0]);
+    password[len] = '\0';
+    while (part > 0) {
+        // Increment password, wrapping 'z' to 'a'.
+        int carry = len - 1;
+        while (carry != -1) {
+            if (password[carry] == 'z') {
+                password[carry] = 'a';
+                carry--;
+            } else {
+                password[carry]++;
+                carry = -1;
+            }
+        }
+        // Check conditions.
+        bool straight = false;
+        bool confusing = false;
+        char first_pair_c = -1;
+        bool two_pair = false;
+        for (int i = 0; i < len; i++) {
+            const char c = password[i];
+            if (i >= 2 && !straight) {
+                if (password[i - 2] == c - 2 && password[i - 1] == c - 1) {
+                    straight = true;
+                }
+            }
+            if (c == 'i' || c == 'o' || c == 'l') {
+                confusing = true;
+                break;
+            }
+            if (i >= 1 && !two_pair) {
+                if (c == password[i - 1]) {
+                    if (first_pair_c == -1) {
+                        first_pair_c = c;
+                    } else if (c != first_pair_c) {
+                        two_pair = true;
+                    }
+                }
+            }
+        }
+        if (straight && !confusing && two_pair) {
+            printf("%s\n", password);
+            part--;
+        }
+    }
+    return 0;
 }
