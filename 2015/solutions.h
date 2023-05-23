@@ -19,5 +19,6 @@ long d06_probably_a_fire_hazard(char *lines[], int line_count, int part);
 long d07_some_assembly_required(char *lines[], int line_count, int part);
 long d08_matchsticks(char *lines[], int line_count, int part);
 long d09_all_in_a_single_night(char *lines[], int line_count, int part);
+long d10_elves_look_elves_say(char *lines[], int line_count, int part);
 
 #endif

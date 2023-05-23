@@ -88,6 +88,8 @@ long solve(int day, int part, char *input_path) {
         answer = d08_matchsticks(lines, line_count, part);
     } else if (day == 9) {
         answer = d09_all_in_a_single_night(lines, line_count, part);
+    } else if (day == 10) {
+        answer = d10_elves_look_elves_say(lines, line_count, part);
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -549,4 +551,42 @@ long d09_all_in_a_single_night(char *lines[], int line_count, int part) {
     }
     free(permutations);
     return polar_dist;
+}
+
+long d10_elves_look_elves_say(char *lines[], int line_count, int part) {
+    int n = strlen(lines[0]);
+    char *seq = malloc((n + 1) * sizeof(char));
+    seq[n] = '\0';
+    strcpy(seq, lines[0]);
+    const int rounds = part == 1 ? 40 : 50;
+    for (int i = 0; i < rounds; i++) {
+        n = strlen(seq);
+        char *next = malloc(sizeof(char));
+        next[0] = '\0';
+        int len = 1;
+        char buffer[8];
+        int count = 1;
+        for (int j = 1; j < n; j++) {
+            if (seq[j] == seq[j - 1]) {
+                count++;
+            } else {
+                sprintf(buffer, "%d%c", count, seq[j - 1]);
+                const int b = strlen(buffer);
+                next = realloc(next, len + b);
+                strcpy(next + len - 1, buffer);
+                len += b;
+                count = 1;
+            }
+        }
+        sprintf(buffer, "%d%c", count, seq[n - 1]);
+        const int b = strlen(buffer);
+        next = realloc(next, len + b);
+        strcpy(next + len - 1, buffer);
+        next[len + b] = '\0';
+        free(seq);
+        seq = next;
+    }
+    long answer = strlen(seq);
+    free(seq);
+    return answer;
 }
