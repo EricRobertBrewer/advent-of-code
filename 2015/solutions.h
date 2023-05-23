@@ -21,5 +21,6 @@ long d08_matchsticks(char *lines[], int line_count, int part);
 long d09_all_in_a_single_night(char *lines[], int line_count, int part);
 long d10_elves_look_elves_say(char *lines[], int line_count, int part);
 long d11_corporate_policy(char *lines[], int line_count, int part);
+long d12_jsabacus_framework_io(char *lines[], int line_count, int part);
 
 #endif

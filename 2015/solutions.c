@@ -70,32 +70,36 @@ long solve(int day, int part, char *input_path) {
     fclose(fp);
 
     long answer;
+    long (*solution)(char *[], int, int); // Function pointer.
     if (day == 1) {
-        answer = d01_not_quite_lisp(lines, line_count, part);
+        solution = &d01_not_quite_lisp;
     } else if (day == 2) {
-        answer = d02_i_was_told_there_would_be_no_math(lines, line_count, part);
+        solution = &d02_i_was_told_there_would_be_no_math;
     } else if (day == 3) {
-        answer = d03_perfectly_spherical_houses_in_a_vacuum(lines, line_count, part);
+        solution = &d03_perfectly_spherical_houses_in_a_vacuum;
     } else if (day == 4) {
-        answer = d04_the_ideal_stocking_stuffer(lines, line_count, part);
+        solution = &d04_the_ideal_stocking_stuffer;
     } else if (day == 5) {
-        answer = d05_doesnt_he_have_intern_elves_for_this(lines, line_count, part);
+        solution = &d05_doesnt_he_have_intern_elves_for_this;
     } else if (day == 6) {
-        answer = d06_probably_a_fire_hazard(lines, line_count, part);
+        solution = &d06_probably_a_fire_hazard;
     } else if (day == 7) {
-        answer = d07_some_assembly_required(lines, line_count, part);
+        solution = &d07_some_assembly_required;
     } else if (day == 8) {
-        answer = d08_matchsticks(lines, line_count, part);
+        solution = &d08_matchsticks;
     } else if (day == 9) {
-        answer = d09_all_in_a_single_night(lines, line_count, part);
+        solution = &d09_all_in_a_single_night;
     } else if (day == 10) {
-        answer = d10_elves_look_elves_say(lines, line_count, part);
+        solution = &d10_elves_look_elves_say;
     } else if (day == 11) {
-        answer = d11_corporate_policy(lines, line_count, part);
+        solution = &d11_corporate_policy;
+    } else if (day == 12) {
+        solution = &d12_jsabacus_framework_io;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
     }
+    answer = (*solution)(lines, line_count, part);
 
     // Release lines.
     while (line_count) {
@@ -642,4 +646,64 @@ long d11_corporate_policy(char *lines[], int line_count, int part) {
         }
     }
     return 0;
+}
+
+long _d12_object_value(char *json, int *index) {
+    if (json[*index] != '{') {
+        fprintf(stderr, "Unexpected character at index %d: %c\n", *index, json[*index]);
+        exit(EXIT_FAILURE);
+    }
+    int start = *index;
+    (*index)++;
+    long sum = 0;
+    bool red = false;
+    bool minus = false;
+    int x = 0;
+    while (true) {
+        if (json[*index] == '{') {
+            sum += _d12_object_value(json, index);
+        } else if ((*index) - start >= 7 && strncmp(json + (*index) - 5, ":\"red\"", 6) == 0) {
+            red = true;
+        } else if (json[*index] == '-') {
+            minus = true;
+        } else if (json[*index] >= '0' && json[*index] <= '9') {
+            x = 10 * x + (char) (json[*index] - '0');
+        } else {
+            if (x != 0) {
+                sum += minus ? -x : x;
+                minus = false;
+                x = 0;
+            }
+            if (json[*index] == '}') {
+                break;
+            }
+        }
+        (*index)++;
+    }
+    return red ? 0 : sum;
+}
+
+long d12_jsabacus_framework_io(char *lines[], int line_count, int part) {
+    char *json = lines[0];
+    long sum = 0;
+    if (part == 1) {
+        bool minus = false;
+        int x = 0;
+        for (int i = 0; i < strlen(json); i++) {
+            const char c = json[i];
+            if (c == '-') {
+                minus = true;
+            } else if (c >= '0' && c <= '9') {
+                x = 10 * x + (c - '0');
+            } else if (x != 0) {
+                sum += minus ? -x : x;
+                minus = false;
+                x = 0;
+            }
+        }
+    } else {
+        int index = 0;
+        sum = _d12_object_value(json, &index);
+    }
+    return sum;
 }
