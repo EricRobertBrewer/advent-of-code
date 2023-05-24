@@ -272,8 +272,8 @@ char ***cs_permutations(char **a, int a_len, int *len) {
             char ***tail_permutations = cs_permutations(tail, tail_len, &tail_permutations_len);
             // Concatenate a[i] with all tail permutations and append to answer.
             permutations = realloc(permutations, (n + tail_permutations_len) * sizeof(char **));
-            for (int k = 0; k < tail_permutations_len; k++) {
-                char **tail_permutation = tail_permutations[k];
+            for (int j = 0; j < tail_permutations_len; j++) {
+                char **tail_permutation = tail_permutations[j];
                 char **permutation = malloc(a_len * sizeof(char *));
                 permutation[0] = a[i];
                 memcpy(permutation + 1, tail_permutation, tail_len * sizeof(char *));
@@ -287,4 +287,37 @@ char ***cs_permutations(char **a, int a_len, int *len) {
 
     *len = n;
     return permutations;
+}
+
+unsigned short **cs_bucket_permutations(unsigned short volume, unsigned short buckets, int *len) {
+    unsigned short **bucket_permutations = NULL;
+    int n = 0;
+    if (buckets == 1) {
+        bucket_permutations = malloc(sizeof(unsigned short *));
+        unsigned short *permutation = malloc(sizeof(unsigned short));
+        *permutation = volume;
+        *bucket_permutations = permutation;
+        n = 1;
+    } else {
+        for (unsigned short x = 0; x <= volume; x++) {
+            int tail_permutations_len;
+            unsigned short **tail_permutations = cs_bucket_permutations(volume - x, buckets - 1, &tail_permutations_len);
+            bucket_permutations = realloc(bucket_permutations, (n + tail_permutations_len) * sizeof(unsigned short *));
+            for (int i = 0; i < tail_permutations_len; i++) {
+                unsigned short *tail_permutation = tail_permutations[i];
+                unsigned short *permutation = malloc(buckets * sizeof(unsigned short));
+                permutation[0] = x;
+                for (int j = 0; j < buckets - 1; j++) {
+                    permutation[j + 1] = tail_permutation[j];
+                }
+                bucket_permutations[n] = permutation;
+                n++;
+                free(tail_permutation);
+            }
+            free(tail_permutations);
+        }
+    }
+
+    *len = n;
+    return bucket_permutations;
 }

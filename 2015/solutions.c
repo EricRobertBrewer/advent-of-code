@@ -26,6 +26,7 @@ long d11_corporate_policy(char *lines[], int line_count, int part);
 long d12_jsabacus_framework_io(char *lines[], int line_count, int part);
 long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part);
 long d14_reindeer_olympics(char *lines[], int line_count, int part);
+long d15_science_for_hungry_people(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -122,6 +123,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d13_knights_of_the_dinner_table;
     } else if (day == 14) {
         solution = &d14_reindeer_olympics;
+    } else if (day == 15) {
+        solution = &d15_science_for_hungry_people;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -839,8 +842,9 @@ long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part) {
 
 long d14_reindeer_olympics(char *lines[], int line_count, int part) {
     const int wall = 2503;
-    int speeds[line_count], times[line_count], rests[line_count];
-    for (int i = 0; i < line_count; i++) {
+    const int n = line_count;
+    int speeds[n], times[n], rests[n];
+    for (int i = 0; i < n; i++) {
         char *line = lines[i];
         const char space[] = " ";
         char *speed_str, *time_str, *rest_str;
@@ -863,7 +867,7 @@ long d14_reindeer_olympics(char *lines[], int line_count, int part) {
 
     if (part == 1) {
         int max_dist = -1;
-        for (int i = 0; i < line_count; i++) {
+        for (int i = 0; i < n; i++) {
             int speed = speeds[i], time = times[i], rest = rests[i], dist;
             dist = (wall / (time + rest)) * (speed * time) + cs_min(time, (wall % (time + rest))) * speed;
             if (max_dist == -1 || dist > max_dist) {
@@ -873,19 +877,76 @@ long d14_reindeer_olympics(char *lines[], int line_count, int part) {
         return max_dist;
     }
 
-    int dists[line_count], points[line_count];
-    for (int i = 0; i < line_count; i++) {
+    int dists[n], points[n];
+    for (int i = 0; i < n; i++) {
         dists[i] = 0;
         points[i] = 0;
     }
     for (int t = 0; t < wall; t++) {
-        for (int i = 0; i < line_count; i++) {
+        for (int i = 0; i < n; i++) {
             int speed = speeds[i], time = times[i], rest = rests[i];
             if (t % (time + rest) < time) {
                 dists[i] += speed;
             }
         }
-        points[cs_imax(dists, line_count)]++;
+        points[cs_imax(dists, n)]++;
     }
-    return points[cs_imax(points, line_count)];
+    return points[cs_imax(points, n)];
+}
+
+long d15_science_for_hungry_people(char *lines[], int line_count, int part) {
+    const int tsp = 100;
+    const int n = line_count;
+    int caps[n], durs[n], flas[n], texs[n], cals[n];
+    for (int i = 0; i < n; i++) {
+        char *line = lines[i];
+        // Read.
+        const char space[] = " ";
+        char *cap_str, *dur_str, *fla_str, *tex_str, *cal_str;
+        strtok(line, space); // Ingredient:
+        strtok(NULL, space); // capacity
+        cap_str = strtok(NULL, space); // #,
+        strtok(NULL, space); // durability
+        dur_str = strtok(NULL, space); // #,
+        strtok(NULL, space); // flavor
+        fla_str = strtok(NULL, space); // #,
+        strtok(NULL, space); // texture
+        tex_str = strtok(NULL, space); // #,
+        strtok(NULL, space); // calories
+        cal_str = strtok(NULL, space); // #
+        // Process.
+        cap_str[strlen(cap_str) - 1] = '\0';
+        caps[i] = (int) strtol(cap_str, NULL, 10);
+        dur_str[strlen(dur_str) - 1] = '\0';
+        durs[i] = (int) strtol(dur_str, NULL, 10);
+        fla_str[strlen(fla_str) - 1] = '\0';
+        flas[i] = (int) strtol(fla_str, NULL, 10);
+        tex_str[strlen(tex_str) - 1] = '\0';
+        texs[i] = (int) strtol(tex_str, NULL, 10);
+        cals[i] = (int) strtol(cal_str, NULL, 10);
+    }
+
+    int len;
+    unsigned short **bucket_permutations = cs_bucket_permutations(tsp, n, &len);
+    printf("len: %d\n", len);
+    int max_score = -1;
+    for (int i = 0; i < len; i++) {
+        unsigned short *bucket_permutation = bucket_permutations[i];
+        int score, cap = 0, dur = 0, fla = 0, tex = 0, cal = 0;
+        for (int j = 0; j < n; j++) {
+            cap += bucket_permutation[j] * caps[j];
+            dur += bucket_permutation[j] * durs[j];
+            fla += bucket_permutation[j] * flas[j];
+            tex += bucket_permutation[j] * texs[j];
+            cal += bucket_permutation[j] * cals[j];
+        }
+        if (part == 2 && cal != 500) {
+            continue;
+        }
+        score = cs_max(0, cap) * cs_max(0, dur) * cs_max(0, fla) * cs_max(0, tex);
+        if (max_score == -1 || score > max_score) {
+            max_score = score;
+        }
+    }
+    return max_score;
 }
