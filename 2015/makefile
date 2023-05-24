@@ -3,7 +3,7 @@ all: solutions.x
 solutions.x: solutions.o aoc.o cs.o
 	gcc -g -o solutions.x solutions.o aoc.o cs.o -lcurl
 
-solutions.o: solutions.h solutions.c
+solutions.o: solutions.c
 	gcc -g -c solutions.c
 
 aoc.o: aoc.h aoc.c
