@@ -25,6 +25,7 @@ long d10_elves_look_elves_say(char *lines[], int line_count, int part);
 long d11_corporate_policy(char *lines[], int line_count, int part);
 long d12_jsabacus_framework_io(char *lines[], int line_count, int part);
 long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part);
+long d14_reindeer_olympics(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -119,6 +120,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d12_jsabacus_framework_io;
     } else if (day == 13) {
         solution = &d13_knights_of_the_dinner_table;
+    } else if (day == 14) {
+        solution = &d14_reindeer_olympics;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -176,7 +179,7 @@ long d02_i_was_told_there_would_be_no_math(char *lines[], int line_count, int pa
         }
         sides[s] = v;
 
-        int s_max = cs_max(sides, N_SIDES);
+        int s_max = cs_imax(sides, N_SIDES);
         if (part == 1) {
             int area = 2*sides[0]*sides[1] + 2*sides[0]*sides[2] + 2*sides[1]*sides[2];
             int slack;
@@ -832,4 +835,57 @@ long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part) {
         free(index_strs[i]);
     }
     return max_value;
+}
+
+long d14_reindeer_olympics(char *lines[], int line_count, int part) {
+    const int wall = 2503;
+    int speeds[line_count], times[line_count], rests[line_count];
+    for (int i = 0; i < line_count; i++) {
+        char *line = lines[i];
+        const char space[] = " ";
+        char *speed_str, *time_str, *rest_str;
+        strtok(line, space); // Comet
+        strtok(NULL, space); // can
+        strtok(NULL, space); // fly
+        speed_str = strtok(NULL, space); // #
+        strtok(NULL, space); // km/s
+        strtok(NULL, space); // for
+        time_str = strtok(NULL, space); // #
+        for (int j = 0; j < 6; j++) {
+            strtok(NULL, space); // seconds, but then must rest for
+        }
+        rest_str = strtok(NULL, space); // #
+        // strtok(NULL, space); // seconds.
+        speeds[i] = (int) strtol(speed_str, NULL, 10);
+        times[i] = (int) strtol(time_str, NULL, 10);
+        rests[i] = (int) strtol(rest_str, NULL, 10);
+    }
+
+    if (part == 1) {
+        int max_dist = -1;
+        for (int i = 0; i < line_count; i++) {
+            int speed = speeds[i], time = times[i], rest = rests[i], dist;
+            dist = (wall / (time + rest)) * (speed * time) + cs_min(time, (wall % (time + rest))) * speed;
+            if (max_dist == -1 || dist > max_dist) {
+                max_dist = dist;
+            }
+        }
+        return max_dist;
+    }
+
+    int dists[line_count], points[line_count];
+    for (int i = 0; i < line_count; i++) {
+        dists[i] = 0;
+        points[i] = 0;
+    }
+    for (int t = 0; t < wall; t++) {
+        for (int i = 0; i < line_count; i++) {
+            int speed = speeds[i], time = times[i], rest = rests[i];
+            if (t % (time + rest) < time) {
+                dists[i] += speed;
+            }
+        }
+        points[cs_imax(dists, line_count)]++;
+    }
+    return points[cs_imax(points, line_count)];
 }

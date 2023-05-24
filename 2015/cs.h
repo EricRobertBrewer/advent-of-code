@@ -9,8 +9,10 @@
 
 #define MAX_BUCKETS 1024
 
-int cs_min(int *a, int n);
-int cs_max(int *a, int n);
+int cs_min(int x, int y);
+int cs_max(int x, int y);
+int cs_imin(int *a, int n);
+int cs_imax(int *a, int n);
 
 // $ Write a dictionary (hash map) implementation in the C programming language.
 

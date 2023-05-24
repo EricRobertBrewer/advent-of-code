@@ -1,6 +1,14 @@
 #include "cs.h"
 
-int cs_min(int *a, int n) {
+int cs_min(int x, int y) {
+    return x < y ? x : y;
+}
+
+int cs_max(int x, int y) {
+    return x > y ? x : y;
+}
+
+int cs_imin(int *a, int n) {
     int x = a[0];
     int j = 0;
     for (int i = 1; i < n; i++) {
@@ -12,7 +20,7 @@ int cs_min(int *a, int n) {
     return j;
 }
 
-int cs_max(int *a, int n) {
+int cs_imax(int *a, int n) {
     int x = a[0];
     int j = 0;
     for (int i = 1; i < n; i++) {
