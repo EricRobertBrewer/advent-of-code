@@ -24,6 +24,7 @@ long d09_all_in_a_single_night(char *lines[], int line_count, int part);
 long d10_elves_look_elves_say(char *lines[], int line_count, int part);
 long d11_corporate_policy(char *lines[], int line_count, int part);
 long d12_jsabacus_framework_io(char *lines[], int line_count, int part);
+long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -116,6 +117,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d11_corporate_policy;
     } else if (day == 12) {
         solution = &d12_jsabacus_framework_io;
+    } else if (day == 13) {
+        solution = &d13_knights_of_the_dinner_table;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -577,6 +580,9 @@ long d09_all_in_a_single_night(char *lines[], int line_count, int part) {
         }
     }
     free(permutations);
+    for (int i = 0; i < n; i++) {
+        free(index_strs[i]);
+    }
     return polar_dist;
 }
 
@@ -727,4 +733,103 @@ long d12_jsabacus_framework_io(char *lines[], int line_count, int part) {
         sum = _d12_object_value(json, &index);
     }
     return sum;
+}
+
+long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part) {
+    int n = (int) ceil(sqrt(line_count));
+    if (n * (n - 1) != line_count) {
+        fprintf(stderr, "Unexpected number of lines: %d\n", line_count);
+        exit(EXIT_FAILURE);
+    }
+    if (part == 2) {
+        n++; // Add self.
+    }
+
+    // Collect happiness units in square matrix.
+    int d[n][n];
+    CS_Dict *names = cs_dict_new();
+    char *index_strs[n];
+    for (int i = 0; i < line_count; i++) {
+        char *line = lines[i];
+        const char space[] = " ";
+        char *a_name, *polarity, *value_str, *b_name;
+        int a, b, value;
+        // Read.
+        a_name = strtok(line, space); // Alice
+        strtok(NULL, space); // would
+        polarity = strtok(NULL, space); // gain/lose
+        value_str = strtok(NULL, space); // #
+        for (int j = 0; j < 6; j++) {
+            strtok(NULL, space); // happiness units by sitting next to
+        }
+        b_name = strtok(NULL, space); // Bob.
+        b_name[strlen(b_name) - 1] = '\0';
+        // Process.
+        if (!cs_dict_contains(names, a_name)) {
+            int index = cs_dict_size(names);
+            char *index_str = malloc(3 * sizeof(char));
+            sprintf(index_str, "%02d", index);
+            cs_dict_put(names, a_name, index_str);
+            index_strs[index] = index_str;
+        }
+        a = (int) strtol(cs_dict_get(names, a_name), NULL, 10);
+        value = (int) strtol(value_str, NULL, 10);
+        if (!cs_dict_contains(names, b_name)) {
+            int index = cs_dict_size(names);
+            char *index_str = malloc(3 * sizeof(char));
+            sprintf(index_str, "%02d", index);
+            cs_dict_put(names, b_name, index_str);
+            index_strs[index] = index_str;
+        }
+        b = (int) strtol(cs_dict_get(names, b_name), NULL, 10);
+        if (strcmp(polarity, "gain") == 0) {
+            d[a][b] = value;
+        } else if (strcmp(polarity, "lose") == 0) {
+            d[a][b] = -value;
+        } else {
+            fprintf(stderr, "Unexpected polarity: %s\n", polarity);
+            exit(EXIT_FAILURE);
+        }
+    }
+    free(names);
+
+    if (part == 2) {
+        int index = n - 1;
+        char *index_str = malloc(3 * sizeof(char));
+        sprintf(index_str, "%02d", index);
+        index_strs[index] = index_str;
+        for (int i = 0; i < n - 1; i++) {
+            d[index][i] = 0;
+            d[i][index] = 0;
+        }
+    }
+
+    // Try all permutations of names.
+    int max_value = -1;
+    int len;
+    char ***permutations = cs_permutations(index_strs, n, &len);
+    for (int i = 0; i < len; i++) {
+        char **permutation = permutations[i];
+        // Calculate sum of happiness units between names for this permutation.
+        int value = 0;
+        int a, b;
+        a = (int) strtol(permutation[0], NULL, 10);
+        for (int j = 1; j < n; j++) {
+            b = (int) strtol(permutation[j], NULL, 10);
+            value += d[a][b];
+            value += d[b][a];
+            a = b;
+        }
+        a = (int) strtol(permutation[0], NULL, 10);
+        value += d[a][b];
+        value += d[b][a];
+        if (max_value == -1 || value > max_value) {
+            max_value = value;
+        }
+    }
+    free(permutations);
+    for (int i = 0; i < n; i++) {
+        free(index_strs[i]);
+    }
+    return max_value;
 }
