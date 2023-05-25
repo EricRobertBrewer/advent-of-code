@@ -29,6 +29,7 @@ long d14_reindeer_olympics(char *lines[], int line_count, int part);
 long d15_science_for_hungry_people(char *lines[], int line_count, int part);
 long d16_aunt_sue(char *lines[], int line_count, int part);
 long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part);
+long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -131,6 +132,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d16_aunt_sue;
     } else if (day == 17) {
         solution = &d17_no_such_thing_as_too_much;
+    } else if (day == 18) {
+        solution = &d18_like_a_gif_for_your_yard;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1078,4 +1081,66 @@ long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part) {
         }
     }
     return -1;
+}
+
+long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part) {
+    const int n = line_count, m = strlen(lines[0]);
+    char lights[n][m];
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            lights[i][j] = lines[i][j];
+        }
+    }
+
+    const int rounds = 100;
+    for (int round = 0; round < rounds; round++) {
+        char next_lights[n][m];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                if (part == 2) {
+                    if ((i == 0 && j == 0) || (i == 0 && j == m - 1) ||
+                            (i == n - 1 && j == 0) || (i == n - 1 && j == m - 1)) {
+                        next_lights[i][j] = '#';
+                        continue;
+                    }
+                }
+                int on = 0;
+                for (int di = -1; di <= 1; di++) {
+                    if (i + di < 0 || i + di >= n) {
+                        continue;
+                    }
+                    for (int dj = -1; dj <= 1; dj++) {
+                        if (di == 0 && dj == 0) {
+                            continue;
+                        }
+                        if (j + dj < 0 || j + dj >= m) {
+                            continue;
+                        }
+                        if (lights[i + di][j + dj] == '#') {
+                            on++;
+                        }
+                    }
+                }
+                if (lights[i][j] == '#') {
+                    next_lights[i][j] = on == 2 || on == 3 ? '#' : '.';
+                } else {
+                    next_lights[i][j] = on == 3 ? '#' : '.';
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                lights[i][j] = next_lights[i][j];
+            }
+        }
+    }
+    int on = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            if (lights[i][j] == '#') {
+                on++;
+            }
+        }
+    }
+    return on;
 }
