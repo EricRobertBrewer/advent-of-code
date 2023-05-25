@@ -14,8 +14,6 @@ int cs_imax(int *a, int n);
 
 // $ Write a dictionary (hash map) implementation in the C programming language.
 
-#define MAX_BUCKETS 1024
-
 typedef struct _BucketNode {
     char *key;
     void *value;
@@ -23,16 +21,19 @@ typedef struct _BucketNode {
 } BucketNode;
 
 typedef struct {
-    BucketNode *buckets[MAX_BUCKETS];
-    unsigned int size;
+    BucketNode **buckets;
+    unsigned int capacity; // Number of buckets.
+    unsigned int size; // Total number of values stored.
 } CS_Dict;
 
-CS_Dict *cs_dict_new();
+CS_Dict *cs_dict_new(unsigned int capacity);
 void cs_dict_put(CS_Dict *dict, const char *key, void *value);
 void *cs_dict_get(CS_Dict *dict, const char *key);
 bool cs_dict_contains(CS_Dict *dict, const char *key);
 bool cs_dict_remove(CS_Dict *dict, const char *key);
 unsigned int cs_dict_size(CS_Dict *dict);
+void cs_dict_keys(CS_Dict *dict, char *keys[]);
+void cs_dict_deinit(CS_Dict *dict);
 
 void cs_md5(const char *key, unsigned char *digest);
 

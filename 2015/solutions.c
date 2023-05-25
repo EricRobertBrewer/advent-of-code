@@ -27,6 +27,7 @@ long d12_jsabacus_framework_io(char *lines[], int line_count, int part);
 long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part);
 long d14_reindeer_olympics(char *lines[], int line_count, int part);
 long d15_science_for_hungry_people(char *lines[], int line_count, int part);
+long d16_aunt_sue(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -125,6 +126,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d14_reindeer_olympics;
     } else if (day == 15) {
         solution = &d15_science_for_hungry_people;
+    } else if (day == 16) {
+        solution = &d16_aunt_sue;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -211,7 +214,7 @@ long d02_i_was_told_there_would_be_no_math(char *lines[], int line_count, int pa
 }
 
 long d03_perfectly_spherical_houses_in_a_vacuum(char *lines[], int line_count, int part) {
-    CS_Dict *dict = cs_dict_new();
+    CS_Dict *dict = cs_dict_new(1024);
     cs_dict_put(dict, "++00000000", NULL);
     int x[2];
     x[0] = 0; x[1] = 0;
@@ -240,7 +243,7 @@ long d03_perfectly_spherical_houses_in_a_vacuum(char *lines[], int line_count, i
         cs_dict_put(dict, code, NULL);
     }
     unsigned int answer = cs_dict_size(dict);
-    free(dict);
+    cs_dict_deinit(dict);
     return answer;
 }
 
@@ -300,7 +303,7 @@ long d05_doesnt_he_have_intern_elves_for_this(char *lines[], int line_count, int
             }
         } else if (part == 2) {
             bool two_pair = false;
-            CS_Dict *pair_to_index = cs_dict_new();
+            CS_Dict *pair_to_index = cs_dict_new(8);
             char pair[3];
             char **index_strs = malloc((strlen(s) - 1) * sizeof(char *));
             for (int j = 1; j < strlen(s); j++) {
@@ -332,7 +335,7 @@ long d05_doesnt_he_have_intern_elves_for_this(char *lines[], int line_count, int
                 free(index_strs[j - 1]);
             }
             free(index_strs);
-            free(pair_to_index);
+            cs_dict_deinit(pair_to_index);
         }
     }
     return n;
@@ -457,7 +460,7 @@ unsigned short _d07_circuit_value(CS_Dict *circuit, const char *wire, CS_Dict *m
 }
 
 long d07_some_assembly_required(char *lines[], int line_count, int part) {
-    CS_Dict *circuit = cs_dict_new();
+    CS_Dict *circuit = cs_dict_new(1024);
     for (int i = 0; i < line_count; i++) {
         char *line = lines[i];
         char *input, *wire;
@@ -475,10 +478,10 @@ long d07_some_assembly_required(char *lines[], int line_count, int part) {
         cs_dict_put(circuit, "b", a_value_str);
         printf("new b: %s\n", cs_dict_get(circuit, "b"));
     }
-    CS_Dict *memo = cs_dict_new();
+    CS_Dict *memo = cs_dict_new(1024);
     unsigned short answer = _d07_circuit_value(circuit, "a", memo);
-    free(memo);
-    free(circuit);
+    cs_dict_deinit(memo);
+    cs_dict_deinit(circuit);
     return answer;
 }
 
@@ -530,7 +533,7 @@ long d09_all_in_a_single_night(char *lines[], int line_count, int part) {
 
     // Collect distances in square matrix.
     int d[n][n];
-    CS_Dict *locations = cs_dict_new();
+    CS_Dict *locations = cs_dict_new(2 * n);
     char *index_strs[n];
     for (int i = 0; i < line_count; i++) {
         char *line = lines[i];
@@ -562,7 +565,7 @@ long d09_all_in_a_single_night(char *lines[], int line_count, int part) {
         d[a][b] = dist;
         d[b][a] = dist;
     }
-    free(locations);
+    cs_dict_deinit(locations);
 
     // Try all permutations of locations.
     int polar_dist = -1;
@@ -753,7 +756,7 @@ long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part) {
 
     // Collect happiness units in square matrix.
     int d[n][n];
-    CS_Dict *names = cs_dict_new();
+    CS_Dict *names = cs_dict_new(2 * n);
     char *index_strs[n];
     for (int i = 0; i < line_count; i++) {
         char *line = lines[i];
@@ -797,7 +800,7 @@ long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part) {
             exit(EXIT_FAILURE);
         }
     }
-    free(names);
+    cs_dict_deinit(names);
 
     if (part == 2) {
         int index = n - 1;
@@ -928,7 +931,6 @@ long d15_science_for_hungry_people(char *lines[], int line_count, int part) {
 
     int len;
     unsigned short **bucket_permutations = cs_bucket_permutations(tsp, n, &len);
-    printf("len: %d\n", len);
     int max_score = -1;
     for (int i = 0; i < len; i++) {
         unsigned short *bucket_permutation = bucket_permutations[i];
@@ -949,4 +951,83 @@ long d15_science_for_hungry_people(char *lines[], int line_count, int part) {
         }
     }
     return max_score;
+}
+
+long d16_aunt_sue(char *lines[], int line_count, int part) {
+    const int n = line_count;
+    CS_Dict *aunt_item_to_count[n];
+    for (int i = 0; i < n; i++) {
+        char *line = lines[i];
+        CS_Dict *item_to_count = cs_dict_new(8);
+        const char space[] = " ";
+        char *item, *count_str;
+        strtok(line, space); // Sue
+        strtok(NULL, space); // #:
+        while (true) {
+            bool end = false;
+            item = strtok(NULL, space); // cats:
+            item[strlen(item) - 1] = '\0';
+            count_str = strtok(NULL, space); // #[,]
+            if (count_str[strlen(count_str) - 1] == ',') {
+                count_str[strlen(count_str) - 1] = '\0';
+            } else {
+                end = true;
+            }
+            cs_dict_put(item_to_count, item, count_str);
+            if (end) {
+                break;
+            }
+        }
+        aunt_item_to_count[i] = item_to_count;
+    }
+
+    long answer = -1;
+    CS_Dict *ticker_to_count = cs_dict_new(16);
+    const char *ticker_keys[] = {
+            "children", "cats", "samoyeds", "pomeranians", "akitas", "vizslas", "goldfish", "trees", "cars", "perfumes"
+    };
+    const char *ticker_values[] = {
+            "3", "7", "2", "3", "0", "0", "5", "3", "2", "1"
+    };
+    for (int i = 0; i < 10; i++) {
+        cs_dict_put(ticker_to_count, ticker_keys[i], (void *) ticker_values[i]);
+    }
+    for (int i = 0; i < n; i++) {
+        CS_Dict *item_to_count = aunt_item_to_count[i];
+        const int k = cs_dict_size(item_to_count);
+        char *keys[k];
+        cs_dict_keys(item_to_count, keys);
+        bool match = true;
+        for (int j = 0; j < k && match; j++) {
+            char *key = keys[j];
+            int count = (int) strtol(cs_dict_get(item_to_count, key), NULL, 10);
+            int ticker_count = (int) strtol(cs_dict_get(ticker_to_count, key), NULL, 10);
+            if (part == 1) {
+                if (count != ticker_count) {
+                    match = false;
+                }
+            } else {
+                if (strcmp(key, "cats") == 0 || strcmp(key, "trees") == 0) {
+                    if (count <= ticker_count) {
+                        match = false;
+                    }
+                } else if (strcmp(key, "pomeranians") == 0 || strcmp(key, "goldfish") == 0) {
+                    if (count >= ticker_count) {
+                        match = false;
+                    }
+                } else if (count != ticker_count) {
+                    match = false;
+                }
+            }
+        }
+        if (match) {
+            answer = i + 1;
+            break;
+        }
+    }
+    cs_dict_deinit(ticker_to_count);
+    for (int i = 0; i < n; i++) {
+        cs_dict_deinit(aunt_item_to_count[i]);
+    }
+    return answer;
 }

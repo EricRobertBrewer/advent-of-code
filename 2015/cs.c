@@ -45,7 +45,7 @@ unsigned long cs_hash(const char *str) {
 }
 
 // create a new bucket node with the specified key and value
-BucketNode *cs_dict_bucket_new(const char *key, void *value) {
+BucketNode *_cs_dict_bucket_new(const char *key, void *value) {
     BucketNode *node = (BucketNode *)malloc(sizeof(BucketNode));
     if (node == NULL) {
         fprintf(stderr, "Error: Unable to allocate memory.\n");
@@ -58,20 +58,24 @@ BucketNode *cs_dict_bucket_new(const char *key, void *value) {
 }
 
 // create a new dictionary
-CS_Dict *cs_dict_new() {
-    CS_Dict *dict = (CS_Dict *)malloc(sizeof(CS_Dict));
+CS_Dict *cs_dict_new(unsigned int capacity) {
+    CS_Dict *dict = (CS_Dict *) malloc(sizeof(CS_Dict));
     if (dict == NULL) {
         fprintf(stderr, "Error: Unable to allocate memory.\n");
         exit(EXIT_FAILURE);
     }
-    memset(dict->buckets, 0, sizeof(dict->buckets));
+    dict->buckets = (BucketNode **) malloc(capacity * sizeof(BucketNode *));
+    for (int i = 0; i < capacity; i++) {
+        dict->buckets[i] = NULL;
+    }
+    dict->capacity = capacity;
     dict->size = 0;
     return dict;
 }
 
 // set a key-value pair in the dictionary
 void cs_dict_put(CS_Dict *dict, const char *key, void *value) {
-    unsigned long index = cs_hash(key) % MAX_BUCKETS;
+    unsigned long index = cs_hash(key) % dict->capacity;
     BucketNode *node = dict->buckets[index];
 
     // check if the key is already in the dictionary
@@ -84,7 +88,7 @@ void cs_dict_put(CS_Dict *dict, const char *key, void *value) {
     }
 
     // add the key-value pair to the dictionary
-    BucketNode *new_node = cs_dict_bucket_new(key, value);
+    BucketNode *new_node = _cs_dict_bucket_new(key, value);
     new_node->next = dict->buckets[index];
     dict->buckets[index] = new_node;
     dict->size++;
@@ -92,7 +96,7 @@ void cs_dict_put(CS_Dict *dict, const char *key, void *value) {
 
 // get a value for a key in the dictionary
 void *cs_dict_get(CS_Dict *dict, const char *key) {
-    unsigned long index = cs_hash(key) % MAX_BUCKETS;
+    unsigned long index = cs_hash(key) % dict->capacity;
     BucketNode *node = dict->buckets[index];
 
     while (node != NULL) {
@@ -107,7 +111,7 @@ void *cs_dict_get(CS_Dict *dict, const char *key) {
 
 // check if a key is in the dictionary
 bool cs_dict_contains(CS_Dict *dict, const char *key) {
-    unsigned long index = cs_hash(key) % MAX_BUCKETS;
+    unsigned long index = cs_hash(key) % dict->capacity;
     BucketNode *node = dict->buckets[index];
 
     while (node != NULL) {
@@ -122,7 +126,7 @@ bool cs_dict_contains(CS_Dict *dict, const char *key) {
 
 // remove a key-value pair from the dictionary
 bool cs_dict_remove(CS_Dict *dict, const char *key) {
-    unsigned long index = cs_hash(key) % MAX_BUCKETS;
+    unsigned long index = cs_hash(key) % dict->capacity;
     BucketNode *prev = NULL;
     BucketNode *node = dict->buckets[index];
 
@@ -147,6 +151,32 @@ bool cs_dict_remove(CS_Dict *dict, const char *key) {
 
 unsigned int cs_dict_size(CS_Dict *dict) {
     return dict->size;
+}
+
+void cs_dict_keys(CS_Dict *dict, char *keys[]) {
+    int k = 0;
+    for (int i = 0; i < dict->capacity; i++) {
+        BucketNode *node = dict->buckets[i];
+        while (node != NULL) {
+            keys[k++] = node->key;
+            node = node->next;
+        }
+    }
+}
+
+void _cs_dict_deinit_bucket(BucketNode *node) {
+    if (node != NULL) {
+        _cs_dict_deinit_bucket(node->next);
+        free(node);
+    }
+}
+
+void cs_dict_deinit(CS_Dict *dict) {
+    for (int i = 0; i < dict->capacity; i++) {
+        _cs_dict_deinit_bucket(dict->buckets[i]);
+    }
+    free(dict->buckets);
+    free(dict);
 }
 
 // https://en.wikipedia.org/wiki/MD5#Algorithm
