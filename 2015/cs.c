@@ -32,6 +32,30 @@ int cs_imax(int *a, int n) {
     return j;
 }
 
+void cs_sort(int *a, int n, bool asc) {
+    if (n <= 1) {
+        return;
+    }
+    const int pivot = n / 2;
+    cs_sort(a, pivot, asc);
+    cs_sort(a + pivot, n - pivot, asc);
+    int *b = malloc(n * sizeof(int));
+    int i = 0, j = pivot, k = 0;
+    while (i < pivot || j < n) {
+        if (i == pivot) {
+            b[k++] = a[j++];
+        } else if (j == n || (asc && a[i] < a[j]) || (!asc && a[i] > a[j])) {
+            b[k++] = a[i++];
+        } else {
+            b[k++] = a[j++];
+        }
+    }
+    for (k = 0; k < n; k++) {
+        a[k] = b[k];
+    }
+    free(b);
+}
+
 // hash function using the djb2 algorithm
 unsigned long cs_hash(const char *str) {
     unsigned long hash = 5381;

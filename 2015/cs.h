@@ -12,6 +12,8 @@ int cs_max(int x, int y);
 int cs_imin(int *a, int n);
 int cs_imax(int *a, int n);
 
+void cs_sort(int *a, int n, bool asc);
+
 // $ Write a dictionary (hash map) implementation in the C programming language.
 
 typedef struct _BucketNode {

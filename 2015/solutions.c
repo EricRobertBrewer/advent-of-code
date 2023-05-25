@@ -28,6 +28,7 @@ long d13_knights_of_the_dinner_table(char *lines[], int line_count, int part);
 long d14_reindeer_olympics(char *lines[], int line_count, int part);
 long d15_science_for_hungry_people(char *lines[], int line_count, int part);
 long d16_aunt_sue(char *lines[], int line_count, int part);
+long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -128,6 +129,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d15_science_for_hungry_people;
     } else if (day == 16) {
         solution = &d16_aunt_sue;
+    } else if (day == 17) {
+        solution = &d17_no_such_thing_as_too_much;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1030,4 +1033,49 @@ long d16_aunt_sue(char *lines[], int line_count, int part) {
         cs_dict_deinit(aunt_item_to_count[i]);
     }
     return answer;
+}
+
+long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part) {
+    const int n = line_count;
+    int containers[n];
+    for (int i = 0; i < n; i++) {
+        containers[i] = (int) strtol(lines[i], NULL, 10);
+    }
+
+    const int liters = 150;
+
+    if (part == 1) {
+        int volumes[liters + 1];
+        volumes[0] = 1;
+        for (int j = 1; j <= liters; j++) {
+            volumes[j] = 0;
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = liters; j >= containers[i]; j--) {
+                volumes[j] += volumes[j - containers[i]];
+            }
+        }
+        return volumes[liters];
+    }
+
+    int cardinality[liters + 1][n + 1];
+    for (int j = 0; j <= liters; j++) {
+        for (int i = 0; i <= n; i++) {
+            cardinality[j][i] = 0;
+        }
+    }
+    cardinality[0][0] = 1;
+    for (int i = 0; i < n; i++) {
+        for (int j = liters; j >= containers[i]; j--) {
+            for (int k = 0; k <= n; k++) {
+                cardinality[j][k + 1] += cardinality[j - containers[i]][k];
+            }
+        }
+    }
+    for (int i = 1; i <= n; i++) {
+        if (cardinality[liters][i] > 0) {
+            return cardinality[liters][i];
+        }
+    }
+    return -1;
 }
