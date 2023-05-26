@@ -31,6 +31,7 @@ long d16_aunt_sue(char *lines[], int line_count, int part);
 long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part);
 long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part);
 long d19_medicine_for_rudolph(char *lines[], int line_count, int part);
+long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -137,6 +138,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d18_like_a_gif_for_your_yard;
     } else if (day == 19) {
         solution = &d19_medicine_for_rudolph;
+    } else if (day == 20) {
+        solution = &d20_infinite_elves_and_infinite_houses;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1215,4 +1218,26 @@ long d19_medicine_for_rudolph(char *lines[], int line_count, int part) {
     }
     cs_dict_deinit(molecules);
     return answer;
+}
+
+long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int part) {
+    const int presents = (int) strtol(lines[0], NULL, 10);
+    const int n = presents;
+    unsigned int *houses = malloc(n * sizeof(unsigned int));
+    for (int i = 0; i < n; i++) {
+        houses[i] = 0;
+    }
+    const int factor = part == 1 ? 10 : 11;
+    int x = 1;
+    while (x < n) {
+        for (int z = x; z < n && (part == 1 || z <= 50 * x); z += x) {
+            houses[z] += factor * x;
+        }
+        if (houses[x] >= presents) {
+            break;
+        }
+        x++;
+    }
+    free(houses);
+    return x;
 }
