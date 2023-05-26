@@ -32,6 +32,7 @@ long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part);
 long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part);
 long d19_medicine_for_rudolph(char *lines[], int line_count, int part);
 long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int part);
+long d21_rpg_simulator_20xx(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -140,6 +141,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d19_medicine_for_rudolph;
     } else if (day == 20) {
         solution = &d20_infinite_elves_and_infinite_houses;
+    } else if (day == 21) {
+        solution = &d21_rpg_simulator_20xx;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1240,4 +1243,73 @@ long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int p
     }
     free(houses);
     return x;
+}
+
+long d21_rpg_simulator_20xx(char *lines[], int line_count, int part) {
+    int boss_hp_base, boss_atk, boss_def;
+    const char space[] = " ";
+    strtok(lines[0], space); // Hit
+    strtok(NULL, space); // Points:
+    boss_hp_base = (int) strtol(strtok(NULL, space), NULL, 10);
+    strtok(lines[1], space); // Damage:
+    boss_atk = (int) strtol(strtok(NULL, space), NULL, 10);
+    strtok(lines[2], space); // Armor:
+    boss_def = (int) strtol(strtok(NULL, space), NULL, 10);
+
+    const int i_cost = 0, i_atk = 1, i_def = 2;
+    const int weapons[][3] = {
+            {8, 4, 0}, {10, 5, 0}, {25, 6, 0}, {40, 7, 0}, {74, 8, 0}
+    };
+    const int weapons_n = 5;
+    const int armors[][3] = {
+            {0, 0, 0}, // No armor.
+            {13, 0, 1}, {31, 0, 2}, {53, 0, 3}, {75, 0, 4}, {102, 0, 5}
+    };
+    const int armors_n = 6;
+    const int rings[][3] = {
+            {0, 0, 0}, {0, 0, 0}, // May buy zero to two rings.
+            {25, 1, 0}, {50, 2, 0}, {100, 3, 0}, {20, 0, 1}, {40, 0, 2}, {80, 0, 3}
+    };
+    const int rings_n = 8;
+
+    const int hero_hp_base = 100, hero_atk_base = 0, hero_def_base = 0;
+    int polar_cost = -1;
+    for (int w = 0; w < weapons_n; w++) {
+        for (int a = 0; a < armors_n; a++) {
+            for (int r0 = 0; r0 < rings_n - 1; r0++) {
+                for (int r1 = r0 + 1; r1 < rings_n; r1++) {
+                    // Equip.
+                    const int *equipped[] = {weapons[w], armors[a], rings[r0], rings[r1]};
+                    int cost = 0;
+                    int hero_atk = hero_atk_base;
+                    int hero_def = hero_def_base;
+                    for (int i = 0; i < 4; i++) {
+                        cost += equipped[i][i_cost];
+                        hero_atk += equipped[i][i_atk];
+                        hero_def += equipped[i][i_def];
+                    }
+                    // Fight.
+                    int boss_hp = boss_hp_base;
+                    int hero_hp = hero_hp_base;
+                    while (boss_hp > 0 && hero_hp > 0) {
+                        boss_hp -= cs_max(1, hero_atk - boss_def);
+                        if (boss_hp <= 0) {
+                            break;
+                        }
+                        hero_hp -= cs_max(1, boss_atk - hero_def);
+                    }
+                    if (part == 1) {
+                        if (boss_hp <= 0 && (polar_cost == -1 || cost < polar_cost)) {
+                            polar_cost = cost;
+                        }
+                    } else {
+                        if (hero_hp <= 0 && (polar_cost == -1 || cost > polar_cost)) {
+                            polar_cost = cost;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return polar_cost;
 }
