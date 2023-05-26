@@ -13,6 +13,7 @@ int cs_imin(int *a, int n);
 int cs_imax(int *a, int n);
 
 void cs_sort(int *a, int n, bool asc);
+void cs_isort(int *a, int *indices, int n, bool asc);
 
 // $ Write a dictionary (hash map) implementation in the C programming language.
 

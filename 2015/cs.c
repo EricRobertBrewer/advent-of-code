@@ -56,6 +56,39 @@ void cs_sort(int *a, int n, bool asc) {
     free(b);
 }
 
+void _cs_isort(int *a, int *x, int n, bool asc) {
+    if (n <= 1) {
+        return;
+    }
+    const int pivot = n / 2;
+    _cs_isort(a, x, pivot, asc);
+    _cs_isort(a, x + pivot, n - pivot, asc);
+    int *y = malloc(n * sizeof(int));
+    int i = 0, j = pivot, k = 0;
+    while (i < pivot || j < n) {
+        if (i == pivot) {
+            y[k++] = x[j++];
+        } else if (j == n || (asc && a[x[i]] < a[x[j]]) || (!asc && a[x[i]] > a[x[j]])) {
+            y[k++] = x[i++];
+        } else {
+            y[k++] = x[j++];
+        }
+    }
+    for (k = 0; k < n; k++) {
+        x[k] = y[k];
+    }
+    free(y);
+}
+
+// `indices` must be allocated first.
+// This function will populate `indices` with the correct ordering.
+void cs_isort(int *a, int *indices, int n, bool asc) {
+    for (int i = 0; i < n; i++) {
+        indices[i] = i;
+    }
+    _cs_isort(a, indices, n, asc);
+}
+
 // hash function using the djb2 algorithm
 unsigned long cs_hash(const char *str) {
     unsigned long hash = 5381;

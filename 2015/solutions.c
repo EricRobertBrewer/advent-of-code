@@ -30,6 +30,7 @@ long d15_science_for_hungry_people(char *lines[], int line_count, int part);
 long d16_aunt_sue(char *lines[], int line_count, int part);
 long d17_no_such_thing_as_too_much(char *lines[], int line_count, int part);
 long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part);
+long d19_medicine_for_rudolph(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -134,6 +135,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d17_no_such_thing_as_too_much;
     } else if (day == 18) {
         solution = &d18_like_a_gif_for_your_yard;
+    } else if (day == 19) {
+        solution = &d19_medicine_for_rudolph;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1134,7 +1137,7 @@ long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part) {
             }
         }
     }
-    int on = 0;
+    long on = 0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
             if (lights[i][j] == '#') {
@@ -1143,4 +1146,73 @@ long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part) {
         }
     }
     return on;
+}
+
+long d19_medicine_for_rudolph(char *lines[], int line_count, int part) {
+    const int n = line_count - 2;
+    char *medicine = lines[line_count - 1];
+    char *replacements[n][2];
+    for (int i = 0; i < n; i++) {
+        char *line = lines[i];
+        const char space[] = " ";
+        replacements[i][0] = strtok(line, space); // Al
+        strtok(NULL, space); // =>
+        replacements[i][1] = strtok(NULL, space); // ThF
+    }
+
+    long answer = -1;
+    CS_Dict *molecules = cs_dict_new(2);
+    cs_dict_put(molecules, medicine, NULL);
+    const int beam = 1 << 12;
+    int step = 1;
+    while (answer == -1) {
+        const int m = cs_dict_size(molecules);
+        char *keys[m];
+        cs_dict_keys(molecules, keys);
+        // Reduce to beam size according to smallest length.
+        int *lens = malloc(m * sizeof(int));
+        int *indices = malloc(m * sizeof(int));
+        for (int k = 0; k < m; k++) {
+            lens[k] = strlen(keys[k]);
+            indices[k] = k;
+        }
+        cs_isort(lens, indices, m, true);
+        printf("step: %d; m: %d; keys[indices[0]]: %s\n", step, m, keys[indices[0]]);
+        // Construct next population.
+        CS_Dict *next_molecules = cs_dict_new(beam << 6);
+        for (int k = 0; k < cs_min(beam, m) && answer == -1; k++) {
+            char *key = keys[indices[k]];
+            const int mlen = strlen(key);
+            for (int i = 0; i < n && answer == -1; i++) {
+                char *pattern = replacements[i][part == 1 ? 0 : 1];
+                const int plen = strlen(pattern);
+                char *sub = replacements[i][part == 1 ? 1 : 0];
+                const int slen = strlen(sub);
+                for (int index = 0; index < mlen - plen + 1 && answer == -1; index++) {
+                    if (strncmp(pattern, key + index, plen) == 0) {
+                        char *molecule = malloc((mlen - plen + slen + 1) * sizeof(char));
+                        strncpy(molecule, key, index);
+                        strncpy(molecule + index, sub, slen);
+                        strncpy(molecule + index + slen, key + index + plen, mlen - index - plen);
+                        molecule[mlen - plen + slen] = '\0';
+                        if (part == 2 && strcmp(molecule, "e") == 0) {
+                            answer = step;
+                        }
+                        cs_dict_put(next_molecules, molecule, NULL);
+                        free(molecule);
+                    }
+                }
+            }
+        }
+        if (part == 1) {
+            answer = cs_dict_size(next_molecules);
+        }
+        cs_dict_deinit(molecules);
+        molecules = next_molecules;
+        free(indices);
+        free(lens);
+        step++;
+    }
+    cs_dict_deinit(molecules);
+    return answer;
 }
