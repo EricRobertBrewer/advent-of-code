@@ -33,6 +33,7 @@ long d18_like_a_gif_for_your_yard(char *lines[], int line_count, int part);
 long d19_medicine_for_rudolph(char *lines[], int line_count, int part);
 long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int part);
 long d21_rpg_simulator_20xx(char *lines[], int line_count, int part);
+long d22_wizard_simulator_20xx(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -143,6 +144,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d20_infinite_elves_and_infinite_houses;
     } else if (day == 21) {
         solution = &d21_rpg_simulator_20xx;
+    } else if (day == 22) {
+        solution = &d22_wizard_simulator_20xx;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1312,4 +1315,163 @@ long d21_rpg_simulator_20xx(char *lines[], int line_count, int part) {
         }
     }
     return polar_cost;
+}
+
+long d22_wizard_simulator_20xx(char *lines[], int line_count, int part) {
+    int boss_hp_base, boss_atk;
+    const char space[] = " ";
+    strtok(lines[0], space); // Hit
+    strtok(NULL, space); // Points:
+    boss_hp_base = (int) strtol(strtok(NULL, space), NULL, 10);
+    strtok(lines[1], space); // Damage:
+    boss_atk = (int) strtol(strtok(NULL, space), NULL, 10);
+    printf("hp: %d; atk: %d\n", boss_hp_base, boss_atk);
+
+    const int hero_hp_base = 50, hero_def_base = 0, mana_base = 500;
+    const int shield_def = 7, poison_damage = 3, recharge_mana_gain = 101;
+    const int j_mana = 0, j_damage = 1, j_heal = 2, j_shield_timer = 3, j_poison_timer = 4, j_recharge_timer = 5;
+    const int spells[][6] = {
+            { 53,  4,  0,  0,  0,  0}, // Magic Missile.
+            { 73,  2,  2,  0,  0,  0}, // Drain.
+            {113,  0,  0,  6,  0,  0}, // Shield.
+            {173,  0,  0,  0,  6,  0}, // Poison.
+            {229,  0,  0,  0,  0,  5}  // Recharge.
+    };
+    const int spells_n = 5;
+
+    int states_size = 4;
+    CS_Dict **step_states = malloc(states_size * sizeof(CS_Dict *));
+    step_states[0] = cs_dict_new(1);
+    const char bar[] = "|";
+    char initial_state[32];
+    // hero_hp|mana|mana_spent|boss_hp|shield_timer|poison_timer|recharge_timer|s_prev
+    sprintf(initial_state, "%d|%d|%d|%d|%d|%d|%d|%d", hero_hp_base, mana_base, 0, boss_hp_base, 0, 0, 0, -1);
+    cs_dict_put(step_states[0], initial_state, NULL);
+    bool hero_turn = true;
+    int step = 1;
+    long x_spent = -1;
+    int x_s = -1;
+    int x_step = -1;
+    char *x_state = NULL;
+    while (cs_dict_size(step_states[step - 1]) > 0) {
+        CS_Dict *states = step_states[step - 1];
+        const int n = cs_dict_size(states);
+        char *keys[n];
+        cs_dict_keys(states, keys);
+        CS_Dict *_states = cs_dict_new(n << 2);
+        for (int k = 0; k < n; k++) {
+            char *state = keys[k];
+            char *state_tokens = strdup(state);
+            int hero_hp = (int) strtol(strtok(state_tokens, bar), NULL, 10);
+            int mana = (int) strtol(strtok(NULL, bar), NULL, 10);
+            int mana_spent = (int) strtol(strtok(NULL, bar), NULL, 10);
+            int boss_hp = (int) strtol(strtok(NULL, bar), NULL, 10);
+            int shield_timer = (int) strtol(strtok(NULL, bar), NULL, 10);
+            int poison_timer = (int) strtol(strtok(NULL, bar), NULL, 10);
+            int recharge_timer = (int) strtol(strtok(NULL, bar), NULL, 10);
+            int s_prev = (int) strtol(strtok(NULL, bar), NULL, 10);
+            free(state_tokens);
+            // Hard mode.
+            if (part == 2 && hero_turn) {
+                if (hero_hp == 1) {
+                    continue;
+                }
+                hero_hp--;
+            }
+            // Effects.
+            if (shield_timer > 0) {
+                shield_timer--;
+            }
+            if (poison_timer > 0) {
+                boss_hp -= poison_damage;
+                if (boss_hp <= 0) {
+                    if (x_spent == -1 || mana_spent < x_spent) {
+                        x_spent = mana_spent;
+                        x_s = -1;
+                        x_step = step;
+                        x_state = state;
+                    }
+                    continue;
+                }
+                poison_timer--;
+            }
+            if (recharge_timer > 0) {
+                mana += recharge_mana_gain;
+                recharge_timer--;
+            }
+            if (hero_turn) {
+                // Cast spell.
+                for (int s = 0; s < spells_n; s++) {
+                    const int *spell = spells[s];
+                    // Check mana cost.
+                    if (spell[j_mana] > mana) {
+                        continue;
+                    }
+                    // Disallow stacking the same effect.
+                    if ((spell[j_shield_timer] > 0 && shield_timer > 0) ||
+                            (spell[j_poison_timer] > 0 && poison_timer > 0) ||
+                            (spell[j_recharge_timer] > 0 && recharge_timer > 0)) {
+                        continue;
+                    }
+                    int _hero_hp = hero_hp + spell[j_heal];
+                    int _mana = mana - spell[j_mana];
+                    int _mana_spent = mana_spent + spell[j_mana];
+                    int _boss_hp = boss_hp - spell[j_damage];
+                    if (_boss_hp <= 0) {
+                        if (x_spent == -1 || mana_spent < x_spent) {
+                            x_spent = _mana_spent;
+                            x_s = s;
+                            x_step = step;
+                            x_state = state;
+                        }
+                        continue;
+                    }
+                    int _shield_timer = shield_timer + spell[j_shield_timer];
+                    int _poison_timer = poison_timer + spell[j_poison_timer];
+                    int _recharge_timer = recharge_timer + spell[j_recharge_timer];
+                    char _state[32];
+                    sprintf(_state, "%d|%d|%d|%d|%d|%d|%d|%d",
+                            _hero_hp, _mana, _mana_spent, _boss_hp, _shield_timer, _poison_timer, _recharge_timer, s);
+                    cs_dict_put(_states, _state, state);
+                }
+            } else {
+                // Boss attack.
+                int _hero_hp = hero_hp - cs_max(1, boss_atk - hero_def_base - (shield_timer > 0 ? shield_def : 0));
+                if (_hero_hp > 0) {
+                    char _state[32];
+                    sprintf(_state, "%d|%d|%d|%d|%d|%d|%d|%d",
+                            _hero_hp, mana, mana_spent, boss_hp, shield_timer, poison_timer, recharge_timer, s_prev);
+                    cs_dict_put(_states, _state, state);
+                }
+            }
+        }
+        if (step == states_size) {
+            states_size <<= 1;
+            step_states = realloc(step_states, states_size * sizeof(CS_Dict *));
+        }
+        step_states[step] = _states;
+        hero_turn = !hero_turn;
+        step++;
+    }
+
+    // Backtrack.
+    printf("spent: %ld; s: %d; step: %d; state: %s\n", x_spent, x_s, x_step, x_state);
+    char *x_states[x_step];
+    x_states[x_step - 1] = x_state;
+    int back_step = x_step - 1;
+    while (back_step > 0) {
+        x_states[back_step - 1] = cs_dict_get(step_states[back_step], x_states[back_step]);
+        back_step--;
+    }
+
+    // Replay.
+    printf("REPLAY\n");
+    for (int i = 0; i < x_step; i++) {
+        printf("Turn %02d - %s: %s\n", i + 1, i % 2 == 0 ? "HERO" : "BOSS", x_states[i]);
+    }
+
+    for (int i = 0; i < step; i++) {
+        cs_dict_deinit(step_states[i]);
+    }
+    return x_spent;
 }

@@ -224,6 +224,7 @@ void cs_dict_keys(CS_Dict *dict, char *keys[]) {
 void _cs_dict_deinit_bucket(BucketNode *node) {
     if (node != NULL) {
         _cs_dict_deinit_bucket(node->next);
+        free(node->key);
         free(node);
     }
 }
