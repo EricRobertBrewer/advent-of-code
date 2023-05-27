@@ -34,6 +34,7 @@ long d19_medicine_for_rudolph(char *lines[], int line_count, int part);
 long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int part);
 long d21_rpg_simulator_20xx(char *lines[], int line_count, int part);
 long d22_wizard_simulator_20xx(char *lines[], int line_count, int part);
+long d23_opening_the_turing_lock(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -146,6 +147,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d21_rpg_simulator_20xx;
     } else if (day == 22) {
         solution = &d22_wizard_simulator_20xx;
+    } else if (day == 23) {
+        solution = &d23_opening_the_turing_lock;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1474,4 +1477,47 @@ long d22_wizard_simulator_20xx(char *lines[], int line_count, int part) {
         cs_dict_deinit(step_states[i]);
     }
     return x_spent;
+}
+
+long d23_opening_the_turing_lock(char *lines[], int line_count, int part) {
+    int i = 0;
+    unsigned int r[2];
+    r[0] = part == 1 ? 0 : 1; // a
+    r[1] = 0; // b
+    while (i < line_count) {
+        char *line = lines[i];
+        if (strncmp(line, "hlf", 3) == 0) {
+            char j = line[4] - 'a';
+            r[j] /= 2;
+            i++;
+        } else if (strncmp(line, "tpl", 3) == 0) {
+            char j = line[4] - 'a';
+            r[j] *= 3;
+            i++;
+        } else if (strncmp(line, "inc", 3) == 0) {
+            char j = line[4] - 'a';
+            r[j] += 1;
+            i++;
+        } else if (strncmp(line, "jmp", 3) == 0) {
+            i += (int) strtol(line + 4, NULL, 10);
+        } else if (strncmp(line, "jie", 3) == 0) {
+            char j = line[4] - 'a';
+            if (r[j] % 2 == 0) {
+                i += (int) strtol(line + 7, NULL, 10);
+            } else {
+                i++;
+            }
+        } else if (strncmp(line, "jio", 3) == 0) {
+            char j = line[4] - 'a';
+            if (r[j] == 1) {
+                i += (int) strtol(line + 7, NULL, 10);
+            } else {
+                i++;
+            }
+        } else {
+            printf("Unexpected instruction: %s\n", line);
+            break;
+        }
+    }
+    return r[1];
 }
