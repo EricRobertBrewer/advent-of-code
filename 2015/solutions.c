@@ -35,6 +35,7 @@ long d20_infinite_elves_and_infinite_houses(char *lines[], int line_count, int p
 long d21_rpg_simulator_20xx(char *lines[], int line_count, int part);
 long d22_wizard_simulator_20xx(char *lines[], int line_count, int part);
 long d23_opening_the_turing_lock(char *lines[], int line_count, int part);
+long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -149,6 +150,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d22_wizard_simulator_20xx;
     } else if (day == 23) {
         solution = &d23_opening_the_turing_lock;
+    } else if (day == 24) {
+        solution = &d24_it_hangs_in_the_balance;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1520,4 +1523,68 @@ long d23_opening_the_turing_lock(char *lines[], int line_count, int part) {
         }
     }
     return r[1];
+}
+
+long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part) {
+    const int n = line_count;
+    int weights[n];
+    for (int i = 0; i < n; i++) {
+        weights[i] = (int) strtol(lines[i], NULL, 10);
+    }
+    cs_sort(weights, n, false); // Sort descending.
+    const int wsum = cs_sum(weights, n);
+    const int target = wsum / 3;
+    printf("sum: %d; target: %d\n", wsum, target);
+
+    long qe_min = -1;
+    for (int r = 1; r < n - 2 && qe_min == -1; r++) {
+        // Greedily search for first group.
+        int len;
+        unsigned short **combinations = cs_combinations(n, r, &len);
+        for (int i = 0; i < len; i++) {
+            unsigned short *combination = combinations[i];
+            int sum = 0;
+            for (int j = 0; j < r; j++) {
+                sum += weights[combination[j]];
+            }
+            if (sum == target) {
+                // Collect complement of current combination of weights.
+                int others[n - r];
+                int o = 0, c = 0;
+                for (int j = 0; j < n; j++) {
+                    if (c < r && j == combination[c]) {
+                        c++;
+                    } else {
+                        others[o] = weights[j];
+                        o++;
+                    }
+                }
+                // Check if the remaining weights can be partitioned to the target value.
+                int sums[target + 1];
+                sums[0] = 1;
+                for (int j = 1; j <= target; j++) {
+                    sums[j] = 0;
+                }
+                for (o = 0; o < n - r; o++) {
+                    for (int t = target; t >= others[o]; t--) {
+                        sums[t] += sums[t - others[o]];
+                    }
+                }
+                if (sums[target] > 0) {
+                    long qe = 1;
+                    for (int j = 0; j < r; j++) {
+                        qe *= weights[combination[j]];
+                    }
+                    if (qe_min == -1 || qe < qe_min) {
+                        qe_min = qe;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < len; i++) {
+            free(combinations[i]);
+        }
+        free(combinations);
+    }
+    return qe_min;
 }

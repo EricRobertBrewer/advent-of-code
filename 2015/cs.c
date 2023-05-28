@@ -32,6 +32,14 @@ int cs_imax(int *a, int n) {
     return j;
 }
 
+int cs_sum(int *a, int n) {
+    int sum = 0;
+    for (int i = 0; i < n; i++) {
+        sum += a[i];
+    }
+    return sum;
+}
+
 void cs_sort(int *a, int n, bool asc) {
     if (n <= 1) {
         return;
@@ -408,4 +416,46 @@ unsigned short **cs_bucket_permutations(unsigned short volume, unsigned short bu
 
     *len = n;
     return bucket_permutations;
+}
+
+unsigned short **_cs_combinations(unsigned short n, unsigned short r, int *len, int k) {
+    unsigned short **combinations = NULL;
+    int size = 0;
+    if (r == 1) {
+        size = n - k;
+        combinations = malloc(size * sizeof(unsigned short *));
+        for (int i = k; i < n; i++) {
+            unsigned short *combination = malloc(sizeof(unsigned short));
+            *combination = i;
+            combinations[i - k] = combination;
+        }
+    } else {
+        for (int i = k; i < n - r + 1; i++) {
+            int tail_len;
+            unsigned short **tail_combinations = _cs_combinations(n, r - 1, &tail_len, i + 1);
+            combinations = realloc(combinations, (size + tail_len) * sizeof(unsigned short *));
+            for (int j = 0; j < tail_len; j++) {
+                unsigned short *tail_combination = tail_combinations[j];
+                unsigned short *combination = malloc(r * sizeof(unsigned short));
+                combination[0] = i;
+                for (int t = 0; t < r - 1; t++) {
+                    combination[t + 1] = tail_combination[t];
+                }
+                combinations[size] = combination;
+                size++;
+                free(tail_combination);
+            }
+            free(tail_combinations);
+        }
+    }
+    *len = size;
+    return combinations;
+}
+
+unsigned short **cs_combinations(unsigned short n, unsigned short r, int *len) {
+    if (r < 1 || r > n) {
+        fprintf(stderr, "Unexpected input: n=%hu; r=%hu\n", n, r);
+        exit(EXIT_FAILURE);
+    }
+    return _cs_combinations(n, r, len, 0);
 }
