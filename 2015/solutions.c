@@ -36,6 +36,7 @@ long d21_rpg_simulator_20xx(char *lines[], int line_count, int part);
 long d22_wizard_simulator_20xx(char *lines[], int line_count, int part);
 long d23_opening_the_turing_lock(char *lines[], int line_count, int part);
 long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part);
+long d25_let_it_snow(char *lines[], int line_count, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -152,6 +153,8 @@ long solve(int day, int part, char *input_path) {
         solution = &d23_opening_the_turing_lock;
     } else if (day == 24) {
         solution = &d24_it_hangs_in_the_balance;
+    } else if (day == 25) {
+        solution = &d25_let_it_snow;
     } else {
         fprintf(stderr, "No solution for day `%d` part `%d`.", day, part);
         exit(EXIT_FAILURE);
@@ -1682,4 +1685,33 @@ long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part) {
         free(combinations);
     }
     return qe_min;
+}
+
+long d25_let_it_snow(char *lines[], int line_count, int part) {
+    const char space[] = " ";
+    char *row_str, *col_str;
+    strtok(lines[0], space); // To
+    for (int i = 0; i < 14; i++) {
+        // Intermediate empty string is (inanely) skipped by `strtok`.
+        strtok(NULL, space); // continue, please consult the code grid in the manual.  Enter the code at row
+    }
+    row_str = strtok(NULL, space); // #,
+    strtok(NULL, space); // column
+    col_str = strtok(NULL, space); // #.
+    row_str[strlen(row_str) - 1] = '\0';
+    const long row = strtol(row_str, NULL, 10);
+    col_str[strlen(col_str) - 1] = '\0';
+    const long col = strtol(col_str, NULL, 10);
+    const unsigned long order = (col * (col + 1) / 2) + ((col - 1) * (row - 1)) + (row * (row - 1) / 2);
+    printf("row: %ld; col: %ld; order: %lu\n", row, col, order);
+
+    const unsigned long s = 20151125;
+    const unsigned long x = 252533;
+    const unsigned long m = 33554393;
+    // Calculate (s * x ^ (order - 1)) mod m.
+    unsigned long answer = s;
+    for (long i = 1; i < order; i++) {
+        answer = (answer * x) % m;
+    }
+    return answer;
 }
