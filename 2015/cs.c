@@ -238,6 +238,9 @@ void _cs_dict_deinit_bucket(BucketNode *node) {
 }
 
 void cs_dict_deinit(CS_Dict *dict) {
+    if (dict == NULL) {
+        return;
+    }
     for (int i = 0; i < dict->capacity; i++) {
         _cs_dict_deinit_bucket(dict->buckets[i]);
     }

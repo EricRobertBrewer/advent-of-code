@@ -1525,6 +1525,109 @@ long d23_opening_the_turing_lock(char *lines[], int line_count, int part) {
     return r[1];
 }
 
+bool _d24_can_partition(int *a, unsigned int n, unsigned int partitions) {
+    if (partitions <= 1) {
+        return true;
+    }
+
+    int sum = 0;
+    for (int i = 0; i < n; i++) {
+        sum += a[i];
+    }
+    if (sum % partitions != 0) {
+        return false;
+    }
+    const int target = sum / partitions;
+
+    bool can = false;
+    if (partitions == 2) {
+        int ways[target + 1];
+        ways[0] = 1;
+        for (int value = 1; value <= target; value++) {
+            ways[value] = 0;
+        }
+        for (int i = 0; i < n; i++) {
+            for (int value = target; value >= a[i]; value--) {
+                ways[value] += ways[value - a[i]];
+            }
+        }
+        can = ways[target] > 0;
+    } else {
+        // Collect all groups of indices that sum to the target.
+        CS_Dict **value_groups = malloc((target + 1) * sizeof(CS_Dict *));
+        const unsigned int capacity = 1 << 13;
+        value_groups[0] = cs_dict_new(1);
+        cs_dict_put(value_groups[0], "-1", NULL);
+        const char sep[] = ",";
+        for (int value = 1; value <= target; value++) {
+           value_groups[value] = NULL;
+        }
+        for (int i = 0; i < n; i++) {
+            for (int value = target; value >= a[i]; value--) {
+                CS_Dict *groups;
+                if ((groups = value_groups[value - a[i]]) == NULL) {
+                    continue;
+                }
+                // Add concatenation of smaller groups with current value.
+                if (value_groups[value] == NULL) {
+                    value_groups[value] = cs_dict_new(capacity);
+                }
+                const int size = cs_dict_size(groups);
+                char *keys[size];
+                cs_dict_keys(groups, keys);
+                for (int k = 0; k < size; k++) {
+                    char *group = keys[k];
+                    int len = strlen(group) + (int) ceil(i > 0 ? log10(i) : 1.0) + 2;
+                    char _group[len];
+                    sprintf(_group, "%s%s%d", group, sep, i);
+                    cs_dict_put(value_groups[value], _group, NULL);
+                }
+            }
+        }
+
+        if (value_groups[target] == NULL) {
+            can = false;
+        } else {
+            // Recursively check if sub-partitions can be made with remaining indices.
+            const unsigned int size = cs_dict_size(value_groups[target]);
+            char **keys = malloc(size * sizeof(char *));
+            cs_dict_keys(value_groups[target], keys);
+            for (int k = 0; k < size && !can; k++) {
+                char *group = strdup(keys[k]);
+                strtok(group, sep); // Skip "-1" token.
+                int indices[n];
+                int m = 0;
+                char *x_str = NULL;
+                while ((x_str = strtok(NULL, sep)) != NULL) {
+                    indices[m++] = (int) strtol(x_str, NULL, 10);
+                }
+                int b[n - m];
+                int i = 0, j = 0;
+                for (int index = 0; index < n; index++) {
+                    if (i < m && index == indices[i]) {
+                        i++;
+                    } else {
+                        b[j] = a[index];
+                        j++;
+                    }
+                }
+                if (_d24_can_partition(b, n - m, partitions - 1)) {
+                    can = true;
+                }
+                free(group);
+            }
+            free(keys);
+        }
+
+        for (int value = 0; value <= target; value++) {
+            cs_dict_deinit(value_groups[value]);
+        }
+        free(value_groups);
+    }
+
+    return can;
+}
+
 long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part) {
     const int n = line_count;
     int weights[n];
@@ -1533,11 +1636,11 @@ long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part) {
     }
     cs_sort(weights, n, false); // Sort descending.
     const int wsum = cs_sum(weights, n);
-    const int target = wsum / 3;
-    printf("sum: %d; target: %d\n", wsum, target);
+    const int groups = part == 1 ? 3 : 4;
+    const int target = wsum / groups;
 
     long qe_min = -1;
-    for (int r = 1; r < n - 2 && qe_min == -1; r++) {
+    for (int r = 1; r < n - groups + 1 && qe_min == -1; r++) {
         // Greedily search for first group.
         int len;
         unsigned short **combinations = cs_combinations(n, r, &len);
@@ -1548,6 +1651,14 @@ long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part) {
                 sum += weights[combination[j]];
             }
             if (sum == target) {
+                long qe = 1;
+                for (int j = 0; j < r; j++) {
+                    qe *= weights[combination[j]];
+                }
+                // Skip weights for whose quantum entanglement is too high; it's not worth checking sub-partitions.
+                if (qe_min != -1 && qe >= qe_min) {
+                    continue;
+                }
                 // Collect complement of current combination of weights.
                 int others[n - r];
                 int o = 0, c = 0;
@@ -1560,24 +1671,8 @@ long d24_it_hangs_in_the_balance(char *lines[], int line_count, int part) {
                     }
                 }
                 // Check if the remaining weights can be partitioned to the target value.
-                int sums[target + 1];
-                sums[0] = 1;
-                for (int j = 1; j <= target; j++) {
-                    sums[j] = 0;
-                }
-                for (o = 0; o < n - r; o++) {
-                    for (int t = target; t >= others[o]; t--) {
-                        sums[t] += sums[t - others[o]];
-                    }
-                }
-                if (sums[target] > 0) {
-                    long qe = 1;
-                    for (int j = 0; j < r; j++) {
-                        qe *= weights[combination[j]];
-                    }
-                    if (qe_min == -1 || qe < qe_min) {
-                        qe_min = qe;
-                    }
+                if (_d24_can_partition(others, n - r, groups - 1)) {
+                    qe_min = qe;
                 }
             }
         }
