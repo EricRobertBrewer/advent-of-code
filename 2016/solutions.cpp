@@ -18,6 +18,7 @@ long solve(int day, int part, std::string input_path);
 
 long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part);
 long d02_bathroom_security(std::vector<std::string> lines, int part);
+long d03_squares_with_three_sides(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -75,6 +76,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d01_no_time_for_a_taxicab;
     } else if (day == 2) {
         solution = &d02_bathroom_security;
+    } else if (day == 3) {
+        solution = &d03_squares_with_three_sides;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -166,4 +169,30 @@ long d02_bathroom_security(std::vector<std::string> lines, int part) {
     }
     std::cout << code << std::endl;
     return 0;
+}
+
+long d03_squares_with_three_sides(std::vector<std::string> lines, int part) {
+    long n = 0;
+    if (part == 1) {
+        for (std::string line : lines) {
+            const int a = std::stoi(line.substr(0, 5));
+            const int b = std::stoi(line.substr(5, 10));
+            const int c = std::stoi(line.substr(10, 15));
+            if (a + b > c && a + c > b && b + c > a) {
+                n++;
+            }
+        }
+    } else {
+        for (int i = 0; i < lines.size(); i += 3) {
+            for (int j = 0; j < 3; j++) {
+                const int a = std::stoi(lines[i].substr(5 * j, 5 * (j + 1)));
+                const int b = std::stoi(lines[i + 1].substr(5 * j, 5 * (j + 1)));
+                const int c = std::stoi(lines[i + 2].substr(5 * j, 5 * (j + 1)));
+                if (a + b > c && a + c > b && b + c > a) {
+                    n++;
+                }
+            }
+        }
+    }
+    return n;
 }
