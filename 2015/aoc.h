@@ -9,7 +9,7 @@
 #include <sys/stat.h> // Create directory (`mkdir`).
 #include <unistd.h> // Check if file exists (`access`).
 
-char *aoc_download_input_if_needed(const char *year, int day);
-char *aoc_example_path(const char *year, int day);
+void aoc_download_input_if_needed(char *day_path, const char *year, int day);
+void aoc_example_path(char *example_path, const char *year, int day);
 
 #endif

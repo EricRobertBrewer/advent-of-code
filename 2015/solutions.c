@@ -64,11 +64,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    char *input_path;
+    char input_path[256];
     if (example) {
-        input_path = aoc_example_path(YEAR, day);
+        aoc_example_path(input_path, YEAR, day);
     } else {
-        input_path = aoc_download_input_if_needed(YEAR, day);
+        aoc_download_input_if_needed(input_path, YEAR, day);
     }
 
     struct timespec start, end;
@@ -80,7 +80,6 @@ int main(int argc, char *argv[]) {
     uint64_t duration_ms = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000;
     fprintf(stdout, "Time: %llu ms\n", duration_ms);
 
-    free(input_path);
     return 0;
 }
 

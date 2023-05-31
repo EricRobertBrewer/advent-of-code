@@ -3,7 +3,7 @@
 #define INPUT_DIR "./input"
 #define ENV_VAR "AOC_SESSION"
 
-char *aoc_download_input_if_needed(const char *year, int day) {
+void aoc_download_input_if_needed(char *day_path, const char *year, int day) {
     // Create year directory.
     char *year_dir_name = malloc((strlen(INPUT_DIR) + strlen(year) + 2) * sizeof(char));
     sprintf(year_dir_name, "%s/%s", INPUT_DIR, year);
@@ -12,7 +12,6 @@ char *aoc_download_input_if_needed(const char *year, int day) {
     }
 
     // Check if file exists.
-    char *day_path = malloc((strlen(year_dir_name) + 8) * sizeof(char));
     sprintf(day_path, "%s/%02d.txt", year_dir_name, day);
     free(year_dir_name);
     if (access(day_path, F_OK) != 0) {
@@ -67,11 +66,8 @@ char *aoc_download_input_if_needed(const char *year, int day) {
         }
         curl_global_cleanup();
     }
-    return day_path;
 }
 
-char *aoc_example_path(const char *year, int day) {
-    char *example_path = malloc((strlen(INPUT_DIR) + strlen(year) + 17) * sizeof(char));
+void aoc_example_path(char *example_path, const char *year, int day) {
     sprintf(example_path, "%s/%s/%02d-example.txt", INPUT_DIR, year, day);
-    return example_path;
 }
