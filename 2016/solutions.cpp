@@ -1,6 +1,7 @@
 extern "C" {
     #include "../2015/aoc.h"
 }
+#include "cs.hpp"
 
 #include <cstdlib>
 #include <ctime>
@@ -16,6 +17,7 @@ extern "C" {
 long solve(int day, int part, std::string input_path);
 
 long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part);
+long d02_bathroom_security(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -71,6 +73,8 @@ long solve(int day, int part, std::string input_path) {
     long (*solution)(std::vector<std::string>, int);
     if (day == 1) {
         solution = &d01_no_time_for_a_taxicab;
+    } else if (day == 2) {
+        solution = &d02_bathroom_security;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -79,15 +83,7 @@ long solve(int day, int part, std::string input_path) {
 }
 
 long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part) {
-    std::string line = lines[0];
-    std::vector<std::string> instructions;
-    std::size_t start = 0, end;
-    std::string sep = ", ";
-    while ((end = line.find(sep, start)) != std::string::npos) {
-        instructions.push_back(line.substr(start, end - start));
-        start = end + sep.length();
-    }
-    instructions.push_back(line.substr(start));
+    std::vector<std::string> instructions = cs::string_split(lines[0], ", ");
 
     int x = 0, y = 0;
     int directions[][2] = {
@@ -96,8 +92,7 @@ long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part) {
     int direction = 0; // North.
     std::set<std::tuple<int, int>> locations;
     locations.insert(std::tuple<int, int>(x, y));
-    for (int i = 0; i < instructions.size(); i++) {
-        std::string instruction = instructions[i];
+    for (std::string instruction : instructions) {
         char turn = instruction[0];
         if (turn == 'L') {
             direction = (direction + 3) % 4;
@@ -120,4 +115,55 @@ long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part) {
         }
     }
     return std::abs(x) + std::abs(y);
+}
+
+long d02_bathroom_security(std::vector<std::string> lines, int part) {
+    int x, y;
+    const int xlim = 5, ylim = 5;
+    std::string pad[ylim];
+    if (part == 1) {
+        x = 1;
+        y = 1;
+        pad[0] = "123--";
+        pad[1] = "456--";
+        pad[2] = "789--";
+        pad[3] = "-----";
+        pad[4] = "-----";
+    } else {
+        x = 0;
+        y = 2;
+        pad[0] = "--1--";
+        pad[1] = "-234-";
+        pad[2] = "56789";
+        pad[3] = "-ABC-";
+        pad[4] = "--D--";
+    }
+    std::string code = "";
+    for (std::string line : lines) {
+        for (char c : line) {
+            if (c == 'U') {
+                if (y > 0 && pad[y - 1][x] != '-') {
+                    y--;
+                }
+            } else if (c == 'D') {
+                if (y < ylim - 1 && pad[y + 1][x] != '-') {
+                    y++;
+                }
+            } else if (c == 'L') {
+                if (x > 0 && pad[y][x - 1] != '-') {
+                    x--;
+                }
+            } else if (c == 'R') {
+                if (x < xlim - 1 && pad[y][x + 1] != '-') {
+                    x++;
+                }
+            } else {
+                std::cerr << "Unexpected instruction: " << c << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        code += pad[y][x];
+    }
+    std::cout << code << std::endl;
+    return 0;
 }
