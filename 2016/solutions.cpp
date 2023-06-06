@@ -27,6 +27,7 @@ long d02_bathroom_security(std::vector<std::string> lines, int part);
 long d03_squares_with_three_sides(std::vector<std::string> lines, int part);
 long d04_security_through_obscurity(std::vector<std::string> lines, int part);
 long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part);
+long d06_signals_and_noise(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -96,6 +97,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d04_security_through_obscurity;
     } else if (day == 5) {
         solution = &d05_how_about_a_nice_game_of_chess;
+    } else if (day == 6) {
+        solution = &d06_signals_and_noise;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -228,6 +231,9 @@ long d04_security_through_obscurity(std::vector<std::string> lines, int part) {
             // Count characters.
             for (int i = 0; i < parts.size() - 1; i++) {
                 for (char c : parts[i]) {
+                    if (c_to_count.find(c) == c_to_count.end()) {
+                        c_to_count[c] = 0;
+                    }
                     c_to_count[c] = c_to_count[c] + 1;
                 }
             }
@@ -287,5 +293,30 @@ long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part
         }
     }
     std::cout << password << std::endl;
+    return 0;
+}
+
+long d06_signals_and_noise(std::vector<std::string> lines, int part) {
+    std::string answer = "";
+    for (int j = 0; j < lines[0].length(); j++) {
+        std::map<char, int> c_to_count;
+        for (int i = 0; i < lines.size(); i++) {
+            char c = lines[i][j];
+            if (c_to_count.find(c) == c_to_count.end()) {
+                c_to_count[c] = 0;
+            }
+            c_to_count[c] = c_to_count[c] + 1;
+        }
+        int polar_count = -1;
+        char polar_c = '\0';
+        for (const auto &c_count : c_to_count) {
+            if (polar_count == -1 || (part == 1 && c_count.second > polar_count) || (part == 2 && c_count.second < polar_count)) {
+                polar_count = c_count.second;
+                polar_c = c_count.first;
+            }
+        }
+        answer += polar_c;
+    }
+    std::cout << answer << std::endl;
     return 0;
 }
