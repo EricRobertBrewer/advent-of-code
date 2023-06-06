@@ -29,6 +29,7 @@ long d04_security_through_obscurity(std::vector<std::string> lines, int part);
 long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part);
 long d06_signals_and_noise(std::vector<std::string> lines, int part);
 long d07_internet_protocol_version_7(std::vector<std::string> lines, int part);
+long d08_two_factor_authentication(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -102,6 +103,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d06_signals_and_noise;
     } else if (day == 7) {
         solution = &d07_internet_protocol_version_7;
+    } else if (day == 8) {
+        solution = &d08_two_factor_authentication;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -370,4 +373,59 @@ long d07_internet_protocol_version_7(std::vector<std::string> lines, int part) {
         }
     }
     return part == 1 ? tls : ssl;
+}
+
+long d08_two_factor_authentication(std::vector<std::string> lines, int part) {
+    const int H = 6, W = 50;
+    char pixels[H][W];
+    for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+            pixels[y][x] = '.';
+        }
+    }
+    for (std::string line : lines) {
+        std::vector<std::string> parts = cs::string_split(line, " ");
+        if (parts[0] == "rect") {
+            std::vector<std::string> w_h = cs::string_split(parts[1], "x");
+            const int w = std::stoi(w_h[0]);
+            const int h = std::stoi(w_h[1]);
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    pixels[y][x] = '#';
+                }
+            }
+        } else if (parts[1] == "row") {
+            const int y = std::stoi(parts[2].substr(2));
+            const int by = std::stoi(parts[4]);
+            char row[W];
+            for (int x = 0; x < W; x++) {
+                row[x] = pixels[y][x];
+            }
+            for (int x = 0; x < W; x++) {
+                pixels[y][x] = row[(x + W - by) % W];
+            }
+        } else if (parts[1] == "column") {
+            const int x = std::stoi(parts[2].substr(2));
+            const int by = std::stoi(parts[4]);
+            char column[H];
+            for (int y = 0; y < H; y++) {
+                column[y] = pixels[y][x];
+            }
+            for (int y = 0; y < H; y++) {
+                pixels[y][x] = column[(y + H - by) % H];
+            }
+        }
+    }
+
+    long on = 0;
+    for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+            if (pixels[y][x] == '#') {
+                on++;
+            }
+            std::cout << pixels[y][x];
+        }
+        std::cout << std::endl;
+    }
+    return on;
 }
