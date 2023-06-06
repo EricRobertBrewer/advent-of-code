@@ -28,6 +28,7 @@ long d03_squares_with_three_sides(std::vector<std::string> lines, int part);
 long d04_security_through_obscurity(std::vector<std::string> lines, int part);
 long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part);
 long d06_signals_and_noise(std::vector<std::string> lines, int part);
+long d07_internet_protocol_version_7(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -99,6 +100,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d05_how_about_a_nice_game_of_chess;
     } else if (day == 6) {
         solution = &d06_signals_and_noise;
+    } else if (day == 7) {
+        solution = &d07_internet_protocol_version_7;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -319,4 +322,52 @@ long d06_signals_and_noise(std::vector<std::string> lines, int part) {
     }
     std::cout << answer << std::endl;
     return 0;
+}
+
+long d07_internet_protocol_version_7(std::vector<std::string> lines, int part) {
+    long tls = 0, ssl = 0;
+    for (std::string line : lines) {
+        bool inside_brackets = false;
+        bool abba_outside = false;
+        bool abba_inside = false;
+        std::set<std::string> aba_outsides;
+        std::set<std::string> bab_insides;
+        for (int j = 0; j < line.length(); j++) {
+            if (line[j] == '[') {
+                inside_brackets = true;
+                continue;
+            } else if (line[j] == ']') {
+                inside_brackets = false;
+                continue;
+            }
+            if (j >= 2 && j < line.length() - 1 &&
+                    line[j - 1] == line[j] && line[j - 2] == line[j + 1] && line[j] != line[j + 1]) {
+                if (inside_brackets) {
+                    abba_inside = true;
+                } else {
+                    abba_outside = true;
+                }
+            }
+            if (j >= 1 && j < line.length() - 1 &&
+                    line[j - 1] == line[j + 1] && line[j] != line[j + 1]) {
+                std::string aba = line.substr(j - 1, 3);
+                if (inside_brackets) {
+                    bab_insides.insert(aba);
+                } else {
+                    aba_outsides.insert(aba);
+                }
+            }
+        }
+        if (abba_outside && !abba_inside) {
+            tls++;
+        }
+        for (const std::string &aba : aba_outsides) {
+            std::string bab = aba.substr(1, 2) + aba.substr(1, 1);
+            if (bab_insides.find(bab) != bab_insides.end()) {
+                ssl++;
+                break;
+            }
+        }
+    }
+    return part == 1 ? tls : ssl;
 }
