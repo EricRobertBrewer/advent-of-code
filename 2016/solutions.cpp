@@ -1,11 +1,12 @@
 extern "C" {
     #include "../2015/aoc.h"
+    #include "../2015/cs.h"
 }
 #include "cs.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
-#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -17,12 +18,15 @@ extern "C" {
 
 #define YEAR "2016"
 
+uint64_t current_time_ms();
+
 long solve(int day, int part, std::string input_path);
 
 long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part);
 long d02_bathroom_security(std::vector<std::string> lines, int part);
 long d03_squares_with_three_sides(std::vector<std::string> lines, int part);
 long d04_security_through_obscurity(std::vector<std::string> lines, int part);
+long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -58,13 +62,19 @@ int main(int argc, char *argv[]) {
     }
     std::string input_path = input_path_p;
 
-    std::time_t start = std::time(NULL);
+    uint64_t start = current_time_ms();
     long answer = solve(day, part, input_path);
-    std::time_t end = std::time(NULL);
+    uint64_t end = current_time_ms();
 
     std::cout << answer << std::endl;
     std::cout << "Time: " << (end - start) << " ms" << std::endl;
     return 0;
+}
+
+uint64_t current_time_ms() {
+    // https://stackoverflow.com/a/56107709/1559071
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
 long solve(int day, int part, std::string input_path) {
@@ -84,6 +94,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d03_squares_with_three_sides;
     } else if (day == 4) {
         solution = &d04_security_through_obscurity;
+    } else if (day == 5) {
+        solution = &d05_how_about_a_nice_game_of_chess;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -251,4 +263,29 @@ long d04_security_through_obscurity(std::vector<std::string> lines, int part) {
         }
     }
     return answer;
+}
+
+long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part) {
+    std::string door_id = lines[0];
+    std::string password = part == 1 ? "" : "zzzzzzzz";
+    unsigned char digest[17];
+    for (long i = 0; (part == 1 && password.length() < 8) || (part == 2 && password.find("z") != std::string::npos); i++) {
+        char message[32];
+        std::sprintf(message, "%s%ld", door_id.c_str(), i);
+        cs_md5(message, digest);
+        if (digest[0] == 0x00 && digest[1] == 0x00 && (digest[2] & 0xf0) == 0x00) {
+            unsigned char sixth = digest[2] & 0x0f;
+            if (part == 1) {
+                password += (char) (sixth + (sixth <= 9 ? '0' : 'a' - 10));
+            } else {
+                int position = (int) sixth;
+                if (position < password.length() && password[position] == 'z') {
+                    unsigned char seventh = digest[3] >> 4;
+                    password[position] = (char) (seventh + (seventh <= 9 ? '0' : 'a' - 10));
+                }
+            }
+        }
+    }
+    std::cout << password << std::endl;
+    return 0;
 }
