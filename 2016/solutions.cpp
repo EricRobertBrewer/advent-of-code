@@ -3,13 +3,16 @@ extern "C" {
 }
 #include "cs.hpp"
 
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <set>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 #define YEAR "2016"
@@ -19,6 +22,7 @@ long solve(int day, int part, std::string input_path);
 long d01_no_time_for_a_taxicab(std::vector<std::string> lines, int part);
 long d02_bathroom_security(std::vector<std::string> lines, int part);
 long d03_squares_with_three_sides(std::vector<std::string> lines, int part);
+long d04_security_through_obscurity(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -78,6 +82,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d02_bathroom_security;
     } else if (day == 3) {
         solution = &d03_squares_with_three_sides;
+    } else if (day == 4) {
+        solution = &d04_security_through_obscurity;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -195,4 +201,54 @@ long d03_squares_with_three_sides(std::vector<std::string> lines, int part) {
         }
     }
     return n;
+}
+
+long d04_security_through_obscurity(std::vector<std::string> lines, int part) {
+    long answer = 0;
+    for (std::string line : lines) {
+        std::map<char, int> c_to_count;
+        std::vector<std::string> parts = cs::string_split(line, "-");
+        std::string sector_checksum = parts[parts.size() - 1];
+        std::size_t bracket = sector_checksum.find("[");
+        int sector = std::stoi(sector_checksum.substr(0, bracket));
+        std::string checksum = sector_checksum.substr(bracket + 1, 5);
+        if (part == 1) {
+            // Count characters.
+            for (int i = 0; i < parts.size() - 1; i++) {
+                for (char c : parts[i]) {
+                    c_to_count[c] = c_to_count[c] + 1;
+                }
+            }
+            // Order by descending frequency, then alphabetically.
+            std::vector<std::pair<int, char>> count_cs;
+            for (const auto &c_count : c_to_count) {
+                count_cs.push_back(std::pair(c_count.second, c_count.first));
+            }
+            std::sort(count_cs.begin(), count_cs.end(), [](const std::pair<int, char> &a, const std::pair<int, char> &b){
+                if (a.first != b.first) {
+                    return a.first > b.first;
+                }
+                return a.second < b.second;
+            });
+            // Verify checksum.
+            bool room = true;
+            for (int i = 0; i < 5 && room; i++) {
+                if (count_cs[i].second != checksum[i]) {
+                    room = false;
+                }
+            }
+            if (room) {
+                answer += sector;
+            }
+        } else {
+            for (int i = 0; i < parts.size() - 1; i++) {
+                for (char c : parts[i]) {
+                    std::cout << (char) ((c - 'a' + sector) % 26 + 'a');
+                }
+                std::cout << " ";
+            }
+            std::cout << sector << std::endl;
+        }
+    }
+    return answer;
 }
