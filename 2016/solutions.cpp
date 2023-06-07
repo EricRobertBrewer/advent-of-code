@@ -7,6 +7,7 @@ extern "C" {
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <deque>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -31,6 +32,7 @@ long d06_signals_and_noise(std::vector<std::string> lines, int part);
 long d07_internet_protocol_version_7(std::vector<std::string> lines, int part);
 long d08_two_factor_authentication(std::vector<std::string> lines, int part);
 long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part);
+long d10_balance_bots(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -108,6 +110,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d08_two_factor_authentication;
     } else if (day == 9) {
         solution = &d09_explosives_in_cyberspace;
+    } else if (day == 10) {
+        solution = &d10_balance_bots;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -477,4 +481,85 @@ long _d09_decompressed_length(std::string s, int version) {
 long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part) {
     std::string file = lines[0];
     return _d09_decompressed_length(file, part);
+}
+
+long d10_balance_bots(std::vector<std::string> lines, int part) {
+    std::map<std::string, std::string> bot_to_low;
+    std::map<std::string, std::string> bot_to_high;
+    std::map<std::string, std::vector<int>> entity_to_values;
+    std::deque<std::string> bots_actionable;
+    for (std::string line : lines) {
+        std::vector<std::string> parts = cs::string_split(line, " ");
+        if (parts[0] == "value") {
+            int value = std::stoi(parts[1]);
+            if (parts[4] != "bot") {
+                std::cerr << "Unexpected value to non-bot: " << parts[4] << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            std::string bot = parts[4] + parts[5];
+            if (entity_to_values.find(bot) == entity_to_values.end()) {
+                entity_to_values[bot] = std::vector<int>();
+            }
+            entity_to_values[bot].push_back(value);
+            if (entity_to_values[bot].size() == 2) {
+                bots_actionable.push_back(bot);
+            }
+        } else if (parts[0] == "bot") {
+            std::string bot = parts[0] + parts[1];
+            if (bot_to_low.find(bot) != bot_to_low.end()) {
+                std::cerr << "Unexpected repeated instruction: " << line << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            std::string low = parts[5] + parts[6];
+            bot_to_low[bot] = low;
+            if (bot_to_high.find(bot) != bot_to_high.end()) {
+                std::cerr << "Unexpected repeated instruction: " << line << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            std::string high = parts[10] + parts[11];
+            bot_to_high[bot] = high;
+        } else {
+            std::cerr << "Unexpected instruction: " << line << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Process the queue.
+    while (!bots_actionable.empty()) {
+        std::string bot = bots_actionable.front();
+        bots_actionable.pop_front();
+        int value_low = entity_to_values[bot][0];
+        int value_high = entity_to_values[bot][1];
+        entity_to_values[bot].clear();
+        if (value_low > value_high) {
+            int temp = value_low;
+            value_low = value_high;
+            value_high = temp;
+        }
+        if (part == 1 && value_low == 17 && value_high == 61) {
+            return std::stoi(bot.substr(3));
+        }
+        std::string low = bot_to_low[bot];
+        if (entity_to_values.find(low) == entity_to_values.end()) {
+            entity_to_values[low] = std::vector<int>();
+        }
+        entity_to_values[low].push_back(value_low);
+        if (low.length() >= 3 && low.substr(0, 3) == "bot" && entity_to_values[low].size() == 2) {
+            bots_actionable.push_back(low);
+        }
+        std::string high = bot_to_high[bot];
+        if (entity_to_values.find(high) == entity_to_values.end()) {
+            entity_to_values[high] = std::vector<int>();
+        }
+        entity_to_values[high].push_back(value_high);
+        if (high.length() >= 3 && high.substr(0, 3) == "bot" && entity_to_values[high].size() == 2) {
+            bots_actionable.push_back(high);
+        }
+    }
+    long answer = 1;
+    const std::string outputs[] = {"output0", "output1", "output2"};
+    for (std::string output : outputs) {
+        answer *= entity_to_values[output][0];
+    }
+    return answer;
 }
