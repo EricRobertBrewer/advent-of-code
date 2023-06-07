@@ -30,6 +30,7 @@ long d05_how_about_a_nice_game_of_chess(std::vector<std::string> lines, int part
 long d06_signals_and_noise(std::vector<std::string> lines, int part);
 long d07_internet_protocol_version_7(std::vector<std::string> lines, int part);
 long d08_two_factor_authentication(std::vector<std::string> lines, int part);
+long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -105,6 +106,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d07_internet_protocol_version_7;
     } else if (day == 8) {
         solution = &d08_two_factor_authentication;
+    } else if (day == 9) {
+        solution = &d09_explosives_in_cyberspace;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -428,4 +431,50 @@ long d08_two_factor_authentication(std::vector<std::string> lines, int part) {
         std::cout << std::endl;
     }
     return on;
+}
+
+long _d09_decompressed_length(std::string s, int version) {
+    long length = 0;
+    bool parentheses = false, read_repeat = false;
+    int subsequent = 0, repeat = 0;
+    for (int i = 0; i < s.length(); i++) {
+        char c = s[i];
+        if (c == '(') {
+            if (parentheses) {
+                std::cerr << "Unexpected opening parenthesis." << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            parentheses = true;
+        } else if (c == ')') {
+            if (!parentheses) {
+                std::cerr << "Unexpected closing parenthesis." << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            std::string sub = s.substr(i + 1, subsequent);
+            if (version == 1) {
+                length += sub.length() * repeat;
+            } else {
+                length += _d09_decompressed_length(sub, version) * repeat;
+            }
+            i += subsequent;
+            parentheses = false;
+            read_repeat = false;
+            subsequent = 0;
+            repeat = 0;
+        } else if (parentheses && !read_repeat && c != 'x') {
+            subsequent = 10 * subsequent + (c - '0');
+        } else if (parentheses && !read_repeat && c == 'x') {
+            read_repeat = true;
+        } else if (parentheses && read_repeat) {
+            repeat = 10 * repeat + (c - '0');
+        } else {
+            length++;
+        }
+    }
+    return length;
+}
+
+long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part) {
+    std::string file = lines[0];
+    return _d09_decompressed_length(file, part);
 }
