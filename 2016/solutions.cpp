@@ -34,6 +34,7 @@ long d08_two_factor_authentication(std::vector<std::string> lines, int part);
 long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part);
 long d10_balance_bots(std::vector<std::string> lines, int part);
 long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, int part);
+long d12_leonardos_monorail(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -115,6 +116,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d10_balance_bots;
     } else if (day == 11) {
         solution = &d11_radioisotope_thermoelectric_generators;
+    } else if (day == 12) {
+        solution = &d12_leonardos_monorail;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -789,4 +792,49 @@ long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, 
         steps++;
     }
     return steps;
+}
+
+long d12_leonardos_monorail(std::vector<std::string> lines, int part) {
+    int r[4];
+    for (int i = 0; i < std::size(r); i++) {
+        r[i] = 0;
+    }
+    if (part == 2) {
+        r[2] = 1;
+    }
+    int i = 0;
+    while (i < lines.size()) {
+        std::string line = lines[i];
+        std::vector<std::string> tokens = cs::string_split(line);
+        std::string xs = tokens[1];
+        if (tokens[0] == "cpy") {
+            int x;
+            if (xs.length() == 1 && xs[0] >= 'a' && xs[0] <= 'd') {
+                x = r[xs[0] - 'a'];
+            } else {
+                x = (int) std::stoi(xs);
+            }
+            r[tokens[2][0] - 'a'] = x;
+        } else if (tokens[0] == "inc") {
+            r[xs[0] - 'a']++;
+        } else if (tokens[0] == "dec") {
+            r[xs[0] - 'a']--;
+        } else if (tokens[0] == "jnz") {
+            int x;
+            if (xs.length() == 1 && xs[0] >= 'a' && xs[0] <= 'd') {
+                x = r[xs[0] - 'a'];
+            } else {
+                x = (int) std::stoi(xs);
+            }
+            if (x != 0) {
+                i += (int) std::stoi(tokens[2]);
+                continue;
+            }
+        } else {
+            std::cerr << "Unexpected instruction: " << tokens[0] << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        i++;
+    }
+    return r[0];
 }
