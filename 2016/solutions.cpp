@@ -33,6 +33,7 @@ long d07_internet_protocol_version_7(std::vector<std::string> lines, int part);
 long d08_two_factor_authentication(std::vector<std::string> lines, int part);
 long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part);
 long d10_balance_bots(std::vector<std::string> lines, int part);
+long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -112,6 +113,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d09_explosives_in_cyberspace;
     } else if (day == 10) {
         solution = &d10_balance_bots;
+    } else if (day == 11) {
+        solution = &d11_radioisotope_thermoelectric_generators;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -562,4 +565,228 @@ long d10_balance_bots(std::vector<std::string> lines, int part) {
         answer *= entity_to_values[output][0];
     }
     return answer;
+}
+
+bool _d11_is_floor_valid(std::string floor) {
+    int comma = floor.find(',');
+    if (comma == 0) { // No generators.
+        return true;
+    }
+    // A state is unstable when a generator is present with a microchip without its corresponding generator.
+    std::string generators = floor.substr(0, comma);
+    std::string microchips = floor.substr(comma + 1);
+    for (char m : microchips) {
+        if (generators.find(m) == -1) {
+            return false;
+        }
+    }
+    return true;
+}
+
+std::string _d11_create_state_next(
+        std::string floor_next,
+        std::string floor_adjacent_next,
+        int elevator,
+        int elevator_adjacent,
+        std::vector<std::string> floor_generators,
+        std::vector<std::string> floor_microchips
+) {
+    std::string state_next = "";
+    state_next += (char) (elevator_adjacent + '0');
+    for (int i = 0; i < floor_generators.size(); i++) {
+        std::string floor;
+        if (i == elevator) {
+            floor = floor_next;
+        } else if (i == elevator_adjacent) {
+            floor = floor_adjacent_next;
+        } else {
+            floor = floor_generators[i] + "," + floor_microchips[i];
+        }
+        state_next += "|" + floor;
+    }
+    return state_next;
+}
+
+long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, int part) {
+    const int N = lines.size();
+    std::vector<std::string> floors_initial;
+    for (int i = 0; i < N; i++) {
+        floors_initial.push_back("");
+    }
+    for (std::string line : lines) {
+        std::vector<std::string> tokens = cs::string_split(line, " ");
+        int i;
+        if (tokens[1] == "first") {
+            i = 0;
+        } else if (tokens[1] == "second") {
+            i = 1;
+        } else if (tokens[1] == "third") {
+            i = 2;
+        } else { // if (tokens[1] == "fourth") {
+            i = 3;
+        }
+        std::string generators = "";
+        std::string microchips = "";
+        if (tokens[4] == "nothing") {
+        } else {
+            int j = 4;
+            while (true) {
+                if (tokens[j] == "and") {
+                    j++;
+                }
+                std::string element = tokens[j + 1];
+                char element_c = element[0] - 'a' + 'A';
+                std::string item = tokens[j + 2];
+                char item_c = item[0];
+                if (item_c == 'g') {
+                    generators += element_c;
+                } else if (item_c == 'm') {
+                    microchips += element_c;
+                } else {
+                    std::cerr << "Unexpected item: " << item << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                if (item[item.length() - 1] == '.') {
+                    break;
+                }
+                j += 3;
+            }
+        }
+        if (part == 2 && i == 0) {
+            generators += "DE";
+            microchips += "DE";
+        }
+        std::sort(generators.begin(), generators.end());
+        std::sort(microchips.begin(), microchips.end());
+        floors_initial[i] = generators + "," + microchips;
+    }
+    std::string state_initial = "0";
+    for (std::string floor : floors_initial) {
+        state_initial += "|" + floor;
+    }
+    std::cout << "state_initial: " << state_initial << std::endl;
+
+    // Construct ending state prefix with (N - 1) empty floors.
+    std::string state_final_prefix = "";
+    state_final_prefix += (char) (N - 1 + '0');
+    for (int i = 0; i < N - 1; i++) {
+        state_final_prefix += "|,";
+    }
+    state_final_prefix += "|";
+
+    std::set<std::string> states_prev; // Prevent immediate backtracking.
+    std::set<std::string> states;
+    states.insert(state_initial);
+    long steps = 0;
+    while (!states.empty()) {
+        // Check termination condition.
+        bool found = false;
+        for (std::string state : states) {
+            if (state.substr(0, state_final_prefix.length()) == state_final_prefix) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            break;
+        }
+        // Build next population of states.
+        std::cout << "steps: " << steps << "; states: " << states.size() << std::endl;
+        std::set<std::string> states_next;
+        for (std::string state : states) {
+            // De-serialize state.
+            std::vector<std::string> floor_generators;
+            std::vector<std::string> floor_microchips;
+            std::vector<std::string> tokens = cs::string_split(state, "|");
+            int elevator = std::stoi(tokens[0]);
+            for (int i = 1; i < tokens.size(); i++) {
+                std::string floor = tokens[i];
+                int comma = floor.find(',');
+                floor_generators.push_back(floor.substr(0, comma));
+                floor_microchips.push_back(floor.substr(comma + 1));
+            }
+            std::string generators = floor_generators[elevator];
+            std::string microchips = floor_microchips[elevator];
+            int elevator_adjacents[] = {elevator - 1, elevator + 1}; // Up or down one level.
+            for (int elevator_adjacent : elevator_adjacents) {
+                // Skip floors out of bounds.
+                if (elevator_adjacent < 0 || elevator_adjacent >= N) {
+                    continue;
+                }
+                // Move a single item up or down.
+                for (int j = 0; j < generators.length() + microchips.length(); j++) {
+                    std::string generators_next = generators;
+                    std::string microchips_next = microchips;
+                    std::string generators_adjacent_next = floor_generators[elevator_adjacent];
+                    std::string microchips_adjacent_next = floor_microchips[elevator_adjacent];
+                    if (j < generators.length()) {
+                        generators_next = generators.substr(0, j) + generators.substr(j + 1);
+                        generators_adjacent_next = generators_adjacent_next + generators.substr(j, 1);
+                    } else {
+                        int jm = j - generators.length();
+                        microchips_next = microchips.substr(0, jm) + microchips.substr(jm + 1);
+                        microchips_adjacent_next = microchips_adjacent_next + microchips.substr(jm, 1);
+                    }
+                    std::sort(generators_next.begin(), generators_next.end());
+                    std::sort(microchips_next.begin(), microchips_next.end());
+                    std::sort(generators_adjacent_next.begin(), generators_adjacent_next.end());
+                    std::sort(microchips_adjacent_next.begin(), microchips_adjacent_next.end());
+                    std::string floor_next = generators_next + "," + microchips_next;
+                    std::string floor_adjacent_next = generators_adjacent_next + "," + microchips_adjacent_next;
+                    if (_d11_is_floor_valid(floor_next) && _d11_is_floor_valid(floor_adjacent_next)) {
+                        std::string state_next = _d11_create_state_next(
+                                floor_next, floor_adjacent_next,
+                                elevator, elevator_adjacent,
+                                floor_generators, floor_microchips);
+                        if (states_prev.find(state_next) == states_prev.end()) {
+                            states_next.insert(state_next);
+                        }
+                    }
+                }
+                // Move a pair of items.
+                if (generators.length() + microchips.length() < 2) {
+                    continue;
+                }
+                int len;
+                unsigned short **item_indices = cs_combinations(generators.length() + microchips.length(), 2, &len);
+                for (int k = 0; k < len; k++) {
+                    std::string generators_next = generators;
+                    std::string microchips_next = microchips;
+                    std::string generators_adjacent_next = floor_generators[elevator_adjacent];
+                    std::string microchips_adjacent_next = floor_microchips[elevator_adjacent];
+                    // Indices returned from `cs_combinations` are in ascending order, so process last index first.
+                    for (int q = 1; q >= 0; q--) {
+                        unsigned short j = item_indices[k][q];
+                        if (j < generators.length()) {
+                            generators_next = generators_next.substr(0, j) + generators_next.substr(j + 1);
+                            generators_adjacent_next = generators_adjacent_next + generators.substr(j, 1);
+                        } else {
+                            short jm = j - generators.length();
+                            microchips_next = microchips_next.substr(0, jm) + microchips_next.substr(jm + 1);
+                            microchips_adjacent_next = microchips_adjacent_next + microchips.substr(jm, 1);
+                        }
+                    }
+                    std::sort(generators_next.begin(), generators_next.end());
+                    std::sort(microchips_next.begin(), microchips_next.end());
+                    std::sort(generators_adjacent_next.begin(), generators_adjacent_next.end());
+                    std::sort(microchips_adjacent_next.begin(), microchips_adjacent_next.end());
+                    std::string floor_next = generators_next + "," + microchips_next;
+                    std::string floor_adjacent_next = generators_adjacent_next + "," + microchips_adjacent_next;
+                    if (_d11_is_floor_valid(floor_next) && _d11_is_floor_valid(floor_adjacent_next)) {
+                        std::string state_next = _d11_create_state_next(
+                                floor_next, floor_adjacent_next,
+                                elevator, elevator_adjacent,
+                                floor_generators, floor_microchips);
+                        if (states_prev.find(state_next) == states_prev.end()) {
+                            states_next.insert(state_next);
+                        }
+                    }
+                }
+            }
+        }
+        states_prev = states;
+        states = states_next;
+        steps++;
+    }
+    return steps;
 }
