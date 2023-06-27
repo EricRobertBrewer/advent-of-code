@@ -35,6 +35,7 @@ long d09_explosives_in_cyberspace(std::vector<std::string> lines, int part);
 long d10_balance_bots(std::vector<std::string> lines, int part);
 long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, int part);
 long d12_leonardos_monorail(std::vector<std::string> lines, int part);
+long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -118,6 +119,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d11_radioisotope_thermoelectric_generators;
     } else if (day == 12) {
         solution = &d12_leonardos_monorail;
+    } else if (day == 13) {
+        solution = &d13_a_maze_of_twisty_little_cubicles;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -837,4 +840,51 @@ long d12_leonardos_monorail(std::vector<std::string> lines, int part) {
         i++;
     }
     return r[0];
+}
+
+bool _d13_is_wall(int x, int y, int favorite) {
+    unsigned long sum = (x * x) + (3 * x) + (2 * x * y) + y + (y * y) + favorite;
+    int ones = 0;
+    while (sum > 0) {
+        if (sum % 2 == 1) {
+            ones++;
+        }
+        sum >>= 1;
+    }
+    return ones % 2 == 1;
+}
+
+long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int part) {
+    int favorite = std::stoi(lines[0]);
+    std::map<std::pair<int, int>, int> point_to_dist;
+    std::deque<std::pair<int, int>> frontier;
+    std::pair<int, int> start(1, 1);
+    point_to_dist[start] = 0;
+    frontier.push_back(start);
+    long answer = -1;
+    while (frontier.size() > 0 && answer == -1) {
+        std::pair<int, int> point = frontier.front();
+        frontier.pop_front();
+        if (part == 2 && point_to_dist[point] == 50) {
+            answer = point_to_dist.size();
+            break;
+        }
+        int x = point.first, y = point.second;
+        std::pair<int, int> neighbors[] = {
+                std::pair(x - 1, y), std::pair(x, y - 1), std::pair(x + 1, y), std::pair(x, y + 1)
+        };
+        for (std::pair<int, int> neighbor : neighbors) {
+            int xd = neighbor.first, yd = neighbor.second;
+            if (point_to_dist.find(neighbor) != point_to_dist.end() || xd < 0 || yd < 0 || _d13_is_wall(xd, yd, favorite)) {
+                continue;
+            }
+            point_to_dist[neighbor] = point_to_dist[point] + 1;
+            frontier.push_back(neighbor);
+            if (part == 1 && xd == 31 && yd == 39) {
+                answer = point_to_dist[neighbor];
+                break;
+            }
+        }
+    }
+    return answer;
 }
