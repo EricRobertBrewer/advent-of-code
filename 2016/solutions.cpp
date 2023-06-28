@@ -37,6 +37,7 @@ long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, 
 long d12_leonardos_monorail(std::vector<std::string> lines, int part);
 long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int part);
 long d14_one_time_pad(std::vector<std::string> lines, int part);
+long d15_timing_is_everything(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -124,6 +125,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d13_a_maze_of_twisty_little_cubicles;
     } else if (day == 14) {
         solution = &d14_one_time_pad;
+    } else if (day == 15) {
+        solution = &d15_timing_is_everything;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -953,4 +956,35 @@ long d14_one_time_pad(std::vector<std::string> lines, int part) {
         index++;
     }
     return index - NEXT - 1;
+}
+
+long d15_timing_is_everything(std::vector<std::string> lines, int part) {
+    const int N = part == 2 ? lines.size() + 1 : lines.size();
+    int mods[N];
+    int positions[N];
+    for (std::string line : lines) {
+        std::vector<std::string> tokens = cs::string_split(line, " ");
+        int i = (int) std::stoi(tokens[1].substr(1)) - 1;
+        mods[i] = (int) std::stoi(tokens[3]);
+        positions[i] = (int) std::stoi(tokens[11].substr(0, tokens[11].length() - 1));
+    }
+    if (part == 2) {
+        mods[N - 1] = 11;
+        positions[N - 1] = 0;
+    }
+    long capsules = 0;
+    long t = 0;
+    while (capsules < 1) {
+        bool capture = true;
+        for (int i = 0; i < N && capture; i++) {
+            if ((positions[i] + t + i + 1) % mods[i] != 0) {
+                capture = false;
+            }
+        }
+        if (capture) {
+            capsules++;
+        }
+        t++;
+    }
+    return t - 1;
 }
