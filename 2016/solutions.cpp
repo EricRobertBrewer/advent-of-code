@@ -36,6 +36,7 @@ long d10_balance_bots(std::vector<std::string> lines, int part);
 long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, int part);
 long d12_leonardos_monorail(std::vector<std::string> lines, int part);
 long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int part);
+long d14_one_time_pad(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -121,6 +122,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d12_leonardos_monorail;
     } else if (day == 13) {
         solution = &d13_a_maze_of_twisty_little_cubicles;
+    } else if (day == 14) {
+        solution = &d14_one_time_pad;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -887,4 +890,67 @@ long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int pa
         }
     }
     return answer;
+}
+
+long d14_one_time_pad(std::vector<std::string> lines, int part) {
+    std::string salt = lines[0];
+    const int NEXT = 1000;
+    const std::string digits = "0123456789abcdef";
+    char message_c[32]; // Fed to MD5.
+    unsigned char digest_c[17]; // Output from MD5.
+    char hex_c[33]; // Hexadecimal representation of digest.
+    std::deque<std::string> hexes;
+    std::map<char, std::deque<int>> five_to_indices;
+    for (char c : digits) {
+        five_to_indices[c] = std::deque<int>();
+    }
+    int keys = 0;
+    int index = 0;
+    while (keys < 64) {
+        // Trim outdated five-hashes.
+        for (char c : digits) {
+            while (five_to_indices[c].size() > 0 && five_to_indices[c].front() <= index - NEXT) {
+                five_to_indices[c].pop_front();
+            }
+        }
+        // Check for valid three-keys.
+        if (hexes.size() >= NEXT) {
+            std::string hex = hexes.front();
+            hexes.pop_front();
+            for (int j = 2; j < 32; j++) {
+                char c = hex[j];
+                if (hex[j - 1] == c && hex[j - 2] == c) {
+                    if (five_to_indices[c].size() > 0) {
+                        keys++;
+                        std::cout << "index: " << index << "; c: " << c << "; keys: " << keys << std::endl;
+                    }
+                    break; // "Only consider the first such triplet in a hash."
+                }
+            }
+        }
+        // Generate hash `NEXT` steps away.
+        std::sprintf(message_c, "%s%d", salt.c_str(), index);
+        cs_md5(message_c, digest_c);
+        for (int j = 0; j < 16; j++) {
+            sprintf(hex_c + 2 * j, "%02x", digest_c[j]);
+        }
+        if (part == 2) {
+            // Stretch key.
+            for (int i = 0; i < 2016; i++) {
+                cs_md5(hex_c, digest_c);
+                for (int j = 0; j < 16; j++) {
+                    sprintf(hex_c + 2 * j, "%02x", digest_c[j]);
+                }
+            }
+        }
+        hexes.push_back(std::string(hex_c));
+        for (int j = 4; j < 32; j++) {
+            char c = hex_c[j];
+            if (hex_c[j - 1] == c && hex_c[j - 2] == c && hex_c[j - 3] == c && hex_c[j - 4] == c) {
+                five_to_indices[c].push_back(index);
+            }
+        }
+        index++;
+    }
+    return index - NEXT - 1;
 }
