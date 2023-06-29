@@ -40,6 +40,7 @@ long d14_one_time_pad(std::vector<std::string> lines, int part);
 long d15_timing_is_everything(std::vector<std::string> lines, int part);
 long d16_dragon_checksum(std::vector<std::string> lines, int part);
 long d17_two_steps_forward(std::vector<std::string> lines, int part);
+long d18_like_a_rogue(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -133,6 +134,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d16_dragon_checksum;
     } else if (day == 17) {
         solution = &d17_two_steps_forward;
+    } else if (day == 18) {
+        solution = &d18_like_a_rogue;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -1077,4 +1080,39 @@ long d17_two_steps_forward(std::vector<std::string> lines, int part) {
     }
     std::cout << answer << std::endl;
     return answer.length();
+}
+
+long d18_like_a_rogue(std::vector<std::string> lines, int part) {
+    std::string row = lines[0];
+    const int m = row.length();
+    int safe = 0;
+    for (int i = 0; i < m; i++) {
+        if (row[i] == '.') {
+            safe++;
+        }
+    }
+    int n = 1;
+    int limit = part == 1 ? 40 : 400000;
+    while (n < limit) {
+        std::string row_next = "";
+        for (int i = 0; i < m; i++) {
+            std::string previous3;
+            if (i == 0) {
+                previous3 = "." + row.substr(0, 2);
+            } else if (i == m - 1) {
+                previous3 = row.substr(m - 2) + ".";
+            } else {
+                previous3 = row.substr(i - 1, 3);
+            }
+            if (previous3 == "^^." || previous3 == ".^^" || previous3 == "^.." || previous3 == "..^") {
+                row_next += "^";
+            } else {
+                row_next += ".";
+                safe++;
+            }
+        }
+        row = row_next;
+        n++;
+    }
+    return safe;
 }
