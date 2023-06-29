@@ -39,6 +39,7 @@ long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int pa
 long d14_one_time_pad(std::vector<std::string> lines, int part);
 long d15_timing_is_everything(std::vector<std::string> lines, int part);
 long d16_dragon_checksum(std::vector<std::string> lines, int part);
+long d17_two_steps_forward(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -130,6 +131,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d15_timing_is_everything;
     } else if (day == 16) {
         solution = &d16_dragon_checksum;
+    } else if (day == 17) {
+        solution = &d17_two_steps_forward;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -1015,4 +1018,63 @@ long d16_dragon_checksum(std::vector<std::string> lines, int part) {
     }
     std::cout << checksum << std::endl;
     return 0;
+}
+
+std::string _d17_pos_path_next(int x, int y, std::string path) {
+    std::string pos_path_next = "";
+    pos_path_next += x + '0';
+    pos_path_next += y + '0';
+    pos_path_next += path;
+    return pos_path_next;
+}
+
+long d17_two_steps_forward(std::vector<std::string> lines, int part) {
+    std::string passcode = lines[0];
+    const int w = 4, h = 4;
+    char message[1024];
+    unsigned char digest[17];
+    std::deque<std::string> pos_paths;
+    pos_paths.push_back("00");
+    std::string answer = "";
+    while (!pos_paths.empty() && (part == 2 || answer.empty())) {
+        std::string pos_path;
+        if (part == 1) {
+            // Breadth-first.
+            pos_path = pos_paths.front();
+            pos_paths.pop_front();
+        } else {
+            // Depth-first.
+            pos_path = pos_paths.back();
+            pos_paths.pop_back();
+        }
+        int x = pos_path[0] - '0';
+        int y = pos_path[1] - '0';
+        std::string path = pos_path.substr(2);
+        if (x == w - 1 && y == h - 1) {
+            if (part == 1) {
+                answer = path;
+            } else {
+                if (path.length() > answer.length()) {
+                    answer = path;
+                }
+            }
+            continue;
+        }
+        std::sprintf(message, "%s%s", passcode.c_str(), path.c_str());
+        cs_md5(message, digest);
+        if (y > 0 && (digest[0] & 0xf0) > 0xa0) {
+            pos_paths.push_back(_d17_pos_path_next(x, y - 1, path + "U"));
+        }
+        if (y < h - 1 && (digest[0] & 0x0f) > 0x0a) {
+            pos_paths.push_back(_d17_pos_path_next(x, y + 1, path + "D"));
+        }
+        if (x > 0 && (digest[1] & 0xf0) > 0xa0) {
+            pos_paths.push_back(_d17_pos_path_next(x - 1, y, path + "L"));
+        }
+        if (x < w - 1 && (digest[1] & 0x0f) > 0x0a) {
+            pos_paths.push_back(_d17_pos_path_next(x + 1, y, path + "R"));
+        }
+    }
+    std::cout << answer << std::endl;
+    return answer.length();
 }
