@@ -38,6 +38,7 @@ long d12_leonardos_monorail(std::vector<std::string> lines, int part);
 long d13_a_maze_of_twisty_little_cubicles(std::vector<std::string> lines, int part);
 long d14_one_time_pad(std::vector<std::string> lines, int part);
 long d15_timing_is_everything(std::vector<std::string> lines, int part);
+long d16_dragon_checksum(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -127,6 +128,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d14_one_time_pad;
     } else if (day == 15) {
         solution = &d15_timing_is_everything;
+    } else if (day == 16) {
+        solution = &d16_dragon_checksum;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -972,9 +975,8 @@ long d15_timing_is_everything(std::vector<std::string> lines, int part) {
         mods[N - 1] = 11;
         positions[N - 1] = 0;
     }
-    long capsules = 0;
     long t = 0;
-    while (capsules < 1) {
+    while (true) {
         bool capture = true;
         for (int i = 0; i < N && capture; i++) {
             if ((positions[i] + t + i + 1) % mods[i] != 0) {
@@ -982,9 +984,35 @@ long d15_timing_is_everything(std::vector<std::string> lines, int part) {
             }
         }
         if (capture) {
-            capsules++;
+            break;
         }
         t++;
     }
-    return t - 1;
+    return t;
+}
+
+long d16_dragon_checksum(std::vector<std::string> lines, int part) {
+    std::string data = lines[0];
+    const int disk = part == 2 ? 35651584 : 272;
+    while (data.length() < disk) {
+        std::string b = "";
+        for (int i = data.length() - 1; i >= 0; i--) {
+            b += data[i] == '1' ? "0" : "1";
+        }
+        data = data + "0" + b;
+    }
+    std::string checksum = data.substr(0, disk);
+    while (checksum.length() % 2 == 0) {
+        std::string checksum_next = "";
+        for (int i = 0; i < checksum.length() / 2; i++) {
+            if (checksum[2 * i] == checksum[2 * i + 1]) {
+                checksum_next += "1";
+            } else {
+                checksum_next += "0";
+            }
+        }
+        checksum = checksum_next;
+    }
+    std::cout << checksum << std::endl;
+    return 0;
 }
