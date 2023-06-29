@@ -10,6 +10,7 @@ extern "C" {
 #include <deque>
 #include <fstream>
 #include <iostream>
+#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -41,6 +42,7 @@ long d15_timing_is_everything(std::vector<std::string> lines, int part);
 long d16_dragon_checksum(std::vector<std::string> lines, int part);
 long d17_two_steps_forward(std::vector<std::string> lines, int part);
 long d18_like_a_rogue(std::vector<std::string> lines, int part);
+long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -136,6 +138,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d17_two_steps_forward;
     } else if (day == 18) {
         solution = &d18_like_a_rogue;
+    } else if (day == 19) {
+        solution = &d19_an_elephant_named_joseph;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -1115,4 +1119,48 @@ long d18_like_a_rogue(std::vector<std::string> lines, int part) {
         n++;
     }
     return safe;
+}
+
+long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part) {
+    const int n = (int) std::stoi(lines[0]);
+    std::list<int> elves;
+    for (int i = 1; i <= n; i++) {
+        elves.push_back(i);
+    }
+    std::list<int>::iterator turn = elves.begin();
+    if (part == 1) {
+        while (elves.size() > 1) {
+            if (std::next(turn) != elves.end()) {
+                turn = elves.erase(std::next(turn)); // Implicit `turn++`.
+                if (turn == elves.end()) {
+                    turn = elves.begin();
+                }
+            } else {
+                elves.erase(elves.begin());
+                turn = elves.begin();
+            }
+        }
+    } else {
+        std::list<int>::iterator opposite = elves.begin();
+        for (int i = 0; i < elves.size() / 2; i++) {
+            opposite++;
+        }
+        while (elves.size() > 1) {
+            opposite = elves.erase(opposite);
+            if (opposite == elves.end()) {
+                opposite = elves.begin();
+            }
+            if (elves.size() % 2 == 0) {
+                opposite++;
+                if (opposite == elves.end()) {
+                    opposite = elves.begin();
+                }
+            }
+            turn++;
+            if (turn == elves.end()) {
+                turn = elves.begin();
+            }
+        }
+    }
+    return *elves.begin();
 }
