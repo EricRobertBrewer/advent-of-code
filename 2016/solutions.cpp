@@ -43,6 +43,7 @@ long d16_dragon_checksum(std::vector<std::string> lines, int part);
 long d17_two_steps_forward(std::vector<std::string> lines, int part);
 long d18_like_a_rogue(std::vector<std::string> lines, int part);
 long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part);
+long d20_firewall_rules(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -140,6 +141,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d18_like_a_rogue;
     } else if (day == 19) {
         solution = &d19_an_elephant_named_joseph;
+    } else if (day == 20) {
+        solution = &d20_firewall_rules;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -834,7 +837,7 @@ long d12_leonardos_monorail(std::vector<std::string> lines, int part) {
             if (xs.length() == 1 && xs[0] >= 'a' && xs[0] <= 'd') {
                 x = r[xs[0] - 'a'];
             } else {
-                x = (int) std::stoi(xs);
+                x = std::stoi(xs);
             }
             r[tokens[2][0] - 'a'] = x;
         } else if (tokens[0] == "inc") {
@@ -846,10 +849,10 @@ long d12_leonardos_monorail(std::vector<std::string> lines, int part) {
             if (xs.length() == 1 && xs[0] >= 'a' && xs[0] <= 'd') {
                 x = r[xs[0] - 'a'];
             } else {
-                x = (int) std::stoi(xs);
+                x = std::stoi(xs);
             }
             if (x != 0) {
-                i += (int) std::stoi(tokens[2]);
+                i += std::stoi(tokens[2]);
                 continue;
             }
         } else {
@@ -977,9 +980,9 @@ long d15_timing_is_everything(std::vector<std::string> lines, int part) {
     int positions[N];
     for (std::string line : lines) {
         std::vector<std::string> tokens = cs::string_split(line, " ");
-        int i = (int) std::stoi(tokens[1].substr(1)) - 1;
-        mods[i] = (int) std::stoi(tokens[3]);
-        positions[i] = (int) std::stoi(tokens[11].substr(0, tokens[11].length() - 1));
+        int i = std::stoi(tokens[1].substr(1)) - 1;
+        mods[i] = std::stoi(tokens[3]);
+        positions[i] = std::stoi(tokens[11].substr(0, tokens[11].length() - 1));
     }
     if (part == 2) {
         mods[N - 1] = 11;
@@ -1122,7 +1125,7 @@ long d18_like_a_rogue(std::vector<std::string> lines, int part) {
 }
 
 long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part) {
-    const int n = (int) std::stoi(lines[0]);
+    const int n = std::stoi(lines[0]);
     std::list<int> elves;
     for (int i = 1; i <= n; i++) {
         elves.push_back(i);
@@ -1163,4 +1166,53 @@ long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part) {
         }
     }
     return *elves.begin();
+}
+
+long d20_firewall_rules(std::vector<std::string> lines, int part) {
+    std::list<std::pair<unsigned int, unsigned int>> blocked_ranges;
+    for (std::string line : lines) {
+        int hyphen = line.find('-');
+        std::pair<unsigned int, unsigned int> item(
+                (unsigned int) std::stoul(line.substr(0, hyphen)),
+                (unsigned int) std::stoul(line.substr(hyphen + 1))
+        );
+        auto i = blocked_ranges.begin();
+        while (i != blocked_ranges.end() && item.first > 0 && item.first - 1 > i->second) {
+            i++;
+        }
+        if (i == blocked_ranges.end()) {
+            // Strictly greater than greatest range; push.
+            blocked_ranges.push_back(item);
+        } else {
+            item.first = std::min(item.first, i->first);
+            // Find first non-subsumed range.
+            while (i != blocked_ranges.end() && item.second >= i->second) {
+                i = blocked_ranges.erase(i);
+            }
+            if (i == blocked_ranges.end()) {
+                // Subsumes all other ranges; push.
+                blocked_ranges.push_back(item);
+            } else if (i->first > 0 && item.second < i->first - 1) {
+                // Strictly smaller than current; insert.
+                blocked_ranges.insert(i, item);
+            } else {
+                i->first = item.first;
+            }
+        }
+    }
+    if (part == 1) {
+        return blocked_ranges.begin()->second + 1;
+    }
+    long allowed = 0;
+    allowed += blocked_ranges.begin()->first; // Before first start.
+    allowed += 4294967295 - blocked_ranges.rbegin()->second; // After last end.
+    unsigned int prev_end = blocked_ranges.begin()->second;
+    auto i = blocked_ranges.begin();
+    i++;
+    while (i != blocked_ranges.end()) {
+        allowed += i->first - prev_end - 1;
+        prev_end = i->second;
+        i++;
+    }
+    return allowed;
 }
