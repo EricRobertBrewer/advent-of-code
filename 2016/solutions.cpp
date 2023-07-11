@@ -44,6 +44,7 @@ long d17_two_steps_forward(std::vector<std::string> lines, int part);
 long d18_like_a_rogue(std::vector<std::string> lines, int part);
 long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part);
 long d20_firewall_rules(std::vector<std::string> lines, int part);
+long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -143,6 +144,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d19_an_elephant_named_joseph;
     } else if (day == 20) {
         solution = &d20_firewall_rules;
+    } else if (day == 21) {
+        solution = &d21_scrambled_letters_and_hash;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -1215,4 +1218,78 @@ long d20_firewall_rules(std::vector<std::string> lines, int part) {
         i++;
     }
     return allowed;
+}
+
+long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part) {
+    std::vector<std::string> operations;
+    for (std::string line : lines) {
+        operations.push_back(line);
+    }
+    std::string s;
+    if (part == 1) {
+        s = "abcdefgh";
+    } else {
+        std::reverse(operations.begin(), operations.end());
+        s = "fbgdceah";
+    }
+    const int n = s.length();
+    for (std::string operation : operations) {
+        std::vector<std::string> tokens = cs::string_split(operation, " ");
+        if (tokens[0] == "swap") {
+            int x, y;
+            if (tokens[1] == "position") {
+                x = std::stoi(tokens[2]);
+                y = std::stoi(tokens[5]);
+            } else {
+                x = s.find(tokens[2]);
+                y = s.find(tokens[5]);
+            }
+            if (y < x) {
+                int t = x;
+                x = y;
+                y = t;
+            }
+            s = s.substr(0, x) + s.substr(y, 1) + s.substr(x + 1, y - x - 1) + s.substr(x, 1) + s.substr(y + 1);
+        } else if (tokens[0] == "rotate") {
+            int steps;
+            if (tokens[1] == "left") {
+                steps = n - (std::stoi(tokens[2]) % n);
+            } else if (tokens[1] == "right") {
+                steps = std::stoi(tokens[2]) % n;
+            } else {
+                int index = s.find(tokens[6]);
+                if (part == 2) {
+                    // Calculate and assign inverse index.
+                    if (index == 0) {
+                        index = n;
+                    }
+                    index = index % 2 == 0 ? (n + index - 2) / 2 : (index - 1) / 2;
+                }
+                steps = (1 + index + (index >= 4 ? 1 : 0)) % n;
+            }
+            if (part == 2) {
+                steps = n - steps;
+            }
+            s = s.substr(n - steps) + s.substr(0, n - steps);
+        } else if (tokens[0] == "reverse") {
+            int x = std::stoi(tokens[2]);
+            int y = std::stoi(tokens[4]);
+            std::string sub = s.substr(x, y - x + 1);
+            std::reverse(sub.begin(), sub.end());
+            s = s.substr(0, x) + sub + s.substr(y + 1);
+        } else if (tokens[0] == "move") {
+            int x = std::stoi(tokens[2]);
+            int y = std::stoi(tokens[5]);
+            if (part == 2) {
+                int t = x;
+                x = y;
+                y = t;
+            }
+            std::string move = s.substr(x, 1);
+            s = s.substr(0, x) + s.substr(x + 1);
+            s = s.substr(0, y) + move + s.substr(y);
+        }
+    }
+    std::cout << s << std::endl;
+    return 0;
 }
