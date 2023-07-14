@@ -47,6 +47,7 @@ long d20_firewall_rules(std::vector<std::string> lines, int part);
 long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part);
 long d22_grid_computing(std::vector<std::string> lines, int part);
 long d23_safe_cracking(std::vector<std::string> lines, int part);
+long d24_air_duct_spelunking(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -152,6 +153,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d22_grid_computing;
     } else if (day == 23) {
         solution = &d23_safe_cracking;
+    } else if (day == 24) {
+        solution = &d24_air_duct_spelunking;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -1489,4 +1492,87 @@ long d23_safe_cracking(std::vector<std::string> lines, int part) {
         i++;
     }
     return r[0];
+}
+
+long d24_air_duct_spelunking(std::vector<std::string> lines, int part) {
+    const int m = lines.size(), n = lines[0].length();
+    // Map non-space, non-wall characters in grid to coordinates.
+    std::map<char, std::pair<int, int>> c_to_point;
+    for (int i = 0; i < lines.size(); i++) {
+        std::string line = lines[i];
+        for (int j = 0; j < line.length(); j++) {
+            if (line[j] != '.' && line[j] != '#') {
+                c_to_point[line[j]] = std::pair<int, int>(i, j);
+            }
+        }
+    }
+    std::map<char, int> c_to_index;
+    std::vector<char> cs;
+    for (std::pair<char, std::pair<int, int>> c_point : c_to_point) {
+        char c = c_point.first;
+        c_to_index[c] = cs.size();
+        cs.push_back(c);
+    }
+    const int k = cs.size();
+
+    // Collect pair-wise distances.
+    int distances[k][k];
+    auto is_neighbor = [&lines](int i, int j) {
+        return lines[i][j] != '#';
+    };
+    for (int a = 0; a < k - 1; a++) {
+        std::pair<int, int> a_point = c_to_point[cs[a]];
+        int ai = a_point.first, aj = a_point.second;
+        for (int b = a + 1; b < k; b++) {
+            std::pair<int, int> b_point = c_to_point[cs[b]];
+            int bi = b_point.first, bj = b_point.second;
+            std::vector<std::pair<int, int>> path = cs::dijkstra_grid_path(m, n, ai, aj, bi, bj, is_neighbor);
+            distances[a][b] = path.size();
+            distances[b][a] = path.size();
+        }
+    }
+
+    // Test all permutations of points.
+    char *locations[k - 1];
+    int i_location = 0;
+    for (char c : cs) {
+        if (c == '0') {
+            continue;
+        }
+        char *location = (char *) malloc(2 * sizeof(char));
+        std::sprintf(location, "%c", c);
+        locations[i_location] = location;
+        i_location++;
+    }
+    std::cout << std::endl;
+    int len;
+    char ***location_permutations = cs_permutations(locations, k - 1, &len);
+    int d_min = -1;
+    for (int i = 0; i < len; i++) {
+        char **location_permutation = location_permutations[i];
+        int d = 0;
+        char c_index_prev = c_to_index['0'];
+        for (int j = 0; j < k - 1; j++) {
+            char c = location_permutation[j][0];
+            int c_index = c_to_index[c];
+            d += distances[c_index_prev][c_index];
+            c_index_prev = c_index;
+        }
+        if (part == 2) {
+            d += distances[c_index_prev][c_to_index['0']];
+        }
+        if (d_min == -1 || d < d_min) {
+            d_min = d;
+            std::printf("d_min: %d; [", d);
+            for (int j = 0; j < k - 1; j++) {
+                std::printf(" %c", location_permutation[j][0]);
+            }
+            std::printf(" ]\n");
+        }
+    }
+    free(location_permutations);
+    for (int i = 0; i < k - 1; i++) {
+        free(locations[i]);
+    }
+    return d_min;
 }
