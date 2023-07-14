@@ -46,6 +46,7 @@ long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part);
 long d20_firewall_rules(std::vector<std::string> lines, int part);
 long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part);
 long d22_grid_computing(std::vector<std::string> lines, int part);
+long d23_safe_cracking(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -149,6 +150,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d21_scrambled_letters_and_hash;
     } else if (day == 22) {
         solution = &d22_grid_computing;
+    } else if (day == 23) {
+        solution = &d23_safe_cracking;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -825,6 +828,13 @@ long d11_radioisotope_thermoelectric_generators(std::vector<std::string> lines, 
     return steps;
 }
 
+int _d12_register_or_literal(std::string s, int r[]) {
+    if (s.length() == 1 && s[0] >= 'a' && s[0] <= 'd') {
+        return r[s[0] - 'a'];
+    }
+    return std::stoi(s);
+}
+
 long d12_leonardos_monorail(std::vector<std::string> lines, int part) {
     int r[4];
     for (int i = 0; i < std::size(r); i++) {
@@ -839,24 +849,14 @@ long d12_leonardos_monorail(std::vector<std::string> lines, int part) {
         std::vector<std::string> tokens = cs::string_split(line);
         std::string xs = tokens[1];
         if (tokens[0] == "cpy") {
-            int x;
-            if (xs.length() == 1 && xs[0] >= 'a' && xs[0] <= 'd') {
-                x = r[xs[0] - 'a'];
-            } else {
-                x = std::stoi(xs);
-            }
+            int x = _d12_register_or_literal(xs, r);
             r[tokens[2][0] - 'a'] = x;
         } else if (tokens[0] == "inc") {
             r[xs[0] - 'a']++;
         } else if (tokens[0] == "dec") {
             r[xs[0] - 'a']--;
         } else if (tokens[0] == "jnz") {
-            int x;
-            if (xs.length() == 1 && xs[0] >= 'a' && xs[0] <= 'd') {
-                x = r[xs[0] - 'a'];
-            } else {
-                x = std::stoi(xs);
-            }
+            int x = _d12_register_or_literal(xs, r);
             if (x != 0) {
                 i += std::stoi(tokens[2]);
                 continue;
@@ -1393,4 +1393,100 @@ long d22_grid_computing(std::vector<std::string> lines, int part) {
         steps += empty_path.size() + 1;
     }
     return steps;
+}
+
+long d23_safe_cracking(std::vector<std::string> lines, int part) {
+    std::vector<std::vector<std::string>> instructions;
+    for (std::string line : lines) {
+        std::vector<std::string> tokens = cs::string_split(line, " ");
+        instructions.push_back(tokens);
+    }
+    const int n = 4;
+    int r[n];
+    for (int j = 0; j < n; j++) {
+        r[j] = 0;
+    }
+    r[0] = part == 1 ? 7 : 12;
+    std::map<int, std::vector<int>> jump_cache;
+    int i = 0;
+    while (i < instructions.size()) {
+        std::vector<std::string> instruction = instructions[i];
+        std::cout << i << " [";
+        for (std::string s : instruction) {
+            std::cout << " " << s;
+        }
+        std::cout << " ]: {";
+        for (int j = 0; j < n; j++) {
+            std::cout << " " << r[j];
+        }
+        std::cout << " }" << std::endl;
+        std::string xs = instruction[1];
+        if (instruction[0] == "cpy") {
+            std::string ys = instruction[2];
+            if (ys.length() == 1 && ys[0] >= 'a' && ys[0] <= 'd') {
+                int x = _d12_register_or_literal(xs, r);
+                r[ys[0] - 'a'] = x;
+            }
+        } else if (instruction[0] == "inc") {
+            r[xs[0] - 'a']++;
+        } else if (instruction[0] == "dec") {
+            r[xs[0] - 'a']--;
+        } else if (instruction[0] == "jnz") {
+            int x = _d12_register_or_literal(xs, r);
+            if (x != 0) {
+                bool do_jump = true;
+                // Add to or use cache in the case of negative jump literals conditioned on a register.
+                if (xs[0] >= 'a' && xs[0] <= 'd' && instruction[2][0] == '-') {
+                    if (jump_cache.find(i) == jump_cache.end()) {
+                        std::vector<int> r_cache(r, r + sizeof(r) / sizeof(int));
+                        jump_cache[i] = r_cache;
+                    } else {
+                        std::vector<int> r_cache = jump_cache[i];
+                        int r_delta[n];
+                        for (int j = 0; j < n; j++) {
+                            r_delta[j] = r_cache[j] - r[j];
+                        }
+                        int j_cond = xs[0] - 'a';
+                        if (r_delta[j_cond] == 0 ||
+                                (r_delta[j_cond] > 0 && (r[j_cond] < 0 || r[j_cond] % r_delta[j_cond] != 0)) ||
+                                (r_delta[j_cond] < 0 && (r[j_cond] > 0 || -r[j_cond] % -r_delta[j_cond] != 0))) {
+                            std::cerr << "Unexpected jump cache result at line " << i << ": " << r[j_cond] << " % " << r_delta[j_cond] << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
+                        int reps = r[j_cond] / r_delta[j_cond];
+                        for (int j = 0; j < n; j++) {
+                            r[j] -= r_delta[j] * reps;
+                        }
+                        jump_cache.erase(i);
+                        do_jump = false;
+                    }
+                }
+                if (do_jump) {
+                    int y = _d12_register_or_literal(instruction[2], r);
+                    i += y;
+                    continue;
+                }
+            } else {
+                jump_cache.erase(i);
+            }
+        } else if (instruction[0] == "tgl") {
+            int x = _d12_register_or_literal(xs, r);
+            int i_other = x + i;
+            if (i_other < instructions.size()) {
+                if (instructions[i_other].size() == 2) {
+                    instructions[i_other][0] = instructions[i_other][0] == "inc" ? "dec" : "inc";
+                } else if (instructions[i_other].size() == 3) {
+                    instructions[i_other][0] = instructions[i_other][0] == "jnz" ? "cpy" : "jnz"; // TODO: Clear jump cache?
+                } else {
+                    std::cerr << "Unexpected number of instruction arguments: " << lines[i_other] << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+            }
+        } else {
+            std::cerr << "Unexpected instruction: " << instruction[0] << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        i++;
+    }
+    return r[0];
 }
