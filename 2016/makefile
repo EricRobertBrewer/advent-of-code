@@ -10,7 +10,7 @@ aoc_c.o: ../2015/aoc.h ../2015/aoc.c
 	gcc -g -c ../2015/aoc.c -o aoc_c.o
 
 cs.o: cs.hpp cs.cpp
-	g++ -g -c cs.cpp
+	g++ -g -std=c++11 -c cs.cpp
 
 cs_c.o: ../2015/cs.h ../2015/cs.c
 	gcc -g -c ../2015/cs.c -o cs_c.o

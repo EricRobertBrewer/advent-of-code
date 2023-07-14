@@ -45,6 +45,7 @@ long d18_like_a_rogue(std::vector<std::string> lines, int part);
 long d19_an_elephant_named_joseph(std::vector<std::string> lines, int part);
 long d20_firewall_rules(std::vector<std::string> lines, int part);
 long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part);
+long d22_grid_computing(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -146,6 +147,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d20_firewall_rules;
     } else if (day == 21) {
         solution = &d21_scrambled_letters_and_hash;
+    } else if (day == 22) {
+        solution = &d22_grid_computing;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -289,7 +292,7 @@ long d04_security_through_obscurity(std::vector<std::string> lines, int part) {
             for (const auto &c_count : c_to_count) {
                 count_cs.push_back(std::pair(c_count.second, c_count.first));
             }
-            std::sort(count_cs.begin(), count_cs.end(), [](const std::pair<int, char> &a, const std::pair<int, char> &b){
+            std::sort(count_cs.begin(), count_cs.end(), [](const std::pair<int, char> &a, const std::pair<int, char> &b) {
                 if (a.first != b.first) {
                     return a.first > b.first;
                 }
@@ -1292,4 +1295,102 @@ long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part) {
     }
     std::cout << s << std::endl;
     return 0;
+}
+
+long d22_grid_computing(std::vector<std::string> lines, int part) {
+    // Read nodes and storage capacity.
+    std::map<std::pair<int, int>, std::pair<int, int>> node_to_tb;
+    int y_max = -1, x_max = -1;
+    // root@ebhq-gridcenter# df -h
+    // Filesystem              Size  Used  Avail  Use%
+    for (int i = 2; i < lines.size(); i++) {
+        std::string line = lines[i];
+        std::string name = line.substr(0, 22);
+        int hyphen_y = name.rfind('-');
+        int hyphen_x = name.find('-');
+        int y = std::stoi(name.substr(hyphen_y + 2));
+        int x = std::stoi(name.substr(hyphen_x + 2, hyphen_y - hyphen_x - 2));
+        std::pair<int, int> node(y, x); // (y, x) to match iteration over (i, j).
+        int used = std::stoi(line.substr(30, 3));
+        int avail = std::stoi(line.substr(37, 3));
+        std::pair<int, int> tb(used, avail);
+        node_to_tb[node] = tb;
+        if (y_max == -1 || y > y_max) {
+            y_max = y;
+        }
+        if (x_max == -1 || x > x_max) {
+            x_max = x;
+        }
+    }
+
+    if (part == 1) {
+        int viable = 0;
+        std::vector<std::pair<int, int>> nodes;
+        for (const auto &node_tb : node_to_tb) {
+            std::pair<int, int> node = node_tb.first;
+            nodes.push_back(node);
+        }
+        for (int i = 0; i < nodes.size() - 1; i++) {
+            std::pair<int, int> tb_i = node_to_tb[nodes[i]];
+            for (int j = i + 1; j < nodes.size(); j++) {
+                std::pair<int, int> tb_j = node_to_tb[nodes[j]];
+                if ((tb_i.first != 0 && tb_i.first <= tb_j.second) ||
+                        (tb_j.first != 0 && tb_j.first <= tb_i.second)) {
+                    viable++;
+                }
+            }
+        }
+        return viable;
+    }
+
+    // Make grid.
+    const int m = y_max + 1, n = x_max + 1;
+    int goal_i = 0, goal_j = x_max;
+    int empty_i = -1, empty_j = -1;
+    char grid[m][n];
+    for (int i = 0; i <= y_max; i++) {
+        for (int j = 0; j <= x_max; j++) {
+            std::pair<int, int> node(i, j);
+            std::pair<int, int> tb = node_to_tb[node];
+            if (i == goal_i && j == goal_j) {
+                grid[i][j] = 'G';
+            } else if (tb.first == 0) {
+                grid[i][j] = '_';
+                empty_i = i;
+                empty_j = j;
+            } else if (tb.first < 100) {
+                grid[i][j] = '.';
+            } else {
+                grid[i][j] = '#';
+            }
+            std::cout << " " << grid[i][j];
+        }
+        std::cout << std::endl;
+    }
+
+    // Get path of goal node to accessible node.
+    auto is_neighbor = [&grid](int i, int j) {
+        return grid[i][j] == '.';
+    };
+    std::vector<std::pair<int, int>> goal_path =
+            cs::dijkstra_grid_path(m, n, goal_i, goal_j, 0, 0, is_neighbor);
+    int steps = 0;
+    for (std::pair<int, int> next_node : goal_path) {
+        // Move empty node to next node in goal path, then swap with goal node.
+        int next_i = next_node.first;
+        int next_j = next_node.second;
+        std::vector<std::pair<int, int>> empty_path =
+                cs::dijkstra_grid_path(m, n, empty_i, empty_j, next_i, next_j, is_neighbor);
+        int t_i = empty_i;
+        int t_j = empty_j;
+        empty_i = goal_i;
+        empty_j = goal_j;
+        goal_i = next_i;
+        goal_j = next_j;
+        grid[goal_i][goal_j] = 'G';
+        grid[empty_i][empty_j] = '_';
+        grid[t_i][t_j] = '.';
+        steps += empty_path.size() + 1;
+    }
+    return steps;
 }
