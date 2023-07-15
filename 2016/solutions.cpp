@@ -48,6 +48,7 @@ long d21_scrambled_letters_and_hash(std::vector<std::string> lines, int part);
 long d22_grid_computing(std::vector<std::string> lines, int part);
 long d23_safe_cracking(std::vector<std::string> lines, int part);
 long d24_air_duct_spelunking(std::vector<std::string> lines, int part);
+long d25_clock_signal(std::vector<std::string> lines, int part);
 
 int main(int argc, char *argv[]) {
     if (argc < 3) {
@@ -155,6 +156,8 @@ long solve(int day, int part, std::string input_path) {
         solution = &d23_safe_cracking;
     } else if (day == 24) {
         solution = &d24_air_duct_spelunking;
+    } else if (day == 25) {
+        solution = &d25_clock_signal;
     } else {
         std::cerr << "No solution for day: " << day << std::endl;
         exit(EXIT_FAILURE);
@@ -1398,6 +1401,46 @@ long d22_grid_computing(std::vector<std::string> lines, int part) {
     return steps;
 }
 
+bool _d23_jnz_with_cache(
+        int r[], int n, std::map<int, std::vector<int>> &jump_cache, int i, std::vector<std::string> instruction
+) {
+    std::string xs = instruction[1];
+    bool do_jump = true;
+    // Add to or use cache in the case of negative jump literals conditioned on a register.
+    if (xs[0] >= 'a' && xs[0] <= 'd' && instruction[2][0] == '-') {
+        if (jump_cache.find(i) == jump_cache.end()) {
+            std::vector<int> r_cache;
+            for (int j = 0; j < n; j++) {
+                r_cache.push_back(r[j]);
+            }
+            jump_cache[i] = r_cache;
+        } else if (jump_cache[i].size() == 0) {
+            // Allow the jump, although these instructions will run infinitely.
+        } else {
+            std::vector<int> r_cache = jump_cache[i];
+            int r_delta[n];
+            for (int j = 0; j < n; j++) {
+                r_delta[j] = r_cache[j] - r[j];
+            }
+            int j_cond = xs[0] - 'a';
+            if (r_delta[j_cond] == 0 ||
+                    (r_delta[j_cond] > 0 && (r[j_cond] < 0 || r[j_cond] % r_delta[j_cond] != 0)) ||
+                    (r_delta[j_cond] < 0 && (r[j_cond] > 0 || -r[j_cond] % -r_delta[j_cond] != 0))) {
+                // Place a marker for this line to let the program run infinitely.
+                jump_cache[i] = std::vector<int>();
+            } else {
+                int reps = r[j_cond] / r_delta[j_cond];
+                for (int j = 0; j < n; j++) {
+                    r[j] -= r_delta[j] * reps;
+                }
+                jump_cache.erase(i);
+                do_jump = false;
+            }
+        }
+    }
+    return do_jump;
+}
+
 long d23_safe_cracking(std::vector<std::string> lines, int part) {
     std::vector<std::vector<std::string>> instructions;
     for (std::string line : lines) {
@@ -1414,15 +1457,6 @@ long d23_safe_cracking(std::vector<std::string> lines, int part) {
     int i = 0;
     while (i < instructions.size()) {
         std::vector<std::string> instruction = instructions[i];
-        std::cout << i << " [";
-        for (std::string s : instruction) {
-            std::cout << " " << s;
-        }
-        std::cout << " ]: {";
-        for (int j = 0; j < n; j++) {
-            std::cout << " " << r[j];
-        }
-        std::cout << " }" << std::endl;
         std::string xs = instruction[1];
         if (instruction[0] == "cpy") {
             std::string ys = instruction[2];
@@ -1437,33 +1471,7 @@ long d23_safe_cracking(std::vector<std::string> lines, int part) {
         } else if (instruction[0] == "jnz") {
             int x = _d12_register_or_literal(xs, r);
             if (x != 0) {
-                bool do_jump = true;
-                // Add to or use cache in the case of negative jump literals conditioned on a register.
-                if (xs[0] >= 'a' && xs[0] <= 'd' && instruction[2][0] == '-') {
-                    if (jump_cache.find(i) == jump_cache.end()) {
-                        std::vector<int> r_cache(r, r + sizeof(r) / sizeof(int));
-                        jump_cache[i] = r_cache;
-                    } else {
-                        std::vector<int> r_cache = jump_cache[i];
-                        int r_delta[n];
-                        for (int j = 0; j < n; j++) {
-                            r_delta[j] = r_cache[j] - r[j];
-                        }
-                        int j_cond = xs[0] - 'a';
-                        if (r_delta[j_cond] == 0 ||
-                                (r_delta[j_cond] > 0 && (r[j_cond] < 0 || r[j_cond] % r_delta[j_cond] != 0)) ||
-                                (r_delta[j_cond] < 0 && (r[j_cond] > 0 || -r[j_cond] % -r_delta[j_cond] != 0))) {
-                            std::cerr << "Unexpected jump cache result at line " << i << ": " << r[j_cond] << " % " << r_delta[j_cond] << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                        int reps = r[j_cond] / r_delta[j_cond];
-                        for (int j = 0; j < n; j++) {
-                            r[j] -= r_delta[j] * reps;
-                        }
-                        jump_cache.erase(i);
-                        do_jump = false;
-                    }
-                }
+                bool do_jump = _d23_jnz_with_cache(r, n, jump_cache, i, instruction);
                 if (do_jump) {
                     int y = _d12_register_or_literal(instruction[2], r);
                     i += y;
@@ -1575,4 +1583,83 @@ long d24_air_duct_spelunking(std::vector<std::string> lines, int part) {
         free(locations[i]);
     }
     return d_min;
+}
+
+long d25_clock_signal(std::vector<std::string> lines, int part) {
+    std::vector<std::vector<std::string>> instructions;
+    for (std::string line : lines) {
+        std::vector<std::string> tokens = cs::string_split(line, " ");
+        instructions.push_back(tokens);
+    }
+    const int n = 4;
+    int a = 1, answer = -1;
+    while (answer == -1) {
+        std::cout << a << std::endl;
+        int r[n];
+        for (int j = 0; j < n; j++) {
+            r[j] = 0;
+        }
+        r[0] = a;
+        int i = 0;
+        std::set<std::vector<int>> r0;
+        std::set<std::vector<int>> r1;
+        bool out0 = false;
+        std::map<int, std::vector<int>> jump_cache;
+        while (i < instructions.size()) {
+            std::vector<std::string> instruction = instructions[i];
+            std::string xs = instruction[1];
+            if (instruction[0] == "cpy") {
+                int x = _d12_register_or_literal(xs, r);
+                r[instruction[2][0] - 'a'] = x;
+            } else if (instruction[0] == "inc") {
+                r[xs[0] - 'a']++;
+            } else if (instruction[0] == "dec") {
+                r[xs[0] - 'a']--;
+            } else if (instruction[0] == "jnz") {
+                int x = _d12_register_or_literal(xs, r);
+                if (x != 0) {
+                    bool do_jump = _d23_jnz_with_cache(r, n, jump_cache, i, instruction);
+                    if (do_jump) {
+                        int y = _d12_register_or_literal(instruction[2], r);
+                        i += y;
+                        continue;
+                    }
+                } else {
+                    jump_cache.erase(i);
+                }
+            } else if (instruction[0] == "out") {
+                int x = _d12_register_or_literal(xs, r);
+                if (!out0) {
+                    if (x != 0) {
+                        break;
+                    } else {
+                        std::vector<int> r_state(r, r + sizeof(r) / sizeof(int));
+                        if (r0.find(r_state) == r0.end()) {
+                            r0.insert(r_state);
+                            out0 = true;
+                        } else {
+                            answer = a;
+                            break;
+                        }
+                    }
+                } else {
+                    if (x != 1) {
+                        break;
+                    } else {
+                        std::vector<int> r_state(r, r + sizeof(r) / sizeof(int));
+                        if (r1.find(r_state) == r1.end()) {
+                            r1.insert(r_state);
+                            out0 = false;
+                        } else {
+                            answer = a;
+                            break;
+                        }
+                    }
+                }
+            }
+            i++;
+        }
+        a++;
+    }
+    return answer;
 }
