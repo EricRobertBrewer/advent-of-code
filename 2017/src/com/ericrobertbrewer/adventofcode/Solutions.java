@@ -20,6 +20,7 @@ public final class Solutions {
     private static Map<Integer, Solution> SOLUTIONS = new HashMap<>();
     static {
         SOLUTIONS.put(1, Solutions::d01_InverseCaptcha);
+        SOLUTIONS.put(2, Solutions::d02_CorruptionChecksum);
     }
 
     public static void main(String[] args) throws IOException {
@@ -81,6 +82,42 @@ public final class Solutions {
             for (int i = 0; i < n / 2; i++) {
                 if (captcha.charAt(i) == captcha.charAt(i + (n / 2))) {
                     sum += 2 * Integer.valueOf("" + captcha.charAt(i));
+                }
+            }
+        }
+        return sum;
+    }
+
+    private static long d02_CorruptionChecksum(List<String> lines, int part) {
+        long sum = 0;
+        for (final String line : lines) {
+            final String[] tokens = line.split("\t");
+            if (part == 1) {
+                int min = -1, max = -1;
+                for (final String token : tokens) {
+                    final int value = Integer.valueOf(token);
+                    if (min == -1 || value < min) {
+                        min = value;
+                    }
+                    if (max == -1 || value > max) {
+                        max = value;
+                    }
+                }
+                sum += max - min;
+            } else {
+                boolean found = false;
+                for (int i = 0; i < tokens.length - 1 && !found; i++) {
+                    final int iValue = Integer.valueOf(tokens[i]);
+                    for (int j = i + 1; j < tokens.length && !found; j++) {
+                        final int jValue = Integer.valueOf(tokens[j]);
+                        if (iValue % jValue == 0) {
+                            sum += iValue / jValue;
+                            found = true;
+                        } else if (jValue % iValue == 0) {
+                            sum += jValue / iValue;
+                            found = true;
+                        }
+                    }
                 }
             }
         }
