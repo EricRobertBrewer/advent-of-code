@@ -36,6 +36,7 @@ public final class Solutions {
         SOLUTIONS.put(7, Solutions::d07_RecursiveCircus);
         SOLUTIONS.put(8, Solutions::d08_IHeardYouLikeRegisters);
         SOLUTIONS.put(9, Solutions::d09_StreamProcessing);
+        SOLUTIONS.put(10, Solutions::d10_KnotHash);
     }
 
     public static void main(String[] args) throws IOException {
@@ -431,5 +432,76 @@ public final class Solutions {
             return score;
         }
         return cancelled;
+    }
+
+    public static long d10_KnotHash(List<String> lines, int part) {
+        final String input = lines.get(0);
+        final int n = 256;
+        final int[] hash = new int[n];
+        for (int i = 0; i < n; i++) {
+            hash[i] = i;
+        }
+        final int[] lengths;
+        final int rounds;
+        if (part == 1) {
+            final String[] lengthStrings = input.split(",");
+            lengths = new int[lengthStrings.length];
+            for (int i = 0; i < lengthStrings.length; i++) {
+                lengths[i] = Integer.parseInt(lengthStrings[i]);
+            }
+            rounds = 1;
+        } else {
+            final int z = input.length() + 5;
+            lengths = new int[z];
+            for (int i = 0; i < input.length(); i++) {
+                lengths[i] = (int) input.charAt(i);
+            }
+            lengths[z - 5] = 17;
+            lengths[z - 4] = 31;
+            lengths[z - 3] = 73;
+            lengths[z - 2] = 47;
+            lengths[z - 1] = 23;
+            rounds = 64;
+        }
+
+        // Sparse hash.
+        int position = 0;
+        int skip = 0;
+        for (int round = 0; round < rounds; round++) {
+            for (int length : lengths) {
+                if (length > n) {
+                    continue;
+                }
+                for (int d = 0; d < length / 2; d++) {
+                    final int i = (position + d) % n;
+                    final int j = (position + length - 1 - d + n) % n;
+                    final int t = hash[i];
+                    hash[i] = hash[j];
+                    hash[j] = t;
+                }
+                position = (position + length + skip) % n;
+                skip++;
+            }
+        }
+        if (part == 1) {
+            return hash[0] * hash[1];
+        }
+
+        // Dense hash.
+        final byte[] dense = new byte[16];
+        for (int i = 0; i < dense.length; i++) {
+            byte value = (byte) hash[16 * i];
+            for (int j = 1; j < 16; j++) {
+                value ^= (byte) hash[16 * i + j];
+            }
+            dense[i] = value;
+        }
+
+        StringBuilder knot = new StringBuilder();
+        for (byte b : dense) {
+            knot.append(String.format("%02x", b));
+        }
+        System.out.println(knot.toString());
+        return 0;
     }
 }
