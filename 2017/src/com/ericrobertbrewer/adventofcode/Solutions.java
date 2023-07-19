@@ -37,6 +37,7 @@ public final class Solutions {
         SOLUTIONS.put(8, Solutions::d08_IHeardYouLikeRegisters);
         SOLUTIONS.put(9, Solutions::d09_StreamProcessing);
         SOLUTIONS.put(10, Solutions::d10_KnotHash);
+        SOLUTIONS.put(11, Solutions::d11_HexEd);
     }
 
     public static void main(String[] args) throws IOException {
@@ -503,5 +504,58 @@ public final class Solutions {
         }
         System.out.println(knot.toString());
         return 0;
+    }
+
+    private static int hexDistance(int i, int j) {
+        if (j > 0) {
+            if (i > 0) {
+                return j + i;
+            } else if (i < -j) {
+                return j + (-j - i);
+            }
+            return j;
+        } else if (j < 0) {
+            if (i < 0) {
+                return -j + (-i);
+            } else if (i > -j) {
+                return -j + (i - (-j));
+            }
+            return -j;
+        }
+        return Math.abs(i);
+    }
+
+    public static long d11_HexEd(List<String> lines, int part) {
+        final String[] steps = lines.get(0).split(",");
+        int i = 0;
+        int j = 0;
+        int distanceMax = 0;
+        for (String step : steps) {
+            if ("n".equals(step)) {
+                i++;
+            } else if ("s".equals(step)) {
+                i--;
+            } else if ("ne".equals(step)) {
+                j++;
+            } else if ("nw".equals(step)) {
+                i++;
+                j--;
+            } else if ("se".equals(step)) {
+                i--;
+                j++;
+            } else if ("sw".equals(step)) {
+                j--;
+            } else {
+                throw new IllegalArgumentException("Unrecognized step: " + step);
+            }
+            final int distance = hexDistance(i, j);
+            if (distance > distanceMax) {
+                distanceMax = distance;
+            }
+        }
+        if (part == 1) {
+            return hexDistance(i, j);
+        }
+        return distanceMax;
     }
 }
