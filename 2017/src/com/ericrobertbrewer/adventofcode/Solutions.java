@@ -5,6 +5,7 @@ import com.ericrobertbrewer.adventofcode.AocUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,14 +22,15 @@ public final class Solutions {
     static {
         SOLUTIONS.put(1, Solutions::d01_InverseCaptcha);
         SOLUTIONS.put(2, Solutions::d02_CorruptionChecksum);
+        SOLUTIONS.put(3, Solutions::d03_SpiralMemory);
     }
 
     public static void main(String[] args) throws IOException {
         if (args.length < 2) {
             throw new IllegalArgumentException("Usage: Solutions <day> <part> [--example|-x]");
         }
-        final int day = Integer.valueOf(args[0]);
-        final int part = Integer.valueOf(args[1]);
+        final int day = Integer.parseInt(args[0]);
+        final int part = Integer.parseInt(args[1]);
         final boolean example;
         if (args.length > 2) {
             if ("--example".equals(args[3]) || "-x".equals(args[2])) {
@@ -72,16 +74,16 @@ public final class Solutions {
         if (part == 1) {
             for (int i = 0; i < n - 1; i++) {
                 if (captcha.charAt(i) == captcha.charAt(i + 1)) {
-                    sum += Integer.valueOf("" + captcha.charAt(i));
+                    sum += Integer.parseInt("" + captcha.charAt(i));
                 }
             }
             if (captcha.charAt(n - 1) == captcha.charAt(0)) {
-                sum += Integer.valueOf("" + captcha.charAt(n - 1));
+                sum += Integer.parseInt("" + captcha.charAt(n - 1));
             }
         } else {
             for (int i = 0; i < n / 2; i++) {
                 if (captcha.charAt(i) == captcha.charAt(i + (n / 2))) {
-                    sum += 2 * Integer.valueOf("" + captcha.charAt(i));
+                    sum += 2 * Integer.parseInt("" + captcha.charAt(i));
                 }
             }
         }
@@ -95,7 +97,7 @@ public final class Solutions {
             if (part == 1) {
                 int min = -1, max = -1;
                 for (final String token : tokens) {
-                    final int value = Integer.valueOf(token);
+                    final int value = Integer.parseInt(token);
                     if (min == -1 || value < min) {
                         min = value;
                     }
@@ -107,7 +109,7 @@ public final class Solutions {
             } else {
                 boolean found = false;
                 for (int i = 0; i < tokens.length - 1 && !found; i++) {
-                    final int iValue = Integer.valueOf(tokens[i]);
+                    final int iValue = Integer.parseInt(tokens[i]);
                     for (int j = i + 1; j < tokens.length && !found; j++) {
                         final int jValue = Integer.valueOf(tokens[j]);
                         if (iValue % jValue == 0) {
@@ -122,5 +124,82 @@ public final class Solutions {
             }
         }
         return sum;
+    }
+
+    public static long d03_SpiralMemory(List<String> lines, int part) {
+        final int input = Integer.parseInt(lines.get(0));
+        if (part == 1) {
+            int layer = 0;
+            int area = 1;
+            while (input > area) {
+                layer++;
+                area = (2 * layer + 1) * (2 * layer + 1);
+            }
+            final int circumference = 8 * layer;
+            final int side = 2 * layer;
+            final int innerArea = area - circumference;
+            final int tick = input - innerArea;
+            return Math.abs((tick % side) - (side / 2)) + layer;
+        }
+
+        final Map<IntPair, Integer> pointToValue = new HashMap<>();
+        pointToValue.put(new IntPair(0, 0), 1);
+        int layer = 1;
+        final int[][] deltas = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
+        while (true) {
+            int i = layer;
+            int j = layer;
+            final int side = 2 * layer;
+            for (int[] delta : deltas) {
+                final int di = delta[0];
+                final int dj = delta[1];
+                for (int k = 0; k < side; k++) {
+                    i += di;
+                    j += dj;
+                    int value = 0;
+                    for (int oi = -1; oi <= 1; oi++) {
+                        for (int oj = -1; oj <= 1; oj++) {
+                            final IntPair point = new IntPair(i + oi, j + oj);
+                            if (pointToValue.containsKey(point)) {
+                                value += pointToValue.get(point);
+                            }
+                        }
+                    }
+                    if (value > input) {
+                        return value;
+                    }
+                    pointToValue.put(new IntPair(i, j), value);
+                }
+            }
+            layer++;
+        }
+    }
+
+    private static final class IntPair {
+
+        final int a;
+        final int b;
+
+        IntPair(int a, int b) {
+            this.a = a;
+            this.b = b;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 17;
+            result = 31 * result + a;
+            result = 31 * result + b;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof IntPair)) {
+                return false;
+            }
+            final IntPair otherPair = (IntPair) other;
+            return otherPair.a == a && otherPair.b == b;
+        }
     }
 }
