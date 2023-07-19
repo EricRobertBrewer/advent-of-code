@@ -18,11 +18,11 @@ public final class Solutions {
 
     private static final int YEAR = 2017;
 
-    private interface Solution {
-        long getAnswer(List<String> lines, int part);
+    private Solutions() {
     }
 
-    private Solutions() {
+    private interface Solution {
+        long getAnswer(List<String> lines, int part);
     }
 
     private static Map<Integer, Solution> SOLUTIONS = new HashMap<>();
@@ -33,6 +33,7 @@ public final class Solutions {
         SOLUTIONS.put(4, Solutions::d04_HighEntropyPassphrases);
         SOLUTIONS.put(5, Solutions::d05_AMazeOfTwistyTrampolinesAllAlike);
         SOLUTIONS.put(6, Solutions::d06_MemoryReallocation);
+        SOLUTIONS.put(7, Solutions::d07_RecursiveCircus);
     }
 
     public static void main(String[] args) throws IOException {
@@ -274,5 +275,75 @@ public final class Solutions {
             }
             cycle++;
         }
+    }
+
+    public static long d07_RecursiveCircus(List<String> lines, int part) {
+        final Map<String, List<String>> programToPrograms = new HashMap<>();
+        final Map<String, Integer> programToWeight = new HashMap<>();
+        for (String line : lines) {
+            final String[] programWeightPrograms = line.split(" -> ");
+            final String programWeight = programWeightPrograms[0];
+            final int space = programWeight.indexOf(' ');
+            final String program = programWeight.substring(0, space);
+            final int weight = Integer.parseInt(programWeight.substring(space + 2, programWeight.length() - 1));
+            final List<String> programs = new ArrayList<>();
+            if (programWeightPrograms.length > 1) {
+                for (String other : programWeightPrograms[1].split(", ")) {
+                    programs.add(other);
+                }
+            }
+            programToPrograms.put(program, programs);
+            programToWeight.put(program, weight);
+        }
+
+        if (part == 1) {
+            final Set<String> programs = new HashSet<>();
+            for (String program : programToPrograms.keySet()) {
+                final List<String> others = programToPrograms.get(program);
+                for (String other : others) {
+                    programs.add(other);
+                }
+            }
+            for (String program : programToPrograms.keySet()) {
+                if (!programs.contains(program)) {
+                    System.out.println(program);
+                    return 0;
+                }
+            }
+        }
+
+        final Map<String, Integer> programToTotalWeight = new HashMap<>();
+        while (programToTotalWeight.size() < programToWeight.size()) {
+            for (String program : programToPrograms.keySet()) {
+                final List<String> others = programToPrograms.get(program);
+                int othersWeight = 0;
+                for (String other : others) {
+                    if (!programToTotalWeight.containsKey(other)) {
+                        othersWeight = -1;
+                        break;
+                    }
+                    final int weight = programToTotalWeight.get(other);
+                    othersWeight += weight;
+                }
+                if (othersWeight != -1) {
+                    if (others.size() > 0) {
+                        final int weight0 = programToTotalWeight.get(others.get(0));
+                        for (int i = 1; i < others.size(); i++) {
+                            final int weight = programToTotalWeight.get(others.get(i));
+                            if (weight != weight0) {
+                                final int mediatorWeight = programToTotalWeight.get(others.get(i == 1 ? 2 : 1));
+                                if (weight0 == mediatorWeight) {
+                                    return programToWeight.get(others.get(i)) - weight + weight0;
+                                } else {
+                                    return programToWeight.get(others.get(0)) - weight0 + weight;
+                                }
+                            }
+                        }
+                    }
+                    programToTotalWeight.put(program, programToWeight.get(program) + othersWeight);
+                }
+            }
+        }
+        throw new RuntimeException("Unable to find non-matching program weight.");
     }
 }
