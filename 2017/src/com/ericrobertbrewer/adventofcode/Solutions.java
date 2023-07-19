@@ -35,6 +35,7 @@ public final class Solutions {
         SOLUTIONS.put(6, Solutions::d06_MemoryReallocation);
         SOLUTIONS.put(7, Solutions::d07_RecursiveCircus);
         SOLUTIONS.put(8, Solutions::d08_IHeardYouLikeRegisters);
+        SOLUTIONS.put(9, Solutions::d09_StreamProcessing);
     }
 
     public static void main(String[] args) throws IOException {
@@ -395,5 +396,40 @@ public final class Solutions {
             }
         }
         return valueMax;
+    }
+
+    public static long d09_StreamProcessing(List<String> lines, int part) {
+        final String input = lines.get(0);
+        int score = 0;
+        int cancelled = 0;
+        int group = 0;
+        boolean garbage = false;
+        int i = 0;
+        while (i < input.length()) {
+            final char c = input.charAt(i);
+            if (garbage) {
+                if (c == '>') {
+                    garbage = false;
+                } else if (c == '!') {
+                    i++;
+                } else {
+                    cancelled++;
+                }
+            } else {
+                if (c == '{') {
+                    group++;
+                    score += group;
+                } else if (c == '<') {
+                    garbage = true;
+                } else if (c == '}') {
+                    group--;
+                }
+            }
+            i++;
+        }
+        if (part == 1) {
+            return score;
+        }
+        return cancelled;
     }
 }
