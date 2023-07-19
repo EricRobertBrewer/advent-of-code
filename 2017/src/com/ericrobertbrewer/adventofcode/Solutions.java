@@ -1,6 +1,7 @@
 package com.ericrobertbrewer.adventofcode;
 
 import com.ericrobertbrewer.adventofcode.AocUtil;
+import com.ericrobertbrewer.adventofcode.CsUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +22,9 @@ public final class Solutions {
         long getAnswer(List<String> lines, int part);
     }
 
+    private Solutions() {
+    }
+
     private static Map<Integer, Solution> SOLUTIONS = new HashMap<>();
     static {
         SOLUTIONS.put(1, Solutions::d01_InverseCaptcha);
@@ -28,6 +32,7 @@ public final class Solutions {
         SOLUTIONS.put(3, Solutions::d03_SpiralMemory);
         SOLUTIONS.put(4, Solutions::d04_HighEntropyPassphrases);
         SOLUTIONS.put(5, Solutions::d05_AMazeOfTwistyTrampolinesAllAlike);
+        SOLUTIONS.put(6, Solutions::d06_MemoryReallocation);
     }
 
     public static void main(String[] args) throws IOException {
@@ -147,8 +152,8 @@ public final class Solutions {
             return Math.abs((tick % side) - (side / 2)) + layer;
         }
 
-        final Map<IntPair, Integer> pointToValue = new HashMap<>();
-        pointToValue.put(new IntPair(0, 0), 1);
+        final Map<CsUtil.IntPair, Integer> pointToValue = new HashMap<>();
+        pointToValue.put(new CsUtil.IntPair(0, 0), 1);
         int layer = 1;
         final int[][] deltas = {{-1, 0}, {0, -1}, {1, 0}, {0, 1}};
         while (true) {
@@ -164,7 +169,7 @@ public final class Solutions {
                     int value = 0;
                     for (int oi = -1; oi <= 1; oi++) {
                         for (int oj = -1; oj <= 1; oj++) {
-                            final IntPair point = new IntPair(i + oi, j + oj);
+                            final CsUtil.IntPair point = new CsUtil.IntPair(i + oi, j + oj);
                             if (pointToValue.containsKey(point)) {
                                 value += pointToValue.get(point);
                             }
@@ -173,7 +178,7 @@ public final class Solutions {
                     if (value > input) {
                         return value;
                     }
-                    pointToValue.put(new IntPair(i, j), value);
+                    pointToValue.put(new CsUtil.IntPair(i, j), value);
                 }
             }
             layer++;
@@ -228,31 +233,46 @@ public final class Solutions {
         return steps;
     }
 
-    private static final class IntPair {
-
-        final int a;
-        final int b;
-
-        IntPair(int a, int b) {
-            this.a = a;
-            this.b = b;
+    public static long d06_MemoryReallocation(List<String> lines, int part) {
+        final String[] tokens = lines.get(0).split("\t");
+        final int[] banks = new int[tokens.length];
+        for (int i = 0; i < tokens.length; i++) {
+            banks[i] = Integer.parseInt(tokens[i]);
         }
-
-        @Override
-        public int hashCode() {
-            int result = 17;
-            result = 31 * result + a;
-            result = 31 * result + b;
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (!(other instanceof IntPair)) {
-                return false;
+        int cycle = 0;
+        final Map<String, Integer> configurationToCycle = new HashMap<>();
+        while (true) {
+            final StringBuilder builder = new StringBuilder();
+            builder.append(banks[0]);
+            for (int i = 1; i < banks.length; i++) {
+                builder.append(",");
+                builder.append(banks[i]);
             }
-            final IntPair otherPair = (IntPair) other;
-            return otherPair.a == a && otherPair.b == b;
+            final String configuration = builder.toString();
+            if (configurationToCycle.containsKey(configuration)) {
+                if (part == 1) {
+                    return cycle;
+                } else {
+                    return cycle - configurationToCycle.get(configuration);
+                }
+            }
+            configurationToCycle.put(configuration, cycle);
+
+            int iMax = 0;
+            for (int i = 1; i < banks.length; i++) {
+                if (banks[i] > banks[iMax]) {
+                    iMax = i;
+                }
+            }
+            int blocks = banks[iMax];
+            banks[iMax] = 0;
+            for (int i = 0; i < banks.length; i++) {
+                banks[i] += blocks / banks.length; // Even distribution.
+            }
+            for (int di = 1; di <= blocks % banks.length; di++) {
+                banks[(iMax + di) % banks.length]++; // Overflow.
+            }
+            cycle++;
         }
     }
 }
