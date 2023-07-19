@@ -6,9 +6,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class Solutions {
 
@@ -23,6 +26,7 @@ public final class Solutions {
         SOLUTIONS.put(1, Solutions::d01_InverseCaptcha);
         SOLUTIONS.put(2, Solutions::d02_CorruptionChecksum);
         SOLUTIONS.put(3, Solutions::d03_SpiralMemory);
+        SOLUTIONS.put(4, Solutions::d04_HighEntropyPassphrases);
     }
 
     public static void main(String[] args) throws IOException {
@@ -173,6 +177,30 @@ public final class Solutions {
             }
             layer++;
         }
+    }
+
+    public static long d04_HighEntropyPassphrases(List<String> lines, int part) {
+        int valid = 0;
+        for (String line : lines) {
+            final Set<String> words = new HashSet<>();
+            boolean isValid = true;
+            for (String word : line.split(" ")) {
+                if (part == 2) {
+                    char[] array = word.toCharArray();
+                    Arrays.sort(array);
+                    word = String.valueOf(array);
+                }
+                if (words.contains(word)) {
+                    isValid = false;
+                    break;
+                }
+                words.add(word);
+            }
+            if (isValid) {
+                valid++;
+            }
+        }
+        return valid;
     }
 
     private static final class IntPair {

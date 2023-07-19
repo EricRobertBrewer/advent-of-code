@@ -32,10 +32,12 @@ public final class AocUtil {
             final int code = connection.getResponseCode();
             if (code == 200) {
                 final InputStream uin = connection.getInputStream();
-                byte[] data = new byte[uin.available()];
-                uin.read(data);
+                byte[] data = new byte[1024];
+                int read;
                 final OutputStream fout = new FileOutputStream(inputFile);
-                fout.write(data);
+                while ((read = uin.read(data)) != -1) {
+                    fout.write(data, 0, read);
+                }
                 fout.close();
             } else {
                 throw new RuntimeException("Request for input returned code: " + code);
