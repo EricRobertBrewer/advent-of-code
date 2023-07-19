@@ -34,6 +34,7 @@ public final class Solutions {
         SOLUTIONS.put(5, Solutions::d05_AMazeOfTwistyTrampolinesAllAlike);
         SOLUTIONS.put(6, Solutions::d06_MemoryReallocation);
         SOLUTIONS.put(7, Solutions::d07_RecursiveCircus);
+        SOLUTIONS.put(8, Solutions::d08_IHeardYouLikeRegisters);
     }
 
     public static void main(String[] args) throws IOException {
@@ -345,5 +346,54 @@ public final class Solutions {
             }
         }
         throw new RuntimeException("Unable to find non-matching program weight.");
+    }
+
+    public static long d08_IHeardYouLikeRegisters(List<String> lines, int part) {
+        final Map<String, Integer> registerToValue = new HashMap<>();
+        int valueMax = Integer.MIN_VALUE;
+        for (String line : lines) {
+            final String[] tokens = line.split(" ");
+            if (!registerToValue.containsKey(tokens[4])) {
+                registerToValue.put(tokens[4], 0);
+            }
+            final int conditionRegister = registerToValue.get(tokens[4]);
+            final int conditionValue = Integer.parseInt(tokens[6]);
+            if ((">".equals(tokens[5]) && conditionRegister <= conditionValue) ||
+                    ("<".equals(tokens[5]) && conditionRegister >= conditionValue) ||
+                    (">=".equals(tokens[5]) && conditionRegister < conditionValue) ||
+                    ("<=".equals(tokens[5]) && conditionRegister > conditionValue) ||
+                    ("==".equals(tokens[5]) && conditionRegister != conditionValue) ||
+                    ("!=".equals(tokens[5]) && conditionRegister == conditionValue)) {
+                continue;
+            }
+            if (!registerToValue.containsKey(tokens[0])) {
+                registerToValue.put(tokens[0], 0);
+            }
+            final int operationValue = registerToValue.get(tokens[0]);
+            final int offset = Integer.parseInt(tokens[2]);
+            final int value;
+            if ("inc".equals(tokens[1])) {
+                value = operationValue + offset;
+            } else if ("dec".equals(tokens[1])) {
+                value = operationValue - offset;
+            } else {
+                throw new RuntimeException("Unknown operator: " + tokens[1]);
+            }
+            if (part == 2) {
+                if (value > valueMax) {
+                    valueMax = value;
+                }
+            }
+            registerToValue.put(tokens[0], value);
+        }
+        if (part == 1) {
+            for (String register : registerToValue.keySet()) {
+                final int value = registerToValue.get(register);
+                if (value > valueMax) {
+                    valueMax = value;
+                }
+            }
+        }
+        return valueMax;
     }
 }
