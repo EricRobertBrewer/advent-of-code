@@ -27,6 +27,7 @@ public final class Solutions {
         SOLUTIONS.put(2, Solutions::d02_CorruptionChecksum);
         SOLUTIONS.put(3, Solutions::d03_SpiralMemory);
         SOLUTIONS.put(4, Solutions::d04_HighEntropyPassphrases);
+        SOLUTIONS.put(5, Solutions::d05_AMazeOfTwistyTrampolinesAllAlike);
     }
 
     public static void main(String[] args) throws IOException {
@@ -201,6 +202,30 @@ public final class Solutions {
             }
         }
         return valid;
+    }
+
+    public static long d05_AMazeOfTwistyTrampolinesAllAlike(List<String> lines, int part) {
+        final int[] instructions = new int[lines.size()];
+        for (int i = 0; i < lines.size(); i++) {
+            instructions[i] = Integer.parseInt(lines.get(i));
+        }
+        int ip = 0;
+        int steps = 0;
+        while (ip >= 0 && ip < instructions.length) {
+            int offset = instructions[ip];
+            if (part == 1) {
+                instructions[ip]++;
+            } else {
+                if (offset >= 3) {
+                    instructions[ip]--;
+                } else {
+                    instructions[ip]++;
+                }
+            }
+            ip += offset;
+            steps++;
+        }
+        return steps;
     }
 
     private static final class IntPair {
