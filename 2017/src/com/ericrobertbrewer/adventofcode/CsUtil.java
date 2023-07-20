@@ -4,10 +4,10 @@ public final class CsUtil {
 
     public static class IntPair {
 
-        final int a;
-        final int b;
+        public final int a;
+        public final int b;
 
-        IntPair(int a, int b) {
+        public IntPair(int a, int b) {
             this.a = a;
             this.b = b;
         }

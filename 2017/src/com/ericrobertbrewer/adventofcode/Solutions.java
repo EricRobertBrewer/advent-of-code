@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +42,7 @@ public final class Solutions {
         SOLUTIONS.put(10, Solutions::d10_KnotHash);
         SOLUTIONS.put(11, Solutions::d11_HexEd);
         SOLUTIONS.put(12, Solutions::d12_DigitalPlumber);
+        SOLUTIONS.put(13, Solutions::d13_PacketScanners);
     }
 
     public static void main(String[] args) throws IOException {
@@ -586,6 +588,7 @@ public final class Solutions {
             int size = 0;
             while (!queue.isEmpty()) {
                 final String programQueue = queue.poll();
+                visited.add(programQueue);
                 if ("0".equals(programQueue)) {
                     hasZero = true;
                 }
@@ -594,7 +597,6 @@ public final class Solutions {
                         queue.push(other);
                     }
                 }
-                visited.add(programQueue);
                 size++;
             }
             if (part == 1 && hasZero) {
@@ -603,5 +605,71 @@ public final class Solutions {
             groups++;
         }
         return groups;
+    }
+
+    public static long d13_PacketScanners(List<String> lines, int part) {
+        final Map<Integer, Integer> depthToRange = new HashMap<>();
+        int depthMax = -1;
+        for (String line : lines) {
+            final String[] depthRange = line.split(": ");
+            final int depth = Integer.parseInt(depthRange[0]);
+            final int range = Integer.parseInt(depthRange[1]);
+            depthToRange.put(depth, range);
+            if (depthMax == -1 || depth > depthMax) {
+                depthMax = depth;
+            }
+        }
+        final Map<Integer, Integer> depthToPosition = new HashMap<>();
+        final Map<Integer, Boolean> depthToDown = new HashMap<>();
+        for (int depth : depthToRange.keySet()) {
+            depthToPosition.put(depth, 0);
+            depthToDown.put(depth, true);
+        }
+
+        int severity = 0;
+        final LinkedList<Integer> packets = new LinkedList<>(); // `Deque` interface doesn't have `listIterator()`.
+        int delay = 0;
+        packets.offer(0);
+        while (packets.getFirst() <= depthMax) {
+            // Check if packets are caught.
+            final ListIterator<Integer> iterator = packets.listIterator();
+            while (iterator.hasNext()) {
+                final int packet = iterator.next();
+                if (depthToPosition.containsKey(packet) && depthToPosition.get(packet) == 0) {
+                    if (part == 1) {
+                        severity += packet * depthToRange.get(packet);
+                        iterator.set(packet + 1);
+                    } else {
+                        iterator.remove();
+                    }
+                } else {
+                    iterator.set(packet + 1);
+                }
+            }
+            // Move scanners.
+            for (int depth : depthToPosition.keySet()) {
+                int position = depthToPosition.get(depth);
+                if (depthToDown.get(depth)) {
+                    position++;
+                    if (position == depthToRange.get(depth) - 1) {
+                        depthToDown.put(depth, false);
+                    }
+                } else {
+                    position--;
+                    if (position == 0) {
+                        depthToDown.put(depth, true);
+                    }
+                }
+                depthToPosition.put(depth, position);
+            }
+            if (part != 1) {
+                packets.offer(0);
+            }
+            delay++;
+        }
+        if (part == 1) {
+            return severity;
+        }
+        return delay - depthMax - 1;
     }
 }
