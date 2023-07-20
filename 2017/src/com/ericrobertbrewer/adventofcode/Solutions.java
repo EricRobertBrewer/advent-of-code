@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +40,7 @@ public final class Solutions {
         SOLUTIONS.put(9, Solutions::d09_StreamProcessing);
         SOLUTIONS.put(10, Solutions::d10_KnotHash);
         SOLUTIONS.put(11, Solutions::d11_HexEd);
+        SOLUTIONS.put(12, Solutions::d12_DigitalPlumber);
     }
 
     public static void main(String[] args) throws IOException {
@@ -557,5 +560,48 @@ public final class Solutions {
             return hexDistance(i, j);
         }
         return distanceMax;
+    }
+
+    public static long d12_DigitalPlumber(List<String> lines, int part) {
+        final Map<String, Set<String>> programToOthers = new HashMap<>();
+        for (String line : lines) {
+            final String[] programOthers = line.split(" <-> ");
+            final String program = programOthers[0];
+            final Set<String> others = new HashSet<>();
+            for (String other : programOthers[1].split(", ")) {
+                others.add(other);
+            }
+            programToOthers.put(program, others);
+        }
+
+        final Deque<String> queue = new LinkedList<>();
+        final Set<String> visited = new HashSet<>();
+        int groups = 0;
+        for (String program : programToOthers.keySet()) {
+            if (visited.contains(program)) {
+                continue;
+            }
+            queue.push(program);
+            boolean hasZero = false;
+            int size = 0;
+            while (!queue.isEmpty()) {
+                final String programQueue = queue.poll();
+                if ("0".equals(programQueue)) {
+                    hasZero = true;
+                }
+                for (String other : programToOthers.get(programQueue)) {
+                    if (!visited.contains(other)) {
+                        queue.push(other);
+                    }
+                }
+                visited.add(programQueue);
+                size++;
+            }
+            if (part == 1 && hasZero) {
+                return size;
+            }
+            groups++;
+        }
+        return groups;
     }
 }
