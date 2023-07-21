@@ -53,7 +53,7 @@ public final class Solutions {
         final int part = Integer.parseInt(args[1]);
         final boolean example;
         if (args.length > 2) {
-            if ("--example".equals(args[3]) || "-x".equals(args[2])) {
+            if ("--example".equals(args[2]) || "-x".equals(args[2])) {
                 example = true;
             } else {
                 throw new IllegalArgumentException("Unexpected argument: " + args[2]);
