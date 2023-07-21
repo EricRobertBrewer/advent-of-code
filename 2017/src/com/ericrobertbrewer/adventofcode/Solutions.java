@@ -43,6 +43,7 @@ public final class Solutions {
         SOLUTIONS.put(11, Solutions::d11_HexEd);
         SOLUTIONS.put(12, Solutions::d12_DigitalPlumber);
         SOLUTIONS.put(13, Solutions::d13_PacketScanners);
+        SOLUTIONS.put(14, Solutions::d14_DiskDefragmentation);
     }
 
     public static void main(String[] args) throws IOException {
@@ -442,73 +443,36 @@ public final class Solutions {
 
     public static long d10_KnotHash(List<String> lines, int part) {
         final String input = lines.get(0);
-        final int n = 256;
-        final int[] hash = new int[n];
-        for (int i = 0; i < n; i++) {
-            hash[i] = i;
-        }
-        final int[] lengths;
-        final int rounds;
-        if (part == 1) {
-            final String[] lengthStrings = input.split(",");
-            lengths = new int[lengthStrings.length];
-            for (int i = 0; i < lengthStrings.length; i++) {
-                lengths[i] = Integer.parseInt(lengthStrings[i]);
-            }
-            rounds = 1;
-        } else {
-            final int z = input.length() + 5;
-            lengths = new int[z];
-            for (int i = 0; i < input.length(); i++) {
-                lengths[i] = (int) input.charAt(i);
-            }
-            lengths[z - 5] = 17;
-            lengths[z - 4] = 31;
-            lengths[z - 3] = 73;
-            lengths[z - 2] = 47;
-            lengths[z - 1] = 23;
-            rounds = 64;
+        if (part == 2) {
+            System.out.println(CsUtil.knotHash(input.toCharArray()));
+            return 0;
         }
 
-        // Sparse hash.
+        final int n = 256;
+        final char[] hash = new char[n];
+        for (int i = 0; i < n; i++) {
+            hash[i] = (char) i;
+        }
+        final String[] tokens = input.split(",");
+        final char[] message = new char[tokens.length];
+        for (int i = 0; i < tokens.length; i++) {
+            message[i] = (char) Integer.parseInt(tokens[i]);
+        }
+
         int position = 0;
         int skip = 0;
-        for (int round = 0; round < rounds; round++) {
-            for (int length : lengths) {
-                if (length > n) {
-                    continue;
-                }
-                for (int d = 0; d < length / 2; d++) {
-                    final int i = (position + d) % n;
-                    final int j = (position + length - 1 - d + n) % n;
-                    final int t = hash[i];
-                    hash[i] = hash[j];
-                    hash[j] = t;
-                }
-                position = (position + length + skip) % n;
-                skip++;
+        for (char length : message) {
+            for (int d = 0; d < length / 2; d++) {
+                final int i = (position + d) % n;
+                final int j = (position + length - 1 - d + n) % n;
+                final char t = hash[i];
+                hash[i] = hash[j];
+                hash[j] = t;
             }
+            position = (position + length + skip) % n;
+            skip++;
         }
-        if (part == 1) {
-            return hash[0] * hash[1];
-        }
-
-        // Dense hash.
-        final byte[] dense = new byte[16];
-        for (int i = 0; i < dense.length; i++) {
-            byte value = (byte) hash[16 * i];
-            for (int j = 1; j < 16; j++) {
-                value ^= (byte) hash[16 * i + j];
-            }
-            dense[i] = value;
-        }
-
-        StringBuilder knot = new StringBuilder();
-        for (byte b : dense) {
-            knot.append(String.format("%02x", b));
-        }
-        System.out.println(knot.toString());
-        return 0;
+        return (int) hash[0] * (int) hash[1];
     }
 
     private static int hexDistance(int i, int j) {
@@ -671,5 +635,68 @@ public final class Solutions {
             return severity;
         }
         return delay - depthMax - 1;
+    }
+
+    public static long d14_DiskDefragmentation(List<String> lines, int part) {
+        final String input = lines.get(0);
+        final int m = 128;
+        final int n = 128;
+        final char[][] grid = new char[m][n];
+        for (int i = 0; i < m; i++) {
+            final char[] message = (input + "-" + i).toCharArray();
+            final byte[] hash = CsUtil.knotHashBytes(message);
+            for (int j = 0; j < 16; j++) {
+                final byte b = hash[j];
+                for (int k = 0; k < 8; k++) {
+                    grid[i][8 * j + 7 - k] = ((b >> k) & 0x01) == 0x01 ? '#' : '.';
+                }
+            }
+        }
+
+        if (part == 1) {
+            int used = 0;
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (grid[i][j] == '#') {
+                        used++;
+                    }
+                }
+            }
+            return used;
+        }
+
+        int regions = 0;
+        final Set<CsUtil.IntPair> visited = new HashSet<>();
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (grid[i][j] != '#') {
+                    continue;
+                }
+                final CsUtil.IntPair square = new CsUtil.IntPair(i, j);
+                if (visited.contains(square)) {
+                    continue;
+                }
+                final Deque<CsUtil.IntPair> queue = new LinkedList<>();
+                queue.offer(square);
+                while (!queue.isEmpty()) {
+                    final CsUtil.IntPair qSquare = queue.poll();
+                    visited.add(qSquare);
+                    final int qi = qSquare.a;
+                    final int qj = qSquare.b;
+                    final int[][] neighbors = {{qi - 1, qj}, {qi, qj + 1}, {qi + 1, qj}, {qi, qj - 1}};
+                    for (int[] neighbor : neighbors) {
+                        final int ni = neighbor[0];
+                        final int nj = neighbor[1];
+                        final CsUtil.IntPair nSquare = new CsUtil.IntPair(ni, nj);
+                        if (ni >= 0 && ni < m && nj >= 0 && nj < n &&
+                                grid[ni][nj] == '#' && !visited.contains(nSquare)) {
+                            queue.offer(nSquare);
+                        }
+                    }
+                }
+                regions++;
+            }
+        }
+        return regions;
     }
 }
