@@ -45,6 +45,7 @@ public final class Solutions {
         SOLUTIONS.put(13, Solutions::d13_PacketScanners);
         SOLUTIONS.put(14, Solutions::d14_DiskDefragmentation);
         SOLUTIONS.put(15, Solutions::d15_DuelingGenerators);
+        SOLUTIONS.put(16, Solutions::d16_PermutationPromenade);
     }
 
     public static void main(String[] args) throws IOException {
@@ -737,5 +738,69 @@ public final class Solutions {
             round++;
         }
         return count;
+    }
+
+    public static long d16_PermutationPromenade(List<String> lines, int part) {
+        final int n = 'p' - 'a' + 1;
+        final char[] order = new char[n];
+        final Map<Character, Integer> cToPosition = new HashMap<>();
+        for (int i = 0; i < n; i++) {
+            order[i] = (char) ('a' + i);
+            cToPosition.put(order[i], i);
+        }
+
+        final Map<String, Integer> orderToDance = new HashMap<>();
+        boolean skipped = false;
+        final int dances = part == 1 ? 1 : 1000000000;
+        int dance = 0;
+        final String[] moves = lines.get(0).split(",");
+        while (dance < dances) {
+            if (!skipped) {
+                final String s = new String(order);
+                if (orderToDance.containsKey(s)) {
+                    final int danceSince = orderToDance.get(s);
+                    final int danceInterval = dance - danceSince;
+                    final int repeat = (dances - danceSince) / danceInterval - 1;
+                    dance += repeat * danceInterval;
+                    skipped = true;
+                } else {
+                    orderToDance.put(s, dance);
+                }
+            }
+            for (String move : moves) {
+                final char c = move.charAt(0);
+                if (c == 's') {
+                    final int x = Integer.parseInt(move.substring(1)) % n;
+                    final char[] orderNext = new char[n];
+                    for (int i = 0; i < n; i++) {
+                        orderNext[i] = order[(i + n - x) % n];
+                    }
+                    for (int i = 0; i < n; i++) {
+                        order[i] = orderNext[i];
+                        cToPosition.put(order[i], i);
+                    }
+                } else if (c == 'x' || c == 'p') {
+                    final int a, b;
+                    if (c == 'x') {
+                        final int slash = move.indexOf('/');
+                        a = Integer.parseInt(move.substring(1, slash));
+                        b = Integer.parseInt(move.substring(slash + 1));
+                    } else {
+                        a = cToPosition.get(move.charAt(1));
+                        b = cToPosition.get(move.charAt(3));
+                    }
+                    char t = order[a];
+                    order[a] = order[b];
+                    order[b] = t;
+                    cToPosition.put(order[a], a);
+                    cToPosition.put(order[b], b);
+                } else {
+                    throw new IllegalArgumentException("Unexpected move: " + move);
+                }
+            }
+            dance++;
+        }
+        System.out.println(order);
+        return 0;
     }
 }
