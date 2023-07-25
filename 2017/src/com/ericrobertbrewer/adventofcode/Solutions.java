@@ -46,6 +46,7 @@ public final class Solutions {
         SOLUTIONS.put(14, Solutions::d14_DiskDefragmentation);
         SOLUTIONS.put(15, Solutions::d15_DuelingGenerators);
         SOLUTIONS.put(16, Solutions::d16_PermutationPromenade);
+        SOLUTIONS.put(17, Solutions::d17_Spinlock);
     }
 
     public static void main(String[] args) throws IOException {
@@ -802,5 +803,40 @@ public final class Solutions {
         }
         System.out.println(order);
         return 0;
+    }
+
+    public static long d17_Spinlock(List<String> lines, int part) {
+        final int steps = Integer.parseInt(lines.get(0));
+
+        if (part == 1) {
+            final LinkedList<Integer> buffer = new LinkedList<>();
+            ListIterator<Integer> iterator = buffer.listIterator();
+            iterator.add(0);
+            while (buffer.size() <= 2017) {
+                for (int i = 0; i < steps % buffer.size(); i++) {
+                    if (iterator.hasNext()) {
+                        iterator.next();
+                    } else {
+                        iterator = buffer.listIterator();
+                        iterator.next();
+                    }
+                }
+                iterator.add(buffer.size());
+            }
+            return iterator.hasNext() ? iterator.next() : buffer.getFirst();
+        }
+
+        int position = 0;
+        int size = 1;
+        int after0 = -1;
+        while (size <= 50000000) {
+            position = (position + steps) % size;
+            if (position == 0) {
+                after0 = size;
+            }
+            position++;
+            size++;
+        }
+        return after0;
     }
 }
