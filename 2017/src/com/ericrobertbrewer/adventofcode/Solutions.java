@@ -44,6 +44,7 @@ public final class Solutions {
         SOLUTIONS.put(12, Solutions::d12_DigitalPlumber);
         SOLUTIONS.put(13, Solutions::d13_PacketScanners);
         SOLUTIONS.put(14, Solutions::d14_DiskDefragmentation);
+        SOLUTIONS.put(15, Solutions::d15_DuelingGenerators);
     }
 
     public static void main(String[] args) throws IOException {
@@ -698,5 +699,43 @@ public final class Solutions {
             }
         }
         return regions;
+    }
+
+    public static long d15_DuelingGenerators(List<String> lines, int part) {
+        int a = -1;
+        int b = -1;
+        for (String line : lines) {
+            final String[] tokens = line.split(" ");
+            final int value = Integer.parseInt(tokens[4]);
+            if ("A".equals(tokens[1])) {
+                a = value;
+            } else if ("B".equals(tokens[1])) {
+                b = value;
+            } else {
+                throw new IllegalArgumentException("Unexpected generator name: " + tokens[1]);
+            }
+        }
+
+        final long fa = 16807;
+        final long fb = 48271;
+        final int x = 2147483647;
+        final int rounds = part == 1 ? 40000000 : 5000000;
+        int round = 0;
+        int count = 0;
+        while (round < rounds) {
+            do {
+                a = (int) ((fa * (long) a) % x);
+            } while (part == 2 && a % 4 != 0);
+            do {
+                b = (int) ((fb * (long) b) % x);
+            } while (part == 2 && b % 8 != 0);
+            final int a16 = a & 0xffff;
+            final int b16 = b & 0xffff;
+            if (a16 == b16) {
+                count++;
+            }
+            round++;
+        }
+        return count;
     }
 }
