@@ -47,6 +47,7 @@ public final class Solutions {
         SOLUTIONS.put(15, Solutions::d15_DuelingGenerators);
         SOLUTIONS.put(16, Solutions::d16_PermutationPromenade);
         SOLUTIONS.put(17, Solutions::d17_Spinlock);
+        SOLUTIONS.put(18, Solutions::d18_Duet);
     }
 
     public static void main(String[] args) throws IOException {
@@ -838,5 +839,109 @@ public final class Solutions {
             size++;
         }
         return after0;
+    }
+
+    private static long getRegisterOrLiteralValue(String ys, Map<Character, Long> registerToValue) {
+        if (ys.length() == 1 && ys.charAt(0) >= 'a' && ys.charAt(0) <= 'z') {
+            return registerToValue.get(ys.charAt(0));
+        }
+        return Long.parseLong(ys);
+    }
+
+    public static long d18_Duet(List<String> lines, int part) {
+        final List<String[]> instructions = new ArrayList<>();
+        final List<Map<Character, Long>> registersToValue = new ArrayList<>();
+        int[] i = new int[2];
+        final List<Deque<Long>> queues = new ArrayList<>();
+        boolean[] waiting = new boolean[2];
+        for (int p = 0; p < 2; p++) {
+            registersToValue.add(new HashMap<>());
+            i[p] = 0;
+            queues.add(new LinkedList<>());
+            waiting[p] = false;
+        }
+        for (String line : lines) {
+            final String[] instruction = line.split(" ");
+            for (int j = 1; j < instruction.length; j++) {
+                final String s = instruction[j];
+                if (s.length() == 1 && s.charAt(0) >= 'a' && s.charAt(0) <= 'z') {
+                    registersToValue.get(0).put(s.charAt(0), 0L);
+                    registersToValue.get(1).put(s.charAt(0), 0L);
+                }
+            }
+            instructions.add(instruction);
+        }
+        registersToValue.get(1).put('p', 1L); // Program ID.
+
+        long answer = 0;
+        int p = 0;
+        for (char c : registersToValue.get(0).keySet()) {
+            System.out.println("0: " + c);
+        }
+        for (char c : registersToValue.get(1).keySet()) {
+            System.out.println("1: " + c);
+        }
+        while (part == 1 || !waiting[0] || !waiting[1]) {
+            final Map<Character, Long> registerToValue = registersToValue.get(p);
+            while (i[p] >= 0 && i[p] < instructions.size()) {
+                final String[] instruction = instructions.get(i[p]);
+                final String operation = instruction[0];
+                final String xs = instruction[1];
+                final char xc = xs.charAt(0);
+                final long x = getRegisterOrLiteralValue(xs, registerToValue);
+                final String ys = instruction.length > 2 ? instruction[2] : null;
+                if ("snd".equals(operation)) {
+                    if (part == 1) {
+                        answer = x;
+                    } else {
+                        queues.get(p == 0 ? 1 : 0).offer(x);
+                        waiting[p == 0 ? 1 : 0] = false;
+                        if (p == 1) {
+                            answer++;
+                        }
+                    }
+                } else if ("set".equals(operation)) {
+                    final long y = getRegisterOrLiteralValue(ys, registerToValue);
+                    registerToValue.put(xc, y);
+                } else if ("add".equals(operation)) {
+                    final long y = getRegisterOrLiteralValue(ys, registerToValue);
+                    registerToValue.put(xc, x + y);
+                } else if ("mul".equals(operation)) {
+                    final long y = getRegisterOrLiteralValue(ys, registerToValue);
+                    registerToValue.put(xc, x * y);
+                } else if ("mod".equals(operation)) {
+                    final long y = getRegisterOrLiteralValue(ys, registerToValue);
+                    registerToValue.put(xc, x % y);
+                } else if ("rcv".equals(operation)) {
+                    if (part == 1) {
+                        if (x != 0 && answer != 0) {
+                            break;
+                        }
+                    } else if (!queues.get(p).isEmpty()) {
+                        registerToValue.put(xc, queues.get(p).poll());
+                    } else {
+                        waiting[p] = true;
+                        break;
+                    }
+                } else if ("jgz".equals(operation)) {
+                    if (x > 0) {
+                        final long y = getRegisterOrLiteralValue(ys, registerToValue);
+                        i[p] += y;
+                        continue;
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unexpected operation: " + operation);
+                }
+                i[p]++;
+            }
+            if (part == 1) {
+                break;
+            }
+            if (i[p] < 0 || i[p] >= instructions.size()) {
+                break;
+            }
+            p = p == 0 ? 1 : 0;
+        }
+        return answer;
     }
 }
