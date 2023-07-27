@@ -48,6 +48,7 @@ public final class Solutions {
         SOLUTIONS.put(16, Solutions::d16_PermutationPromenade);
         SOLUTIONS.put(17, Solutions::d17_Spinlock);
         SOLUTIONS.put(18, Solutions::d18_Duet);
+        SOLUTIONS.put(19, Solutions::d19_ASeriesOfTubes);
     }
 
     public static void main(String[] args) throws IOException {
@@ -875,12 +876,6 @@ public final class Solutions {
 
         long answer = 0;
         int p = 0;
-        for (char c : registersToValue.get(0).keySet()) {
-            System.out.println("0: " + c);
-        }
-        for (char c : registersToValue.get(1).keySet()) {
-            System.out.println("1: " + c);
-        }
         while (part == 1 || !waiting[0] || !waiting[1]) {
             final Map<Character, Long> registerToValue = registersToValue.get(p);
             while (i[p] >= 0 && i[p] < instructions.size()) {
@@ -943,5 +938,80 @@ public final class Solutions {
             p = p == 0 ? 1 : 0;
         }
         return answer;
+    }
+
+    public static long d19_ASeriesOfTubes(List<String> lines, int part) {
+        int i = 0;
+        int j = -1;
+        for (int k = 0; k < lines.get(0).length(); k++) {
+            final char c = lines.get(0).charAt(k);
+            if (c != ' ') {
+                if (c != '|') {
+                    throw new IllegalArgumentException("Unexpected character in first line: " + c);
+                }
+                if (j != -1) {
+                    throw new IllegalArgumentException("Multiple start characters found at indices: " + j + ", " + k);
+                }
+                j = k;
+            }
+        }
+        final int[][] deltas = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
+        final char[] pathChars = {'|', '-'};
+        int direction = 2; // Down.
+        String answer = "";
+        int steps = 1;
+        while (true) {
+            final int[] delta = deltas[direction];
+            final int iNext = i + delta[0];
+            final int jNext = j + delta[1];
+            final char c = lines.get(iNext).charAt(jNext);
+            if (c == '+') {
+                int directionNext = -1;
+                int axisOther = (direction + 1) % 2;
+                for (int directionOther : new int[]{axisOther, 2 + axisOther}) {
+                    final int[] deltaOther = deltas[directionOther];
+                    int iNextNext = iNext + deltaOther[0];
+                    int jNextNext = jNext + deltaOther[1];
+                    if (iNextNext < 0 || iNextNext >= lines.size() || jNextNext < 0 || jNextNext >= lines.get(iNextNext).length()) {
+                        continue;
+                    }
+                    final char cNextNext = lines.get(iNextNext).charAt(jNextNext);
+                    if (cNextNext != ' ') {
+                        if (directionNext != -1) {
+                            throw new IllegalArgumentException("Unexpected fork: (" + iNext + ", " + jNext + ")");
+                        }
+                        i = iNextNext;
+                        j = jNextNext;
+                        directionNext = directionOther;
+                        if (cNextNext != pathChars[directionNext % 2]) {
+                            answer += cNextNext;
+                        }
+                    }
+                }
+                if (directionNext == -1) {
+                    break;
+                }
+                direction = directionNext;
+                steps += 2;
+            } else if (c == pathChars[direction % 2]) {
+                i = iNext;
+                j = jNext;
+                steps++;
+            } else if (c == pathChars[(direction + 1) % 2]) {
+                // Cross.
+                i = iNext;
+                j = jNext;
+                steps++;
+            } else if (c == ' ') {
+                break;
+            } else {
+                i = iNext;
+                j = jNext;
+                answer += c;
+                steps++;
+            }
+        }
+        System.out.println(answer);
+        return steps;
     }
 }
