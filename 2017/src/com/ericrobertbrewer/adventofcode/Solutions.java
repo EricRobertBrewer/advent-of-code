@@ -49,6 +49,7 @@ public final class Solutions {
         SOLUTIONS.put(17, Solutions::d17_Spinlock);
         SOLUTIONS.put(18, Solutions::d18_Duet);
         SOLUTIONS.put(19, Solutions::d19_ASeriesOfTubes);
+        SOLUTIONS.put(20, Solutions::d20_ParticleSwarm);
     }
 
     public static void main(String[] args) throws IOException {
@@ -1013,5 +1014,99 @@ public final class Solutions {
         }
         System.out.println(answer);
         return steps;
+    }
+
+    public static long d20_ParticleSwarm(List<String> lines, int part) {
+        final int[][][] particles = new int[lines.size()][3][3];
+        final String names = "pva";
+        final int P = 0, V = 1, A = 2;
+        final int X = 0, Y = 1, Z = 2;
+        for (int i = 0; i < lines.size(); i++) {
+            final String[] pva = lines.get(i).split(", ");
+            if (pva.length != 3) {
+                throw new IllegalArgumentException("Unexpected line: " + lines.get(i));
+            }
+            for (int j = 0; j < pva.length; j++) {
+                final String xyzS = pva[j];
+                if (!xyzS.startsWith("" + names.charAt(j) + "=<") || !xyzS.endsWith(">")) {
+                    throw new IllegalArgumentException("Unexpected point description on line " + i + ": " + xyzS);
+                }
+                final String[] vector = xyzS.substring(3, xyzS.length() - 1).split(",");
+                if (vector.length != 3) {
+                    throw new IllegalArgumentException("Unexpected vector on line " + i + ": " + xyzS);
+                }
+                for (int k = 0; k < vector.length; k++) {
+                    particles[i][j][k] = Integer.parseInt(vector[k]);
+                }
+            }
+        }
+
+        if (part == 1) {
+            // Find the minimum Manhattan acceleration; minimum sum of zero-acceleration velocities break ties.
+            int aMin = -1;
+            int iMin = -1;
+            for (int i = 0; i < particles.length; i++) {
+                final int[][] particle = particles[i];
+                final int ax = particle[A][X], ay = particle[A][Y], az = particle[A][Z];
+                final int a = Math.abs(ax) + Math.abs(ay) + Math.abs(az);
+                if (aMin == -1 || a < aMin) {
+                    aMin = a;
+                    iMin = i;
+                } else if (a == aMin) {
+                    final int[][] particleMin = particles[iMin];
+                    int dMin = 0;
+                    int d = 0;
+                    for (int k = 0; k < 3; k++) {
+                        if (particleMin[A][k] == 0) {
+                            dMin += Math.abs(particleMin[V][k]);
+                        }
+                        if (particle[A][k] == 0) {
+                            d += Math.abs(particle[V][k]);
+                        }
+                    }
+                    if (d < dMin) {
+                        aMin = a;
+                        iMin = i;
+                    }
+                }
+            }
+            return iMin;
+        }
+
+        final Set<Integer> ids = new HashSet<>();
+        for (int i = 0; i < particles.length; i++) {
+            ids.add(i);
+        }
+        int patience = 0; // Not deterministic; this is only a heuristic.
+        while (patience < 20) {
+            final Map<CsUtil.IntTriple, Set<Integer>> pointToIds = new HashMap<>();
+            for (int id : ids) {
+                final int[][] particle = particles[id];
+                for (int k = 0; k < 3; k++) {
+                    particle[V][k] += particle[A][k];
+                    particle[P][k] += particle[V][k];
+                }
+                final CsUtil.IntTriple point = new CsUtil.IntTriple(particle[P][X], particle[P][Y], particle[P][Z]);
+                if (!pointToIds.containsKey(point)) {
+                    pointToIds.put(point, new HashSet<Integer>());
+                }
+                pointToIds.get(point).add(id);
+            }
+            boolean patient = true;
+            for (CsUtil.IntTriple point : pointToIds.keySet()) {
+                if (pointToIds.get(point).size() > 1) {
+                    for (int id : pointToIds.get(point)) {
+                        ids.remove(id);
+                    }
+                    patient = false;
+                }
+            }
+            if (patient) {
+                patience++;
+            } else {
+                patience = 0;
+            }
+        }
+        return ids.size();
     }
 }

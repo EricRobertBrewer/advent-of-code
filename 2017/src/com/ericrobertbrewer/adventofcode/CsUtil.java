@@ -30,6 +30,32 @@ public final class CsUtil {
         }
     }
 
+    public static class IntTriple extends IntPair {
+
+        public final int c;
+
+        public IntTriple(int a, int b, int c) {
+            super(a, b);
+            this.c = c;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + c;
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof IntTriple)) {
+                return false;
+            }
+            final IntTriple otherTriple = (IntTriple) other;
+            return otherTriple.a == a && otherTriple.b == b && otherTriple.c == c;
+        }
+    }
+
     public static byte[] knotHashBytes(char[] message) {
         final int z = message.length + 5;
         final char[] payload = new char[z];
