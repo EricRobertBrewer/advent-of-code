@@ -50,6 +50,7 @@ public final class Solutions {
         SOLUTIONS.put(18, Solutions::d18_Duet);
         SOLUTIONS.put(19, Solutions::d19_ASeriesOfTubes);
         SOLUTIONS.put(20, Solutions::d20_ParticleSwarm);
+        SOLUTIONS.put(21, Solutions::d21_FractalArt);
     }
 
     public static void main(String[] args) throws IOException {
@@ -1108,5 +1109,87 @@ public final class Solutions {
             }
         }
         return ids.size();
+    }
+
+    public static long d21_FractalArt(List<String> lines, int part) {
+        final Map<String, String[]> squareToResult = new HashMap<>();
+        for (String line : lines) {
+            final String[] squareResult = line.split(" => ");
+            final String[] result = squareResult[1].split("/");
+            final String[] square = squareResult[0].split("/");
+            final int n = square.length;
+            final int[][] loops = {
+                    {    0,  n,  1,     0,  n,  1}, // No rotation.
+                    {n - 1, -1, -1,     0,  n,  1}, // Rotate 90 degrees clockwise.
+                    {n - 1, -1, -1, n - 1, -1, -1}, // Rotate 180 degrees.
+                    {    0,  n,  1, n - 1, -1, -1}  // Rotate 270 degress.
+            };
+            for (int k = 0; k < loops.length; k++) {
+                final int[] loop = loops[k];
+                final StringBuilder rotation = new StringBuilder();
+                for (int i = loop[0]; i != loop[1]; i += loop[2]) {
+                    for (int j = loop[3]; j != loop[4]; j += loop[5]) {
+                        rotation.append(square[i].charAt(j));
+                    }
+                    rotation.append('/');
+                }
+                final StringBuilder flip = new StringBuilder();
+                for (int j = loop[3]; j != loop[4]; j += loop[5]) {
+                    for (int i = loop[0]; i != loop[1]; i += loop[2]) {
+                        flip.append(square[i].charAt(j));
+                    }
+                    flip.append('/');
+                }
+                squareToResult.put(rotation.toString(), result);
+                squareToResult.put(flip.toString(), result);
+            }
+        }
+
+        char[][] grid = {
+                {'.' , '#', '.'},
+                {'.' , '.', '#'},
+                {'#' , '#', '#'}
+        };
+        for (int iterations = 0; iterations < (part == 1 ? 5 : 18); iterations++) {
+            final int v;
+            final int m;
+            if (grid.length % 2 == 0) {
+                v = 2;
+                m = 3;
+            } else {
+                v = 3;
+                m = 4;
+            }
+            final int n = grid.length / v * m;
+            final char[][] gridNext = new char[n][n];
+            for (int i = 0; i < grid.length; i += v) {
+                for (int j = 0; j < grid[i].length; j += v) {
+                    final StringBuilder s = new StringBuilder();
+                    for (int di = i; di < i + v; di++) {
+                        for (int dj = j; dj < j + v; dj++) {
+                            s.append(grid[di][dj]);
+                        }
+                        s.append('/');
+                    }
+                    final String[] result = squareToResult.get(s.toString());
+                    for (int ri = 0; ri < m; ri++) {
+                        for (int rj = 0; rj < m; rj++) {
+                            gridNext[i / v * m + ri][j / v * m + rj] = result[ri].charAt(rj);
+                        }
+                    }
+                }
+            }
+            grid = gridNext;
+        }
+
+        int on = 0;
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid[i].length; j++) {
+                if (grid[i][j] == '#') {
+                    on++;
+                }
+            }
+        }
+        return on;
     }
 }
