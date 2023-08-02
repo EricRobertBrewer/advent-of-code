@@ -51,6 +51,7 @@ public final class Solutions {
         SOLUTIONS.put(19, Solutions::d19_ASeriesOfTubes);
         SOLUTIONS.put(20, Solutions::d20_ParticleSwarm);
         SOLUTIONS.put(21, Solutions::d21_FractalArt);
+        SOLUTIONS.put(22, Solutions::d22_SporificaVirus);
     }
 
     public static void main(String[] args) throws IOException {
@@ -1191,5 +1192,54 @@ public final class Solutions {
             }
         }
         return on;
+    }
+
+    public static long d22_SporificaVirus(List<String> lines, int part) {
+        final int STATE_CLEAN = 0;
+        final int STATE_WEAKENED = 1;
+        final int STATE_INFECTED = 2;
+        final int STATE_FLAGGED = 3;
+        final Map<CsUtil.IntPair, Integer> pointToState = new HashMap<>();
+        for (int i = 0; i < lines.size(); i++) {
+            final String line = lines.get(i);
+            for (int j = 0; j < line.length(); j++) {
+                pointToState.put(new CsUtil.IntPair(i, j), line.charAt(j) == '#' ? STATE_INFECTED : STATE_CLEAN);
+            }
+        }
+        final int[][] deltas = {{-1, 0}, {0, 1}, {1, 0}, {0, -1}};
+        int direction = 0;
+        int i = lines.size() / 2;
+        int j = lines.get(i).length() / 2;
+        int count = 0;
+        for (int burst = 0; burst < (part == 1 ? 10000 : 10000000); burst++) {
+            final CsUtil.IntPair point = new CsUtil.IntPair(i, j);
+            if (!pointToState.containsKey(point) || pointToState.get(point) == STATE_CLEAN) {
+                direction = (direction + 3) % 4; // Left.
+                if (part == 1) {
+                    pointToState.put(point, STATE_INFECTED);
+                    count++;
+                } else {
+                    pointToState.put(point, STATE_WEAKENED);
+                }
+            } else if (pointToState.get(point) == STATE_WEAKENED) {
+                // Direction stays straight.
+                pointToState.put(point, STATE_INFECTED);
+                count++;
+            } else if (pointToState.get(point) == STATE_INFECTED) {
+                direction = (direction + 1) % 4; // Right.
+                if (part == 1) {
+                    pointToState.put(point, STATE_CLEAN);
+                } else {
+                    pointToState.put(point, STATE_FLAGGED);
+                }
+            } else {
+                direction = (direction + 2) % 4; // Backwards.
+                pointToState.put(point, STATE_CLEAN);
+            }
+            final int[] delta = deltas[direction];
+            i += delta[0];
+            j += delta[1];
+        }
+        return count;
     }
 }
