@@ -28,7 +28,7 @@ public final class Solutions {
         long getAnswer(List<String> lines, int part);
     }
 
-    private static Map<Integer, Solution> SOLUTIONS = new HashMap<>();
+    private static final Map<Integer, Solution> SOLUTIONS = new HashMap<>();
     static {
         SOLUTIONS.put(1, Solutions::d01_InverseCaptcha);
         SOLUTIONS.put(2, Solutions::d02_CorruptionChecksum);
@@ -53,6 +53,7 @@ public final class Solutions {
         SOLUTIONS.put(21, Solutions::d21_FractalArt);
         SOLUTIONS.put(22, Solutions::d22_SporificaVirus);
         SOLUTIONS.put(23, Solutions::d23_CoprocessorConflagration);
+        SOLUTIONS.put(24, Solutions::d24_ElectromagneticMoat);
     }
 
     public static void main(String[] args) throws IOException {
@@ -97,7 +98,7 @@ public final class Solutions {
         return solution.getAnswer(lines, part);
     }
 
-    private static long d01_InverseCaptcha(List<String> lines, int part) {
+    public static long d01_InverseCaptcha(List<String> lines, int part) {
         final String captcha = lines.get(0);
         final int n = captcha.length();
         long sum = 0;
@@ -120,7 +121,7 @@ public final class Solutions {
         return sum;
     }
 
-    private static long d02_CorruptionChecksum(List<String> lines, int part) {
+    public static long d02_CorruptionChecksum(List<String> lines, int part) {
         long sum = 0;
         for (final String line : lines) {
             final String[] tokens = line.split("\t");
@@ -484,25 +485,6 @@ public final class Solutions {
         return (int) hash[0] * (int) hash[1];
     }
 
-    private static int hexDistance(int i, int j) {
-        if (j > 0) {
-            if (i > 0) {
-                return j + i;
-            } else if (i < -j) {
-                return j + (-j - i);
-            }
-            return j;
-        } else if (j < 0) {
-            if (i < 0) {
-                return -j + (-i);
-            } else if (i > -j) {
-                return -j + (i - (-j));
-            }
-            return -j;
-        }
-        return Math.abs(i);
-    }
-
     public static long d11_HexEd(List<String> lines, int part) {
         final String[] steps = lines.get(0).split(",");
         int i = 0;
@@ -535,6 +517,25 @@ public final class Solutions {
             return hexDistance(i, j);
         }
         return distanceMax;
+    }
+
+    private static int hexDistance(int i, int j) {
+        if (j > 0) {
+            if (i > 0) {
+                return j + i;
+            } else if (i < -j) {
+                return j + (-j - i);
+            }
+            return j;
+        } else if (j < 0) {
+            if (i < 0) {
+                return -j + (-i);
+            } else if (i > -j) {
+                return -j + (i - (-j));
+            }
+            return -j;
+        }
+        return Math.abs(i);
     }
 
     public static long d12_DigitalPlumber(List<String> lines, int part) {
@@ -846,13 +847,6 @@ public final class Solutions {
         return after0;
     }
 
-    private static long getRegisterOrLiteralValue(String ys, Map<Character, Long> registerToValue) {
-        if (ys.length() == 1 && ys.charAt(0) >= 'a' && ys.charAt(0) <= 'z') {
-            return registerToValue.get(ys.charAt(0));
-        }
-        return Long.parseLong(ys);
-    }
-
     public static long d18_Duet(List<String> lines, int part) {
         final List<String[]> instructions = new ArrayList<>();
         final List<Map<Character, Long>> registersToValue = new ArrayList<>();
@@ -942,6 +936,13 @@ public final class Solutions {
             p = p == 0 ? 1 : 0;
         }
         return answer;
+    }
+
+    private static long getRegisterOrLiteralValue(String ys, Map<Character, Long> registerToValue) {
+        if (ys.length() == 1 && ys.charAt(0) >= 'a' && ys.charAt(0) <= 'z') {
+            return registerToValue.get(ys.charAt(0));
+        }
+        return Long.parseLong(ys);
     }
 
     public static long d19_ASeriesOfTubes(List<String> lines, int part) {
@@ -1244,24 +1245,6 @@ public final class Solutions {
         return count;
     }
 
-    private static boolean[] getPrimeSieve(int x) {
-        final boolean[] sieve = new boolean[x + 1];
-        for (int i = 0; i < sieve.length; i++) {
-            sieve[i] = false;
-        }
-        int i = 2;
-        while (i < Math.sqrt(sieve.length)) {
-            for (int j = i * i; j < sieve.length; j += i) {
-                sieve[j] = true;
-            }
-            i++;
-            while (i < Math.sqrt(sieve.length) && sieve[i]) {
-                i++;
-            }
-        }
-        return sieve;
-    }
-
     public static long d23_CoprocessorConflagration(List<String> lines, int part) {
         final List<String[]> instructions = new ArrayList<>();
         for (String line : lines) {
@@ -1352,5 +1335,100 @@ public final class Solutions {
         }
 
         return muls;
+    }
+
+    private static boolean[] getPrimeSieve(int x) {
+        final boolean[] sieve = new boolean[x + 1];
+        for (int i = 0; i < sieve.length; i++) {
+            sieve[i] = false;
+        }
+        int i = 2;
+        while (i < Math.sqrt(sieve.length)) {
+            for (int j = i * i; j < sieve.length; j += i) {
+                sieve[j] = true;
+            }
+            i++;
+            while (i < Math.sqrt(sieve.length) && sieve[i]) {
+                i++;
+            }
+        }
+        return sieve;
+    }
+
+    public static long d24_ElectromagneticMoat(List<String> lines, int part) {
+        final Map<Integer, List<Integer>> pinToIndices = new HashMap<>();
+        final int[][] components = new int[lines.size()][2];
+        boolean[] visited = new boolean[components.length];
+        for (int i = 0; i < lines.size(); i++) {
+            final String line = lines.get(i);
+            final String[] pins = line.split("/");
+            for (int j = 0; j < 2; j++) {
+                final int pin = Integer.parseInt(pins[j]);
+                if (!pinToIndices.containsKey(pin)) {
+                    pinToIndices.put(pin, new ArrayList<>());
+                }
+                pinToIndices.get(pin).add(i);
+                components[i][j] = pin;
+            }
+            visited[i] = false;
+        }
+
+        int strengthMax = 0;
+        int lengthLongest = 0;
+        int strengthMaxLongest = 0;
+        final List<List<Integer>> bridges = getBridges(0, pinToIndices, components, visited);
+        for (List<Integer> bridge : bridges) {
+            int strength = 0;
+            for (int index : bridge) {
+                strength += components[index][0] + components[index][1];
+            }
+            if (strength > strengthMax) {
+                strengthMax = strength;
+            }
+            if (bridge.size() > lengthLongest || (bridge.size() == lengthLongest && strength > strengthMaxLongest)) {
+                lengthLongest = bridge.size();
+                strengthMaxLongest = strength;
+            }
+        }
+        if (part == 1) {
+            return strengthMax;
+        }
+        return strengthMaxLongest;
+    }
+
+    private static List<List<Integer>> getBridges(
+            int pin,
+            Map<Integer, List<Integer>> pinToIndices,
+            int[][] components,
+            boolean[] visited
+    ) {
+        final List<List<Integer>> bridges = new ArrayList<>();
+        if (pinToIndices.containsKey(pin)) {
+            for (int index : pinToIndices.get(pin)) {
+                if (visited[index]) {
+                    continue;
+                }
+                visited[index] = true;
+                final int[] component = components[index];
+                final int pinNext = component[0] == pin ? component[1] : component[0];
+                final List<List<Integer>> subBridges = getBridges(pinNext, pinToIndices, components, visited);
+                if (subBridges.size() == 0) {
+                    final List<Integer> bridge = new ArrayList<>();
+                    bridge.add(index);
+                    bridges.add(bridge);
+                } else {
+                    for (List<Integer> subBridge : subBridges) {
+                        final List<Integer> bridge = new ArrayList<>();
+                        bridge.add(index);
+                        for (int subIndex : subBridge) {
+                            bridge.add(subIndex);
+                        }
+                        bridges.add(bridge);
+                    }
+                }
+                visited[index] = false;
+            }
+        }
+        return bridges;
     }
 }
