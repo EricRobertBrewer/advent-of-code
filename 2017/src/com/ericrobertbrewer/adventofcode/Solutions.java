@@ -52,6 +52,7 @@ public final class Solutions {
         SOLUTIONS.put(20, Solutions::d20_ParticleSwarm);
         SOLUTIONS.put(21, Solutions::d21_FractalArt);
         SOLUTIONS.put(22, Solutions::d22_SporificaVirus);
+        SOLUTIONS.put(23, Solutions::d23_CoprocessorConflagration);
     }
 
     public static void main(String[] args) throws IOException {
@@ -1241,5 +1242,115 @@ public final class Solutions {
             j += delta[1];
         }
         return count;
+    }
+
+    private static boolean[] getPrimeSieve(int x) {
+        final boolean[] sieve = new boolean[x + 1];
+        for (int i = 0; i < sieve.length; i++) {
+            sieve[i] = false;
+        }
+        int i = 2;
+        while (i < Math.sqrt(sieve.length)) {
+            for (int j = i * i; j < sieve.length; j += i) {
+                sieve[j] = true;
+            }
+            i++;
+            while (i < Math.sqrt(sieve.length) && sieve[i]) {
+                i++;
+            }
+        }
+        return sieve;
+    }
+
+    public static long d23_CoprocessorConflagration(List<String> lines, int part) {
+        final List<String[]> instructions = new ArrayList<>();
+        for (String line : lines) {
+            instructions.add(line.split(" "));
+        }
+
+        // Initialize registers.
+        final Map<Character, Long> r = new HashMap<>();
+        for (String[] instruction : instructions) {
+            for (int j = 1; j < 3; j++) {
+                if (instruction[j].length() == 1) {
+                    final char c = instruction[j].charAt(0);
+                    if (c >= 'a' && c <= 'z') {
+                        if (!r.containsKey(c)) {
+                            r.put(c, 0L);
+                        }
+                    }
+                }
+            }
+        }
+
+        final int loopIpStart;
+        final long loopStep;
+        if (part == 1) {
+            loopIpStart = -1;
+            loopStep = 0L;
+        } else {
+            r.put('a', 1L);
+
+            // For part 2, I just wrote out the program (input) as pseudocode,
+            // then determined with my eyeballs that the program calculates the
+            // number of composite numbers inclusively between `b` and `c` with
+            // an interval given on the second-to-last line.
+            final String[] instructionLoopIpStart = instructions.get(instructions.size() - 1);
+            if (!"jnz".equals(instructionLoopIpStart[0]) || !"1".equals(instructionLoopIpStart[1])) {
+                throw new RuntimeException("Unsupported program structure (loop ip start): " + lines.get(lines.size() - 1));
+            }
+            loopIpStart = instructions.size() - 1 + Integer.parseInt(instructionLoopIpStart[2]);
+            final String[] instructionLoopStep = instructions.get(instructions.size() - 2);
+            if (!"sub".equals(instructionLoopStep[0]) || !"b".equals(instructionLoopStep[1])) {
+                throw new RuntimeException("Unsupported program structure (loop step): " + lines.get(lines.size() - 2));
+            }
+            loopStep = Long.parseLong(instructionLoopStep[2]);
+        }
+
+        // Run.
+        int ip = 0;
+        long muls = 0L;
+        while (ip >= 0 && ip < instructions.size()) {
+            final String[] instruction = instructions.get(ip);
+            final String operation = instruction[0];
+            final String xs = instruction[1];
+            final char xc = xs.charAt(0);
+            final long x = getRegisterOrLiteralValue(xs, r);
+            final String ys = instruction[2];
+            final long y = getRegisterOrLiteralValue(ys, r);
+            boolean jump = false;
+            if ("set".equals(operation)) {
+                r.put(xc, y);
+            } else if ("sub".equals(operation)) {
+                r.put(xc, x - y);
+            } else if ("mul".equals(operation)) {
+                r.put(xc, x * y);
+                muls++;
+            } else if ("jnz".equals(operation)) {
+                if (x != 0) {
+                    ip += (int) y;
+                    jump = true;
+                }
+            } else {
+                throw new IllegalArgumentException("Unknown operation: " + operation);
+            }
+            if (!jump) {
+                ip++;
+            }
+
+            // Return number of composite numbers in range (and interval) of main loop.
+            if (part == 2 && ip == loopIpStart) {
+                final boolean[] sieve = getPrimeSieve(r.get('c').intValue());
+                int h = 0;
+                for (long i = r.get('b'); i <= r.get('c'); i -= loopStep) {
+                    if (sieve[(int) i]) {
+                        h++;
+                    }
+                }
+                return h;
+            }
+        }
+
+        return muls;
     }
 }
