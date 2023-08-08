@@ -54,6 +54,7 @@ public final class Solutions {
         SOLUTIONS.put(22, Solutions::d22_SporificaVirus);
         SOLUTIONS.put(23, Solutions::d23_CoprocessorConflagration);
         SOLUTIONS.put(24, Solutions::d24_ElectromagneticMoat);
+        SOLUTIONS.put(25, Solutions::d25_TheHaltingProblem);
     }
 
     public static void main(String[] args) throws IOException {
@@ -1430,5 +1431,64 @@ public final class Solutions {
             }
         }
         return bridges;
+    }
+
+    public static long d25_TheHaltingProblem(List<String> lines, int part) {
+        final Map<Character, Map<Integer, Rule>> stateToValueToRule = new HashMap<>();
+        for (int stateIndex = 0; stateIndex < (lines.size() - 2) / 10; stateIndex++) {
+            final char stateIn = lines.get(10 * stateIndex + 3).split(" ")[2].charAt(0);
+            stateToValueToRule.put(stateIn, new HashMap<>());
+            for (int i = 0; i < 2; i++) {
+                final int valueIf = lines.get(10 * stateIndex + 4 * i + 4).trim().split(" ")[5].charAt(0) - '0';
+                final int value = lines.get(10 * stateIndex + 4 * i + 5).trim().split(" ")[4].charAt(0) - '0';
+                final String moveLine = lines.get(10 * stateIndex + 4 * i + 6).trim();
+                final String move = moveLine.substring(moveLine.lastIndexOf(' ') + 1, moveLine.lastIndexOf('.'));
+                if (!"right".equals(move) && !"left".equals(move)) {
+                    throw new IllegalArgumentException("Unexpected move: " + move);
+                }
+                final char state = lines.get(10 * stateIndex + 4 * i + 7).trim().split(" ")[4].charAt(0);
+                stateToValueToRule.get(stateIn).put(valueIf, new Rule(value, move, state));
+            }
+        }
+
+        char state = lines.get(0).split(" ")[3].charAt(0);
+        final long check = Long.parseLong(lines.get(1).split(" ")[5]);
+        final Map<Integer, Integer> tape = new HashMap<>();
+        int i = 0;
+        int step = 0;
+        while (step < check) {
+            if (!tape.containsKey(i)) {
+                tape.put(i, 0);
+            }
+            final Rule rule = stateToValueToRule.get(state).get(tape.get(i));
+            tape.put(i, rule.value);
+            if ("right".equals(rule.move)) {
+                i++;
+            } else {
+                i--;
+            }
+            state = rule.state;
+            step++;
+        }
+        int sum = 0;
+        for (int j : tape.keySet()) {
+            if (tape.get(j) == 1) {
+                sum++;
+            }
+        }
+        return sum;
+    }
+
+    private static final class Rule {
+
+        final int value;
+        final String move;
+        final char state;
+
+        Rule(int value, String move, char state) {
+            this.value = value;
+            this.move = move;
+            this.state = state;
+        }
     }
 }
