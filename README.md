@@ -28,9 +28,15 @@ make -C 2016
 
 ### 2017 (Java)
 
-```
+```sh
 javac -sourcepath 2017/src -d 2017/bin 2017/src/com/ericrobertbrewer/adventofcode/*.java
 java -cp 2017/bin com.ericrobertbrewer.adventofcode.Solutions <day> <part>
+```
+
+### 2018 (JavaScript/Node.js)
+
+```sh
+node 2018/solutions.js <day> <part>
 ```
 
 ### 2022 (Python)
