@@ -9,6 +9,7 @@ const SOLUTIONS = {
     1: d01_ChronalCalibration,
     2: d02_InventoryManagementSystem,
     3: d03_NoMatterHowYouSliceIt,
+    4: d04_ReposeRecord,
 };
 
 function main() {
@@ -33,8 +34,12 @@ function main() {
 function solve(day, part, fd) {
     const start = Date.now();
 
-    const lines = fs.readFileSync(fd, "utf8").split("\n");
+    let lines = fs.readFileSync(fd, "utf8").split("\n");
     fs.close(fd);
+    // Ignore blank last line, if present.
+    if (lines[lines.length - 1].length === 0) {
+        lines = lines.slice(0, lines.length - 1);
+    }
 
     const solution = SOLUTIONS[day];
     if (solution === undefined) {
@@ -53,13 +58,11 @@ function d01_ChronalCalibration(lines, part) {
     while (true) {
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (line.length > 0) {
-                frequency += parseInt(line);
-                if (part === 2 && frequencies.has(frequency)) {
-                    return frequency;
-                }
-                frequencies.add(frequency);
+            frequency += parseInt(line);
+            if (part === 2 && frequencies.has(frequency)) {
+                return frequency;
             }
+            frequencies.add(frequency);
         }
         if (part === 1) {
             return frequency;
@@ -122,9 +125,6 @@ function d03_NoMatterHowYouSliceIt(lines, part) {
     const claims = new Array();
     const overlapClaims = new Set();
     lines.forEach(line => {
-        if (line.length === 0) {
-            return;
-        }
         const claimDescription = line.split(" @ ");
         const claim = parseInt(claimDescription[0].substring(1));
         claims.push(claim);
@@ -169,6 +169,104 @@ function d03_NoMatterHowYouSliceIt(lines, part) {
         }
     }
     throw new Error("Solution not found.")
+}
+
+function d04_ReposeRecord(lines, part) {
+    const guardToShifts = _d04_getGuardToShifts(lines);
+    const guardToSleep = new Object();
+    const guardToSleepMinutes = new Object();
+    for (const guard in guardToShifts) {
+        const shifts = guardToShifts[guard];
+        if (guardToSleep[guard] === undefined) {
+            guardToSleep[guard] = 0;
+            guardToSleepMinutes[guard] = new Array();
+            for (let i = 0; i < 60; i++) {
+                guardToSleepMinutes[guard].push(0);
+            }
+        }
+        for (let i = 0; i < shifts.length; i++) {
+            const shift = shifts[i];
+            for (let j = 0; j < shift.length; j += 2) {
+                guardToSleep[guard] += shift[j + 1] - shift[j];
+                for (let k = shift[j]; k < shift[j + 1]; k++) {
+                    guardToSleepMinutes[guard][k]++;
+                }
+            }
+        }
+    }
+
+    let guardMax = -1;
+    let minuteMax = -1;
+    if (part === 1) {
+        for (const guard in guardToSleep) {
+            const sleep = guardToSleep[guard];
+            if (guardMax === -1 || sleep > guardToSleep[guardMax]) {
+                guardMax = guard;
+            }
+        }
+        for (const minute in guardToSleepMinutes[guardMax]) {
+            const sleep = guardToSleepMinutes[guardMax][minute];
+            if (minuteMax === -1 || sleep > guardToSleepMinutes[guardMax][minuteMax]) {
+                minuteMax = minute;
+            }
+        }
+    } else {
+        for (const guard in guardToSleepMinutes) {
+            const sleepMinutes = guardToSleepMinutes[guard];
+            for (const minute in sleepMinutes) {
+                const sleep = sleepMinutes[minute];
+                if (guardMax === -1 || sleep > guardToSleepMinutes[guardMax][minuteMax]) {
+                    guardMax = guard;
+                    minuteMax = minute;
+                }
+            }
+        }
+    }
+    return guardMax * minuteMax;
+}
+
+function _d04_getGuardToShifts(lines) {
+    const separators = [0, 5, 8, 11, 14, 17];
+    lines.sort((a, b) => {
+        for (let i = 0; i < separators.length - 1; i++) {
+            const xa = parseInt(a.substring(separators[i] + 1, separators[i + 1]));
+            const xb = parseInt(b.substring(separators[i] + 1, separators[i + 1]));
+            if (xa !== xb) {
+                return xa < xb ? -1 : 1;
+            }
+        }
+        return 0;
+    });
+
+    const guardToShifts = new Object();
+    let guard = -1;
+    let shift = null;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const minute = parseInt(line.substring(15, 17));
+        const note = line.substring(19);
+        if (note === "falls asleep" || note === "wakes up") {
+            shift.push(minute);
+        } else {
+            if (shift !== null) {
+                if (guardToShifts[guard] === undefined) {
+                    guardToShifts[guard] = new Array();
+                }
+                guardToShifts[guard].push(shift);
+            }
+            const pound = note.indexOf("#");
+            const space = note.indexOf(" ", pound + 1);
+            guard = parseInt(note.substring(pound + 1, space));
+            shift = new Array();
+        }
+    }
+    if (shift !== null) {
+        if (guardToShifts[guard] === undefined) {
+            guardToShifts[guard] = new Array();
+        }
+        guardToShifts[guard].push(shift);
+    }
+    return guardToShifts;
 }
 
 if (require.main === module) {
