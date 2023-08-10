@@ -8,6 +8,7 @@ const YEAR = "2018";
 const SOLUTIONS = {
     1: d01_ChronalCalibration,
     2: d02_InventoryManagementSystem,
+    3: d03_NoMatterHowYouSliceIt,
 };
 
 function main() {
@@ -109,9 +110,66 @@ function d02_InventoryManagementSystem(lines, part) {
             }
         }
     }
-    throw new Error();
+    throw new Error("Solution not found.");
 }
 
+function d03_NoMatterHowYouSliceIt(lines, part) {
+    const fabric = new Array(1000);
+    for (let i = 0; i < fabric.length; i++) {
+        fabric[i] = new Array(1000);
+    }
+    let overlap = 0;
+    const claims = new Array();
+    const overlapClaims = new Set();
+    lines.forEach(line => {
+        if (line.length === 0) {
+            return;
+        }
+        const claimDescription = line.split(" @ ");
+        const claim = parseInt(claimDescription[0].substring(1));
+        claims.push(claim);
+        const description = claimDescription[1];
+        const startSize = description.split(": ");
+        const start = startSize[0];
+        const comma = start.indexOf(",");
+        const x = parseInt(start.substring(0, comma));
+        const y = parseInt(start.substring(comma + 1));
+        const size = startSize[1];
+        const by = size.indexOf("x");
+        const w = parseInt(size.substring(0, by));
+        const h = parseInt(size.substring(by + 1));
+        for (let i = y; i < y + h; i++) {
+            for (let j = x; j < x + w; j++) {
+                if (part === 1) {
+                    if (fabric[i][j] === undefined) {
+                        fabric[i][j] = 1;
+                    } else {
+                        fabric[i][j]++;
+                        if (fabric[i][j] === 2) {
+                            overlap++;
+                        }
+                    }
+                } else {
+                    if (fabric[i][j] !== undefined) {
+                        overlapClaims.add(fabric[i][j]);
+                        overlapClaims.add(claim);
+                    }
+                    fabric[i][j] = claim;
+                }
+            }
+        }
+    });
+
+    if (part === 1) {
+        return overlap;
+    }
+    for (const i in claims) {
+        if (!overlapClaims.has(claims[i])) {
+            return claims[i];
+        }
+    }
+    throw new Error("Solution not found.")
+}
 
 if (require.main === module) {
     main();
