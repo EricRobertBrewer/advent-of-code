@@ -7,6 +7,7 @@ const aocUtil = require("./aocUtil.js")
 const YEAR = "2018";
 const SOLUTIONS = {
     1: d01_ChronalCalibration,
+    2: d02_InventoryManagementSystem,
 };
 
 function main() {
@@ -64,6 +65,53 @@ function d01_ChronalCalibration(lines, part) {
         }
     }
 }
+
+function d02_InventoryManagementSystem(lines, part) {
+    if (part === 1) {
+        let twos = 0;
+        let threes = 0;
+        lines.forEach(line => {
+            let cToCount = new Object();
+            line.split("").forEach(c => {
+                if (cToCount[c] === undefined) {
+                    cToCount[c] = 0;
+                }
+                cToCount[c]++;
+            });
+            for (c in cToCount) {
+                if (cToCount[c] == 2) {
+                    twos++;
+                    break;
+                }
+            }
+            for (c in cToCount) {
+                if (cToCount[c] == 3) {
+                    threes++;
+                    break;
+                }
+            }
+        });
+        return twos * threes;
+    }
+
+    for (let i = 0; i < lines.length - 1; i++) {
+        const lineI = lines[i];
+        for (let j = i + 1; j < lines.length; j++) {
+            const lineJ = lines[j];
+            let match = "";
+            for (let k = 0; k < lineI.length; k++) {
+                if (lineI[k] == lineJ[k]) {
+                    match += lineI[k];
+                }
+            }
+            if (match.length === lineI.length - 1) {
+                return match;
+            }
+        }
+    }
+    throw new Error();
+}
+
 
 if (require.main === module) {
     main();
