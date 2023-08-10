@@ -10,6 +10,7 @@ const SOLUTIONS = {
     2: d02_InventoryManagementSystem,
     3: d03_NoMatterHowYouSliceIt,
     4: d04_ReposeRecord,
+    5: d05_AlchemicalReduction,
 };
 
 function main() {
@@ -267,6 +268,53 @@ function _d04_getGuardToShifts(lines) {
         guardToShifts[guard].push(shift);
     }
     return guardToShifts;
+}
+
+function d05_AlchemicalReduction(lines, part) {
+    let polymer = lines[0];
+    const lower = "abcdefghijklmnopqrstuvwxyz";
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const cToOpposite = new Object();
+    for (let i = 0; i < lower.length; i++) {
+        cToOpposite[lower[i]] = upper[i];
+        cToOpposite[upper[i]] = lower[i];
+    }
+
+    if (part === 1) {
+        const reaction = _d05_getReaction(polymer, cToOpposite);
+        return reaction.length;
+    }
+
+    let lengthMin = -1;
+    for (let i = 0; i < lower.length; i++) {
+        let polymerRemove = "";
+        for (let j = 0; j < polymer.length; j++) {
+            const c = polymer[j];
+            if (c !== lower[i] && c !== upper[i]) {
+                polymerRemove += c;
+            }
+        }
+        const reactionRemove = _d05_getReaction(polymerRemove, cToOpposite);
+        if (lengthMin === -1 || reactionRemove.length < lengthMin) {
+            lengthMin = reactionRemove.length;
+        }
+    }
+    return lengthMin;
+}
+
+function _d05_getReaction(polymer, cToOpposite) {
+    let i = 1;
+    while (i < polymer.length) {
+        if (polymer[i] === cToOpposite[polymer[i - 1]]) {
+            polymer = polymer.substring(0, i - 1) + polymer.substring(i + 1);
+            if (i > 1) {
+                i--;
+            }
+        } else {
+            i++;
+        }
+    }
+    return polymer;
 }
 
 if (require.main === module) {
