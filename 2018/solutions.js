@@ -11,6 +11,7 @@ const SOLUTIONS = {
     3: d03_NoMatterHowYouSliceIt,
     4: d04_ReposeRecord,
     5: d05_AlchemicalReduction,
+    6: d06_ChronalCoordinates,
 };
 
 function main() {
@@ -315,6 +316,104 @@ function _d05_getReaction(polymer, cToOpposite) {
         }
     }
     return polymer;
+}
+
+function d06_ChronalCoordinates(lines, part) {
+    const pointSToIndex = new Object();
+    const indexPoints = new Array();
+    let xMin = null, xMax = null;
+    let yMin = null, yMax = null;
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const xy = line.split(", ");
+        const x = parseInt(xy[0]);
+        if (xMin === null || x < xMin) {
+            xMin = x;
+        }
+        if (xMax === null || x > xMax) {
+            xMax = x;
+        }
+        const y = parseInt(xy[1]);
+        if (yMin === null || y < yMin) {
+            yMin = y;
+        }
+        if (yMax === null || y > yMax) {
+            yMax = y;
+        }
+        pointSToIndex["" + x + "," + y] = i;
+        indexPoints.push([[x, y]]);
+    }
+
+    if (part === 2) {
+        let region = 0;
+        for (let x = xMin; x <= xMax; x++) {
+            for (let y = yMin; y <= yMax; y++) {
+                let d = 0;
+                for (let i in indexPoints) {
+                    const cx = indexPoints[i][0][0];
+                    const cy = indexPoints[i][0][1];
+                    d += Math.abs(x - cx) + Math.abs(y - cy);
+                }
+                if (d < 10000) {
+                    region++;
+                }
+            }
+        }
+        return region;
+    }
+
+    const indicesInfinite = new Set();
+    while (Object.keys(pointSToIndex).length < (xMax - xMin + 1) * (yMax - yMin + 1)) {
+        const pointSToIndexNew = new Object();
+        for (let i in indexPoints) {
+            const points = indexPoints[i];
+            for (let j = 0; j < points.length; j++) {
+                const x = points[j][0];
+                const y = points[j][1];
+                // Claim all neighboring points, reconcile ties, and declare infinite areas.
+                const neighbors = [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]];
+                for (let k = 0; k < neighbors.length; k++) {
+                    const nx = neighbors[k][0];
+                    const ny = neighbors[k][1];
+                    if (xMin <= nx && nx <= xMax && yMin <= ny && ny <= yMax) {
+                        const pointNS = "" + nx + "," + ny;
+                        if (pointSToIndex[pointNS] !== undefined) {
+                            continue; // Skip previously claimed points.
+                        }
+                        if (pointSToIndexNew[pointNS] === undefined) {
+                            pointSToIndexNew[pointNS] = i; // The first coordinate to claim this point.
+                        } else if (pointSToIndexNew[pointNS] !== i) {
+                            pointSToIndexNew[pointNS] = -1; // A tie with another coordinate.
+                        }
+                    } else {
+                        indicesInfinite.add(i); // At a boundary.
+                    }
+                }
+            }
+        }
+        for (const pointS in pointSToIndexNew) {
+            const i = pointSToIndexNew[pointS];
+            pointSToIndex[pointS] = i;
+            if (i !== -1) {
+                const comma = pointS.indexOf(",");
+                const x = parseInt(pointS.substring(0, comma));
+                const y = parseInt(pointS.substring(comma + 1));
+                indexPoints[i].push([x, y]);
+            }
+        }
+    }
+
+    let areaMax = -1;
+    for (let i in indexPoints) {
+        if (indicesInfinite.has(i)) {
+            continue;
+        }
+        const area = indexPoints[i].length;
+        if (areaMax === -1 || area > areaMax) {
+            areaMax = area;
+        }
+    }
+    return areaMax;
 }
 
 if (require.main === module) {
