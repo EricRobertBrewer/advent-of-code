@@ -13,6 +13,7 @@ const SOLUTIONS = {
     5: d05_AlchemicalReduction,
     6: d06_ChronalCoordinates,
     7: d07_TheSumOfItsParts,
+    8: d08_MemoryManeuver,
 };
 
 function main() {
@@ -504,6 +505,53 @@ function d07_TheSumOfItsParts(lines, part) {
         secondsTotal++;
     }
     return secondsTotal;
+}
+
+function d08_MemoryManeuver(lines, part) {
+    const values = lines[0].split(" ").map(s => parseInt(s));
+    const root = _d08_getTree(values, [0]);
+    if (part === 1) {
+        return root["sum"];
+    }
+    return root["value"];
+}
+
+function _d08_getTree(values, ip) {
+    const node = new Object();
+    const n = values[ip[0]]; // Number of children.
+    const m = values[ip[0] + 1]; // Number of metadata entries.
+    ip[0] += 2;
+    node["sum"] = 0;
+    // Recursively collect children.
+    node["children"] = new Array();
+    for (let i = 0; i < n; i++) {
+        const child = _d08_getTree(values, ip);
+        node["children"].push(child);
+        node["sum"] += child["sum"];
+    }
+    // Read metadata values.
+    node["metadata"] = new Array();
+    for (let j = 0; j < m; j++) {
+        const value = values[ip[0]];
+        node["metadata"].push(value);
+        node["sum"] += value;
+        ip[0]++;
+    }
+    // Calculate value.
+    node["value"] = 0;
+    if (n === 0) {
+        // Sum of metadata values.
+        node["value"] = node["sum"];
+    } else {
+        // Sum of childrens' values.
+        for (let j = 0; j < m; j++) {
+            const i = node["metadata"][j] - 1;
+            if (i < n) {
+                node["value"] += node["children"][i]["value"];
+            }
+        }
+    }
+    return node;
 }
 
 if (require.main === module) {
