@@ -12,6 +12,7 @@ const SOLUTIONS = {
     4: d04_ReposeRecord,
     5: d05_AlchemicalReduction,
     6: d06_ChronalCoordinates,
+    7: d07_TheSumOfItsParts,
 };
 
 function main() {
@@ -84,13 +85,13 @@ function d02_InventoryManagementSystem(lines, part) {
                 }
                 cToCount[c]++;
             });
-            for (c in cToCount) {
+            for (const c in cToCount) {
                 if (cToCount[c] == 2) {
                     twos++;
                     break;
                 }
             }
-            for (c in cToCount) {
+            for (const c in cToCount) {
                 if (cToCount[c] == 3) {
                     threes++;
                     break;
@@ -165,9 +166,9 @@ function d03_NoMatterHowYouSliceIt(lines, part) {
     if (part === 1) {
         return overlap;
     }
-    for (const i in claims) {
-        if (!overlapClaims.has(claims[i])) {
-            return claims[i];
+    for (const claim of claims) {
+        if (!overlapClaims.has(claim)) {
+            return claim;
         }
     }
     throw new Error("Solution not found.")
@@ -349,9 +350,9 @@ function d06_ChronalCoordinates(lines, part) {
         for (let x = xMin; x <= xMax; x++) {
             for (let y = yMin; y <= yMax; y++) {
                 let d = 0;
-                for (let i in indexPoints) {
-                    const cx = indexPoints[i][0][0];
-                    const cy = indexPoints[i][0][1];
+                for (const points of indexPoints) {
+                    const cx = points[0][0];
+                    const cy = points[0][1];
                     d += Math.abs(x - cx) + Math.abs(y - cy);
                 }
                 if (d < 10000) {
@@ -414,6 +415,95 @@ function d06_ChronalCoordinates(lines, part) {
         }
     }
     return areaMax;
+}
+
+function d07_TheSumOfItsParts(lines, part) {
+    const stepToDependencies = new Object();
+    for (let i = 0; i < lines.length; i++) {
+        const tokens = lines[i].split(" ");
+        const dependency = tokens[1];
+        if (stepToDependencies[dependency] === undefined) {
+            stepToDependencies[dependency] = new Set();
+        }
+        const step = tokens[7];
+        if (stepToDependencies[step] === undefined) {
+            stepToDependencies[step] = new Set();
+        }
+        stepToDependencies[step].add(dependency);
+    }
+    const steps = Object.keys(stepToDependencies).sort();
+
+    if (part === 1) {
+        let order = "";
+        const added = new Set();
+        while (added.size < Object.keys(stepToDependencies).length) {
+            for (const step of steps) {
+                if (added.has(step)) {
+                    continue;
+                }
+                let ready = true;
+                for (const dependency of stepToDependencies[step]) {
+                    if (!added.has(dependency)) {
+                        ready = false;
+                        break;
+                    }
+                }
+                if (ready) {
+                    order += step;
+                    added.add(step);
+                    break;
+                }
+            }
+        }
+        return order;
+    }
+
+    const stepToSeconds = new Object();
+    for (let i = 0; i < steps.length; i++) {
+        stepToSeconds[steps[i]] = 61 + i;
+    }
+    const finished = new Set();
+    const workerSteps = new Array();
+    const workerSeconds = new Array();
+    let secondsTotal = 0;
+    while (finished.size < steps.length) {
+        // Add new steps.
+        for (let step of steps) {
+            if (workerSteps.length == 5) {
+                break;
+            }
+            if (finished.has(step) || workerSteps.includes(step)) {
+                continue;
+            }
+            let ready = true;
+            for (const dependency of stepToDependencies[step]) {
+                if (!finished.has(dependency)) {
+                    ready = false;
+                    break;
+                }
+            }
+            if (ready) {
+                workerSteps.push(step);
+                workerSeconds.push(stepToSeconds[step]);
+            }
+        }
+        // Tick down steps in progress.
+        for (let i = 0; i < workerSeconds.length; i++) {
+            workerSeconds[i]--;
+        }
+        // Check off steps that are complete.
+        for (let i = 0; i < workerSteps.length; i++) {
+            if (workerSeconds[i] === 0) {
+                const step = workerSteps[i];
+                workerSteps.splice(i, 1);
+                workerSeconds.splice(i, 1);
+                finished.add(step);
+                i--;
+            }
+        }
+        secondsTotal++;
+    }
+    return secondsTotal;
 }
 
 if (require.main === module) {
