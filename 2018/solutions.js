@@ -1,8 +1,9 @@
 #!/usr/local/bin node
 
-const fs = require("fs")
+const fs = require("fs");
 
-const aocUtil = require("./aocUtil.js")
+const aocUtil = require("./aocUtil.js");
+const csUtil = require("./csUtil.js");
 
 const YEAR = "2018";
 const SOLUTIONS = {
@@ -14,6 +15,7 @@ const SOLUTIONS = {
     6: d06_ChronalCoordinates,
     7: d07_TheSumOfItsParts,
     8: d08_MemoryManeuver,
+    9: d09_MarbleMania,
 };
 
 function main() {
@@ -552,6 +554,46 @@ function _d08_getTree(values, ip) {
         }
     }
     return node;
+}
+
+function d09_MarbleMania(lines, part) {
+    const tokens = lines[0].split(" ");
+    const p = parseInt(tokens[0]);
+    const n = part === 1 ? parseInt(tokens[6]) : 100 * parseInt(tokens[6]);
+
+    const scores = new Array(p);
+    for (let j = 0; j < p; j++) {
+        scores[j] = 0;
+    }
+
+    // `0` marble is placed first.
+    let current = new csUtil.Node(0);
+    current.next = current; // Circle.
+    current.prev = current;
+
+    let player = 0;
+    for (let i = 1; i < n; i++) {
+        if (i % 23 !== 0) {
+            current = current.next.insertNext(i);
+        } else {
+            scores[player] += i;
+            let marble = current;
+            for (let m = 0; m < 7; m++) {
+                marble = marble.prev;
+            }
+            scores[player] += marble.value;
+            current = marble.remove();
+        }
+        player = (player + 1) % p;
+    }
+
+    let scoreMax = scores[0];
+    for (let j = 1; j < p; j++) {
+        if (scores[j] > scoreMax) {
+            scoreMax = scores[j];
+        }
+    }
+    return scoreMax;
 }
 
 if (require.main === module) {
