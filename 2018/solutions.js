@@ -17,6 +17,7 @@ const SOLUTIONS = {
     8: d08_MemoryManeuver,
     9: d09_MarbleMania,
     10: d10_TheStarsAlign,
+    11: d11_ChronalCharge,
 };
 
 function main() {
@@ -662,6 +663,46 @@ function d10_TheStarsAlign(lines, part) {
         console.log(grid[i].join(""));
     }
     return seconds;
+}
+
+function d11_ChronalCharge(lines, part) {
+    const serial = parseInt(lines[0]);
+    const h = 300, w = 300;
+    const grid = Array(h);
+    for (let i = 0; i < h; i++) {
+        const y = i + 1;
+        grid[i] = Array(w);
+        for (let j = 0; j < w; j++) {
+            const x = j + 1;
+            const rackId = x + 10;
+            const power = Math.floor(((rackId * y + serial) * rackId) / 100) % 10 - 5;
+            grid[i][j] = power;
+        }
+    }
+
+    let xMax = null, yMax = null, totalMax = null, sizeTotalMax = null;
+    const sizeMin = part == 1 ? 3 : 1;
+    const sizeMax = part == 1 ? 3 : 300;
+    // Lazy brute force; ~270,000 ms.
+    for (let size = sizeMin; size <= sizeMax; size++) {
+        for (let i = 0; i < h + 1 - size; i++) {
+            for (let j = 0; j < w + 1 - size; j++) {
+                let total = 0;
+                for (let di = 0; di < size; di++) {
+                    for (let dj = 0; dj < size; dj++) {
+                        total += grid[i + di][j + dj];
+                    }
+                }
+                if (totalMax === null || total > totalMax) {
+                    xMax = j + 1;
+                    yMax = i + 1;
+                    totalMax = total;
+                    sizeTotalMax = size;
+                }
+            }
+        }
+    }
+    return "" + xMax + "," + yMax + "," + sizeTotalMax + ": " + totalMax;
 }
 
 if (require.main === module) {
