@@ -16,6 +16,7 @@ const SOLUTIONS = {
     7: d07_TheSumOfItsParts,
     8: d08_MemoryManeuver,
     9: d09_MarbleMania,
+    10: d10_TheStarsAlign,
 };
 
 function main() {
@@ -594,6 +595,73 @@ function d09_MarbleMania(lines, part) {
         }
     }
     return scoreMax;
+}
+
+function d10_TheStarsAlign(lines, part) {
+    // Read points.
+    const n = lines.length
+    const px = Array(n);
+    const py = Array(n);
+    const vx = Array(n);
+    const vy = Array(n);
+    let xMin = null, xMax = null;
+    let yMin = null, yMax = null;
+    for (let i = 0; i < n; i++) {
+        const line = lines[i];
+        const plt = line.indexOf("<");
+        const pgt = line.indexOf(">", plt + 1);
+        const vlt = line.indexOf("<", pgt + 1);
+        const vgt = line.indexOf(">", vlt + 1);
+        const pxys = line.substring(plt + 1, pgt);
+        const vxys = line.substring(vlt + 1, vgt);
+        const pxy = pxys.split(",").map(s => s.trim()).map(s => parseInt(s));
+        const vxy = vxys.split(",").map(s => s.trim()).map(s => parseInt(s));
+        px[i] = pxy[0];
+        py[i] = pxy[1];
+        vx[i] = vxy[0];
+        vy[i] = vxy[1];
+        if (xMin === null || px[i] < xMin) {
+            xMin = px[i];
+        }
+        if (xMax === null || px[i] > xMax) {
+            xMax = px[i];
+        }
+        if (yMin === null || py[i] < yMin) {
+            yMin = py[i];
+        }
+        if (yMax === null || py[i] > yMax) {
+            yMax = py[i];
+        }
+    }
+
+    // Move.
+    let seconds = 0;
+    while (yMax - yMin > 10) {
+        for (let i = 0; i < n; i++) {
+            px[i] += vx[i];
+            py[i] += vy[i];
+        }
+        xMin = csUtil.aMin(px);
+        xMax = csUtil.aMax(px);
+        yMin = csUtil.aMin(py);
+        yMax = csUtil.aMax(py);
+        seconds++;
+    }
+
+    // Print.
+    const h = yMax - yMin + 1;
+    const w = xMax - xMin + 1;
+    const grid = Array(h);
+    for (let i = 0; i < h; i++) {
+        grid[i] = Array(w).fill(" ");
+    }
+    for (let i = 0; i < n; i++) {
+        grid[py[i] - yMin][px[i] - xMin] = "#";
+    }
+    for (let i = 0; i < h; i++) {
+        console.log(grid[i].join(""));
+    }
+    return seconds;
 }
 
 if (require.main === module) {
