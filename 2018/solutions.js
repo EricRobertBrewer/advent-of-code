@@ -19,6 +19,7 @@ const SOLUTIONS = {
     10: d10_TheStarsAlign,
     11: d11_ChronalCharge,
     12: d12_SubterraneanSustainability,
+    13: d13_MineCartMadness,
 };
 
 function main() {
@@ -790,6 +791,93 @@ function d12_SubterraneanSustainability(lines, part) {
         }
     }
     return potSum;
+}
+
+function d13_MineCartMadness(lines, part) {
+    const trackLines = new Array();
+    const turns = [-1, 0, 1];
+    const deltas = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+    const d = deltas.length;
+    const yxToDirectionTurn = new Object();
+    for (let y = 0; y < lines.length; y++) {
+        let trackLine = "";
+        for (let x = 0; x < lines[y].length; x++) {
+            const c = lines[y][x];
+            if (c === "^") {
+                yxToDirectionTurn["" + y + "," + x] = [0, 0];
+                trackLine += "|";
+            } else if (c === ">") {
+                yxToDirectionTurn["" + y + "," + x] = [1, 0];
+                trackLine += "-";
+            } else if (c === "v") {
+                yxToDirectionTurn["" + y + "," + x] = [2, 0];
+                trackLine += "|";
+            } else if (c === "<") {
+                yxToDirectionTurn["" + y + "," + x] = [3, 0];
+                trackLine += "-";
+            } else {
+                trackLine += c;
+            }
+        }
+        trackLines.push(trackLine);
+    }
+
+    while (Object.keys(yxToDirectionTurn).length > 1) {
+        const carts = Object.keys(yxToDirectionTurn).sort((a, b) => {
+            const ayx = a.split(",");
+            const ay = parseInt(ayx[0]), ax = parseInt(ayx[1]);
+            const byx = b.split(",");
+            const by = parseInt(byx[0]), bx = parseInt(byx[1]);
+            if (ay !== by) {
+                return ay < by ? -1 : 1;
+            }
+            return ax < bx ? -1 : 1;
+        });
+        for (const yx of carts) {
+            // Ignore deletions.
+            if (yxToDirectionTurn[yx] === undefined) {
+                continue;
+            }
+            const comma = yx.indexOf(",");
+            const y = parseInt(yx.substring(0, comma));
+            const x = parseInt(yx.substring(comma + 1));
+            const directionTurn = yxToDirectionTurn[yx];
+            const direction = directionTurn[0];
+            const turn = directionTurn[1];
+            // Move.
+            const delta = deltas[direction];
+            const yNext = y + delta[0];
+            const xNext = x + delta[1];
+            const yxNext = "" + yNext + "," + xNext;
+            if (yxToDirectionTurn[yxNext] === undefined) {
+                // Possibly change direction, and possibly turn.
+                const c = trackLines[yNext][xNext];
+                let directionNext = direction;
+                let turnNext = turn;
+                if (c === "+") {
+                    // Turn.
+                    directionNext = (direction + turns[turn] + d) % d;
+                    turnNext = (turn + 1) % turns.length;
+                } else if (c === "\\") {
+                    directionNext = (direction + (direction % 2 === 0 ? -1 : 1) + d) % d;
+                } else if (c === "/") {
+                    directionNext = (direction + (direction % 2 === 0 ? 1 : -1) + d) % d;
+                }
+                delete yxToDirectionTurn[yx];
+                yxToDirectionTurn[yxNext] = [directionNext, turnNext];
+            } else if (part === 1) {
+                // Crash.
+                return yxNext;
+            } else {
+                // Remove carts.
+                delete yxToDirectionTurn[yx];
+                delete yxToDirectionTurn[yxNext];
+            }
+        }
+    }
+    for (const yx in yxToDirectionTurn) {
+        return yx;
+    }
 }
 
 if (require.main === module) {
