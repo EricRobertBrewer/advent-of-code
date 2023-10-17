@@ -18,6 +18,7 @@ const SOLUTIONS = {
     9: d09_MarbleMania,
     10: d10_TheStarsAlign,
     11: d11_ChronalCharge,
+    12: d12_SubterraneanSustainability,
 };
 
 function main() {
@@ -683,7 +684,7 @@ function d11_ChronalCharge(lines, part) {
     let xMax = null, yMax = null, totalMax = null, sizeTotalMax = null;
     const sizeMin = part == 1 ? 3 : 1;
     const sizeMax = part == 1 ? 3 : 300;
-    // Lazy brute force; ~270,000 ms.
+    // TODO Fix lazy brute force; ~270,000 ms.
     for (let size = sizeMin; size <= sizeMax; size++) {
         for (let i = 0; i < h + 1 - size; i++) {
             for (let j = 0; j < w + 1 - size; j++) {
@@ -703,6 +704,92 @@ function d11_ChronalCharge(lines, part) {
         }
     }
     return "" + xMax + "," + yMax + "," + sizeTotalMax + ": " + totalMax;
+}
+
+function d12_SubterraneanSustainability(lines, part) {
+    const initialPrefix = "initial state: ";
+    let potToPlant = new Object();
+    let left = null, right = null;
+    for (let j = initialPrefix.length; j < lines[0].length; j++) {
+        const pot = j - initialPrefix.length;
+        const plant = lines[0][j];
+        potToPlant[pot] = plant;
+        if (plant === '#') {
+            if (left === null) {
+                left = pot;
+            }
+            right = pot;
+        }
+    }
+    const patternToPlant = new Object();
+    for (let i = 2; i < lines.length; i++) {
+        const patternPlant = lines[i].split(" => ");
+        patternToPlant[patternPlant[0]] = patternPlant[1];
+    }
+
+    const generations = part === 1 ? 20 : 50000000000;
+    const plantsToGenerationLeft = new Object();
+    let skipped = false;
+    for (let generation = 0; generation < generations; generation++) {
+        const potToPlantNext = new Object();
+        let leftNext = null, rightNext = null;
+        for (let pot = left - 2; pot <= right + 2; pot++) {
+            let pattern = "";
+            for (let di = -2; di <= 2; di++) {
+                if (potToPlant[pot + di] === undefined) {
+                    pattern += ".";
+                } else {
+                    pattern += potToPlant[pot + di];
+                }
+            }
+            const plantNext = patternToPlant[pattern];
+            potToPlantNext[pot] = plantNext;
+            if (plantNext === "#") {
+                if (leftNext === null) {
+                    leftNext = pot;
+                }
+                rightNext = pot;
+            }
+        }
+
+        if (!skipped) {
+            let plants = "";
+            for (let pot = leftNext; pot <= rightNext; pot++) {
+                plants += potToPlantNext[pot];
+            }
+            if (plantsToGenerationLeft[plants] === undefined) {
+                const generationLeft = [generation, leftNext];
+                plantsToGenerationLeft[plants] = generationLeft;
+            } else {
+                const generationLeft = plantsToGenerationLeft[plants];
+                const generationPrev = generationLeft[0];
+                const leftPrev = generationLeft[1];
+                const interval = generation - generationPrev;
+                const repeat = Math.floor((generations - 1 - generation) / interval);
+                const offset = leftNext - leftPrev;
+                potToPlant = new Object();
+                for (let pot = leftNext; pot <= rightNext; pot++) {
+                    potToPlant[pot + offset * repeat] = potToPlantNext[pot];
+                }
+                left = leftNext + offset * repeat;
+                right = rightNext + offset * repeat;
+                generation = generation + interval * repeat;
+                skipped = true;
+                continue;
+            }
+        }
+        potToPlant = potToPlantNext;
+        left = leftNext;
+        right = rightNext;
+    }
+
+    let potSum = 0;
+    for (const pot in potToPlant) {
+        if (potToPlant[pot] === "#") {
+            potSum += parseInt(pot);
+        }
+    }
+    return potSum;
 }
 
 if (require.main === module) {
