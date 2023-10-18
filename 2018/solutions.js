@@ -20,6 +20,7 @@ const SOLUTIONS = {
     11: d11_ChronalCharge,
     12: d12_SubterraneanSustainability,
     13: d13_MineCartMadness,
+    14: d14_ChocolateCharts,
 };
 
 function main() {
@@ -878,6 +879,40 @@ function d13_MineCartMadness(lines, part) {
     for (const yx in yxToDirectionTurn) {
         return yx;
     }
+}
+
+function d14_ChocolateCharts(lines, part) {
+    const recipes = parseInt(lines[0]);
+    const sequence = ("" + recipes).split("").map(c => parseInt(c));
+    let scores = [3, 7];
+    let paren = 0, bracket = 1;
+    while (part === 2 || scores.length < recipes + 10) {
+        const combine = scores[paren] + scores[bracket];
+        const newScores = combine >= 10 ? [Math.floor(combine / 10), combine % 10] : [combine % 10];
+        for (const score of newScores) {
+            scores.push(score);
+            if (part === 2 && scores.length >= sequence.length) {
+                let match = true;
+                for (let i = 0; i < sequence.length; i++) {
+                    if (scores[scores.length - sequence.length + i] !== sequence[i]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) {
+                    return scores.length - sequence.length;
+                }
+            }
+        }
+        paren = (paren + 1 + scores[paren]) % scores.length;
+        bracket = (bracket + 1 + scores[bracket]) % scores.length;
+    }
+
+    let ten = "";
+    for (let i = 0; i < 10; i++) {
+        ten += "" + scores[recipes + i];
+    }
+    return ten;
 }
 
 if (require.main === module) {
