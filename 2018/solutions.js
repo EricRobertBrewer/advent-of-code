@@ -22,6 +22,7 @@ const SOLUTIONS = {
     13: d13_MineCartMadness,
     14: d14_ChocolateCharts,
     15: d15_BeverageBandits,
+    16: d16_ChronalClassification,
 };
 
 function main() {
@@ -1105,6 +1106,130 @@ function _d15_getElfCount(yxToUnit) {
         }
     }
     return elves;
+}
+
+function d16_ChronalClassification(lines, part) {
+    const opcodes = [
+        "addr", "addi", // Addition.
+        "mulr", "muli", // Multiplication.
+        "banr", "bani", // Bitwise AND.
+        "borr", "bori", // Bitwise OR.
+        "setr", "seti", // Assignment.
+        "gtir", "gtri", "gtrr", // Greater-than.
+        "eqir", "eqri", "eqrr", // Equality.
+    ];
+
+    let behaveLikeThree = 0;
+    let idToOpcodeCandidates = new Array();
+    for (let j = 0; j < opcodes.length; j++) {
+        idToOpcodeCandidates.push(new Set(opcodes));
+    }
+    let idToOpcode = new Array(opcodes.length);
+    idToOpcode.fill(null);
+    let i = 0;
+    while (true) {
+        const beforeStart = lines[i].indexOf("[");
+        if (beforeStart === -1) {
+            i += 2;
+            break;
+        }
+        const beforeEnd = lines[i].indexOf("]", beforeStart + 1);
+        const rBefore = lines[i].substring(beforeStart + 1, beforeEnd).split(", ").map(s => parseInt(s));
+        const inst = lines[i + 1].split(" ").map(s => parseInt(s));
+        const afterStart = lines[i + 2].indexOf("[");
+        const afterEnd = lines[i + 2].indexOf("]");
+        const rAfter = lines[i + 2].substring(afterStart + 1, afterEnd).split(", ").map(s => parseInt(s));
+
+        const id = inst[0], a = inst[1], b = inst[2], c = inst[3];
+        let matches = new Set();
+        for (const opcode of opcodes) {
+            let r = rBefore.map(x => x);
+            _d16_execute(r, opcode, a, b, c);
+            if (r[c] === rAfter[c]) {
+                matches.add(opcode);
+            } else {
+                _d16_eliminate(id, opcode, idToOpcodeCandidates, idToOpcode);
+            }
+        }
+        if (matches.size >= 3) {
+            behaveLikeThree++;
+        }
+
+        i += 4;
+    }
+
+    if (part === 1) {
+        return behaveLikeThree;
+    }
+
+    const r = [0, 0, 0, 0];
+    while (i < lines.length) {
+        const inst = lines[i].split(" ").map(s => parseInt(s));
+        const id = inst[0], a = inst[1], b = inst[2], c = inst[3];
+        _d16_execute(r, idToOpcode[id], a, b, c);
+        i++;
+    }
+    return r[0];
+}
+
+function _d16_execute(r, opcode, a, b, c) {
+    if (opcode === "addr") {
+        r[c] = r[a] + r[b];
+    } else if (opcode === "addi") {
+        r[c] = r[a] + b;
+    } else if (opcode === "mulr") {
+        r[c] = r[a] * r[b];
+    } else if (opcode === "muli") {
+        r[c] = r[a] * b;
+    } else if (opcode === "banr") {
+        r[c] = r[a] & r[b];
+    } else if (opcode === "bani") {
+        r[c] = r[a] & b;
+    } else if (opcode === "borr") {
+        r[c] = r[a] | r[b];
+    } else if (opcode === "bori") {
+        r[c] = r[a] | b;
+    } else if (opcode === "setr") {
+        r[c] = r[a];
+    } else if (opcode === "seti") {
+        r[c] = a;
+    } else if (opcode === "gtir") {
+        r[c] = a > r[b] ? 1 : 0;
+    } else if (opcode === "gtri") {
+        r[c] = r[a] > b ? 1 : 0;
+    } else if (opcode === "gtrr") {
+        r[c] = r[a] > r[b] ? 1 : 0;
+    } else if (opcode === "eqir") {
+        r[c] = a === r[b] ? 1 : 0;
+    } else if (opcode === "eqri") {
+        r[c] = r[a] === b ? 1 : 0;
+    } else if (opcode === "eqrr") {
+        r[c] = r[a] === r[b] ? 1 : 0;
+    } else {
+        throw new Error("Unrecognized opcode: " + opcode);
+    }
+}
+
+function _d16_eliminate(id, opcode, idToOpcodeCandidates, idToOpcode) {
+    if (idToOpcode[id] !== null) {
+        return;
+    }
+    idToOpcodeCandidates[id].delete(opcode);
+    if (idToOpcodeCandidates[id].size === 1) {
+        let opcodeSure = null;
+        for (const opcodeCandidate of idToOpcodeCandidates[id]) {
+            opcodeSure = opcodeCandidate;
+            break;
+        }
+        idToOpcode[id] = opcodeSure;
+        for (const idOther in idToOpcodeCandidates) {
+            if (idOther === id) {
+                continue;
+            }
+            _d16_eliminate(idOther, opcodeSure, idToOpcodeCandidates, idToOpcode);
+        }
+    }
+
 }
 
 if (require.main === module) {
