@@ -21,6 +21,7 @@ const SOLUTIONS = {
     12: d12_SubterraneanSustainability,
     13: d13_MineCartMadness,
     14: d14_ChocolateCharts,
+    15: d15_BeverageBandits,
 };
 
 function main() {
@@ -805,16 +806,16 @@ function d13_MineCartMadness(lines, part) {
         for (let x = 0; x < lines[y].length; x++) {
             const c = lines[y][x];
             if (c === "^") {
-                yxToDirectionTurn["" + y + "," + x] = [0, 0];
+                yxToDirectionTurn[csUtil.gridVectorToYx([y, x])] = [0, 0];
                 trackLine += "|";
             } else if (c === ">") {
-                yxToDirectionTurn["" + y + "," + x] = [1, 0];
+                yxToDirectionTurn[csUtil.gridVectorToYx([y, x])] = [1, 0];
                 trackLine += "-";
             } else if (c === "v") {
-                yxToDirectionTurn["" + y + "," + x] = [2, 0];
+                yxToDirectionTurn[csUtil.gridVectorToYx([y, x])] = [2, 0];
                 trackLine += "|";
             } else if (c === "<") {
-                yxToDirectionTurn["" + y + "," + x] = [3, 0];
+                yxToDirectionTurn[csUtil.gridVectorToYx([y, x])] = [3, 0];
                 trackLine += "-";
             } else {
                 trackLine += c;
@@ -824,16 +825,7 @@ function d13_MineCartMadness(lines, part) {
     }
 
     while (Object.keys(yxToDirectionTurn).length > 1) {
-        const carts = Object.keys(yxToDirectionTurn).sort((a, b) => {
-            const ayx = a.split(",");
-            const ay = parseInt(ayx[0]), ax = parseInt(ayx[1]);
-            const byx = b.split(",");
-            const by = parseInt(byx[0]), bx = parseInt(byx[1]);
-            if (ay !== by) {
-                return ay < by ? -1 : 1;
-            }
-            return ax < bx ? -1 : 1;
-        });
+        const carts = Object.keys(yxToDirectionTurn).sort(csUtil.gridCompareReadingYx);
         for (const yx of carts) {
             // Ignore deletions.
             if (yxToDirectionTurn[yx] === undefined) {
@@ -849,7 +841,7 @@ function d13_MineCartMadness(lines, part) {
             const delta = deltas[direction];
             const yNext = y + delta[0];
             const xNext = x + delta[1];
-            const yxNext = "" + yNext + "," + xNext;
+            const yxNext = csUtil.gridVectorToYx([yNext, xNext]);
             if (yxToDirectionTurn[yxNext] === undefined) {
                 // Possibly change direction, and possibly turn.
                 const c = trackLines[yNext][xNext];
@@ -913,6 +905,206 @@ function d14_ChocolateCharts(lines, part) {
         ten += "" + scores[recipes + i];
     }
     return ten;
+}
+
+function d15_BeverageBandits(lines, part) {
+    const arena = new Array(lines.length);
+    for (let i = 0; i < lines.length; i++) {
+        arena[i] = lines[i].split("");
+    }
+    const yxToUnit = new Object();
+    for (let y = 0; y < arena.length; y++) {
+        for (let x = 0; x < arena[y].length; x++) {
+            const c = arena[y][x];
+            if (c === "E" || c === "G") {
+                const yx = csUtil.gridVectorToYx([y, x]);
+                yxToUnit[yx] = {"race": c, "atk": 3, "hp": 200, "round": -1};
+            }
+        }
+    }
+
+    if (part === 1) {
+        return _d15_getOutcome(arena, yxToUnit);
+    }
+
+    const elves = _d15_getElfCount(yxToUnit);
+    let atkElf = 4;
+    while (true) {
+        const arenaCopy = new Array(arena.length);
+        for (let i = 0; i < arena.length; i++) {
+            const row = new Array(arena[i].length);
+            for (let j = 0; j < arena[i].length; j++) {
+                row[j] = arena[i][j];
+            }
+            arenaCopy[i] = row;
+        }
+        const yxToUnitCopy = new Object();
+        for (const yx in yxToUnit) {
+            const unitCopy = new Object();
+            for (const key in yxToUnit[yx]) {
+                unitCopy[key] = yxToUnit[yx][key];
+            }
+            if (unitCopy["race"] === "E") {
+                unitCopy["atk"] = atkElf;
+            }
+            yxToUnitCopy[yx] = unitCopy;
+        }
+        const outcome = _d15_getOutcome(arenaCopy, yxToUnitCopy);
+        if (_d15_getElfCount(yxToUnitCopy) === elves) {
+            return outcome;
+        }
+        atkElf++;
+    }
+}
+
+function _d15_getOutcome(arena, yxToUnit) {
+    const vDeltas = [[-1, 0], [0, -1], [0, 1], [1, 0]]; // In reading order.
+    const openChars = new Set(["."]); // For Dijkstra function.
+    let round = 0;
+    while (true) {
+        const orderedYxs = Object.keys(yxToUnit).sort(csUtil.gridCompareReadingYx);
+        for (let yx of orderedYxs) {
+            const unit = yxToUnit[yx];
+            if (unit === undefined || unit["round"] === round) {
+                continue; // Killed or another unit moved onto previously-killed unit's space.
+            }
+            unit["round"] = round;
+            // Check for adjacent enemies.
+            let v = csUtil.gridYxToVector(yx); // Updated after moving, hence not `const`.
+            let hasAdjacentEnemy = false;
+            for (const vDelta of vDeltas) {
+                const yxAdjacent = csUtil.gridVectorToYx([v[0] + vDelta[0], v[1] + vDelta[1]]);
+                if (yxToUnit[yxAdjacent] !== undefined && yxToUnit[yxAdjacent]["race"] !== unit["race"]) {
+                    hasAdjacentEnemy = true;
+                    break;
+                }
+            }
+            if (!hasAdjacentEnemy) {
+                // Collect all spaces adjacent to enemies.
+                let enemies = 0;
+                let enemyAdjacentYxs = new Set();
+                for (const yxOther in yxToUnit) {
+                    const unitOther = yxToUnit[yxOther];
+                    if (unitOther["race"] === unit["race"]) {
+                        continue; // Ally or self.
+                    }
+                    enemies++;
+                    const vOther = csUtil.gridYxToVector(yxOther);
+                    for (const vDelta of vDeltas) {
+                        const yCand = vOther[0] + vDelta[0], xCand = vOther[1] + vDelta[1];
+                        if (yCand < 0 || yCand >= arena.length || xCand < 0 || xCand >= arena[yCand].length) {
+                            continue;
+                        }
+                        if (arena[yCand][xCand] === ".") {
+                            const yxCand = csUtil.gridVectorToYx([yCand, xCand]);
+                            enemyAdjacentYxs.add(yxCand);
+                        }
+                    }
+                }
+                // Check if combat ceases.
+                if (enemies === 0) {
+                    let hpSum = 0;
+                    for (const yxAlly in yxToUnit) {
+                        hpSum += yxToUnit[yxAlly]["hp"];
+                    }
+                    return round * hpSum;
+                }
+                // Identify nearest space via BFS, in reading order, adjacent to an enemy.
+                if (enemyAdjacentYxs.size === 0) {
+                    continue; // No spaces are in range.
+                }
+                let vMove = null;
+                let visitedYxs = new Set();
+                let frontierVs = [v];
+                while (frontierVs.length > 0) {
+                    let frontierNextVs = new Array();
+                    for (const vSpace of frontierVs) {
+                        const yxSpace = csUtil.gridVectorToYx(vSpace);
+                        if (enemyAdjacentYxs.has(yxSpace)) {
+                            vMove = vSpace;
+                            break;
+                        }
+                        if (visitedYxs.has(yxSpace)) {
+                            continue;
+                        }
+                        visitedYxs.add(yxSpace);
+                        for (const vDelta of vDeltas) {
+                            const yStep = vSpace[0] + vDelta[0], xStep = vSpace[1] + vDelta[1];
+                            if (yStep < 0 || yStep >= arena.length || xStep < 0 || xStep >= arena[yStep].length) {
+                                continue;
+                            }
+                            if (openChars.has(arena[yStep][xStep])) {
+                                frontierNextVs.push([yStep, xStep]);
+                            }
+                        }
+                    }
+                    if (vMove !== null) {
+                        break;
+                    }
+                    frontierVs = frontierNextVs.sort(csUtil.gridCompareReadingVector);
+                }
+                if (vMove === null) {
+                    continue; // Unreachable.
+                }
+                // Move.
+                arena[v[0]][v[1]] = ".";
+                const d = csUtil.gridDijkstra(arena, vMove, v, openChars);
+                let vStep = null;
+                let dStep = null;
+                for (const vDelta of vDeltas) {
+                    const yStep = v[0] + vDelta[0], xStep = v[1] + vDelta[1];
+                    if (yStep < 0 || yStep >= arena.length || xStep < 0 || xStep >= arena[yStep].length) {
+                        continue;
+                    }
+                    if (d[yStep][xStep] === -1) {
+                        continue;
+                    }
+                    if (vStep === null || d[yStep][xStep] < dStep) {
+                        vStep = [yStep, xStep];
+                        dStep = d[yStep][xStep];
+                    }
+                }
+                v = vStep;
+                arena[vStep[0]][vStep[1]] = unit["race"];
+                delete yxToUnit[yx];
+                yx = csUtil.gridVectorToYx(v);
+                yxToUnit[yx] = unit;
+            }
+            // Attack.
+            let yxAttack = null;
+            for (const vDelta of vDeltas) {
+                const yAdj = v[0] + vDelta[0], xAdj = v[1] + vDelta[1];
+                if (yAdj < 0 || yAdj >= arena.length || xAdj < 0 || xAdj >= arena[yAdj.length]) {
+                    continue;
+                }
+                const yxAdj = csUtil.gridVectorToYx([yAdj, xAdj]);
+                if (yxToUnit[yxAdj] !== undefined && yxToUnit[yxAdj]["race"] !== unit["race"]) {
+                    if (yxAttack === null || yxToUnit[yxAdj]["hp"] < yxToUnit[yxAttack]["hp"]) {
+                        yxAttack = yxAdj;
+                    }
+                }
+            }
+            if (yxAttack !== null) {
+                yxToUnit[yxAttack]["hp"] -= unit["atk"];
+                if (yxToUnit[yxAttack]["hp"] <= 0) {
+                    delete yxToUnit[yxAttack];
+                    const vAttack = csUtil.gridYxToVector(yxAttack);
+                    arena[vAttack[0]][vAttack[1]] = ".";
+                }
+            }
+        }
+        round++;
+    }
+}
+
+function _d15_getElfCount(yxToUnit) {
+    let elves = 0;
+    for (const yx in yxToUnit) {
+        if (yxToUnit[yx]["race"] === "E") {
+            elves++;
+        }
+    }
+    return elves;
 }
 
 if (require.main === module) {
