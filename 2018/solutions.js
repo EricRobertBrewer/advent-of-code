@@ -24,6 +24,7 @@ const SOLUTIONS = {
     15: d15_BeverageBandits,
     16: d16_ChronalClassification,
     17: d17_ReservoirResearch,
+    18: d18_SettlersOfTheNorthPole,
 };
 
 function main() {
@@ -1366,6 +1367,84 @@ function d17_ReservoirResearch(lines, part) {
         }
     }
     return waterSquares;
+}
+
+function d18_SettlersOfTheNorthPole(lines, part) {
+    let acres = lines.map(line => line.split(""));
+
+    const minutes = part === 1 ? 10 : 1000000000;
+    let minute = 0;
+    const flatToMinute = new Object();
+    let skipped = false;
+    while (minute < minutes) {
+        let acresNext = acres.map(row => row.join("").split(""));
+        for (let y = 0; y < acres.length; y++) {
+            for (let x = 0; x < acres[y].length; x++) {
+                const acre = acres[y][x];
+                let opens = 0, trees = 0, lumbers = 0;
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        if (dy === 0 && dx === 0) {
+                            continue;
+                        }
+                        const yz = y + dy, xz = x + dx;
+                        if (yz < 0 || yz >= acres.length || xz < 0 || xz >= acres[y].length) {
+                            continue;
+                        }
+                        const acreAdj = acres[yz][xz];
+                        if (acreAdj === ".") {
+                            opens++;
+                        } else if (acreAdj === "|") {
+                            trees++;
+                        } else {
+                            lumbers++;
+                        }
+                    }
+                }
+                if (acre === ".") {
+                    if (trees >= 3) {
+                        acresNext[y][x] = "|";
+                    }
+                } else if (acre === "|") {
+                    if (lumbers >= 3) {
+                        acresNext[y][x] = "#";
+                    }
+                } else {
+                    if (lumbers < 1 || trees < 1) {
+                        acresNext[y][x] = ".";
+                    }
+                }
+            }
+        }
+        acres = acresNext;
+        minute++;
+
+        if (!skipped) {
+            const flat = acres.map(row => row.join("")).join("");
+            if (flatToMinute[flat] === undefined) {
+                flatToMinute[flat] = minute;
+            } else {
+                const minutePrev = flatToMinute[flat];
+                const interval = minute - minutePrev;
+                const repeat = Math.floor((minutes - minute) / interval);
+                minute += interval * repeat;
+                skipped = true;
+            }
+        }
+    }
+
+    let trees = 0, lumbers = 0;
+    for (let y = 0; y < acres.length; y++) {
+        for (let x = 0; x < acres[y].length; x++) {
+            const acre = acres[y][x];
+            if (acre === "|") {
+                trees++;
+            } else if (acre === "#") {
+                lumbers++;
+            }
+        }
+    }
+    return trees * lumbers;
 }
 
 if (require.main === module) {
