@@ -23,6 +23,7 @@ const SOLUTIONS = {
     14: d14_ChocolateCharts,
     15: d15_BeverageBandits,
     16: d16_ChronalClassification,
+    17: d17_ReservoirResearch,
 };
 
 function main() {
@@ -1229,7 +1230,142 @@ function _d16_eliminate(id, opcode, idToOpcodeCandidates, idToOpcode) {
             _d16_eliminate(idOther, opcodeSure, idToOpcodeCandidates, idToOpcode);
         }
     }
+}
 
+function d17_ReservoirResearch(lines, part) {
+    const yxToSquare = new Object();
+    let yMin = null, yMax = null;
+    for (const line of lines) {
+        const constantRangeExpressions = line.split(", ");
+        const constantExpression = constantRangeExpressions[0].split("=");
+        const variableC = constantExpression[0];
+        const constant = parseInt(constantExpression[1]);
+        const rangeExpression = constantRangeExpressions[1].split("=");
+        const variableR = rangeExpression[0];
+        const range = rangeExpression[1].split("..").map(s => parseInt(s));
+        if (variableC === variableR || range.length !== 2) {
+            throw new Error("Unable to parse line: " + line);
+        }
+        if (variableC === "x") {
+            for (let y = range[0]; y <= range[1]; y++) {
+                const yx = csUtil.gridVectorToYx([y, constant]);
+                yxToSquare[yx] = "#";
+            }
+            if (yMin === null || range[0] < yMin) {
+                yMin = range[0];
+            }
+            if (yMax === null || range[1] > yMax) {
+                yMax = range[1];
+            }
+        } else {
+            for (let x = range[0]; x <= range[1]; x++) {
+                const yx = csUtil.gridVectorToYx([constant, x]);
+                yxToSquare[yx] = "#";
+            }
+            if (yMin === null || constant < yMin) {
+                yMin = constant;
+            }
+            if (yMax === null || constant > yMax) {
+                yMax = constant;
+            }
+        }
+    }
+
+    yxToSquare[csUtil.gridVectorToYx([yMin, 500])] = "|";
+    let flowVs = [[yMin, 500]];
+    while (flowVs.length > 0) {
+        const flowV = flowVs.shift();
+        let y = flowV[0], x = flowV[1];
+        // Fall downward.
+        let yxDown = null;
+        while (y < yMax) {
+            yxDown = csUtil.gridVectorToYx([y + 1, x]);
+            if (yxToSquare[yxDown] !== undefined) {
+                break;
+            }
+            yxToSquare[yxDown] = "|";
+            y++;
+        }
+        if (y == yMax || yxToSquare[yxDown] === "|") {
+            continue; // Reached bottom or another flow.
+        }
+        // Settle upwards.
+        while (true) {
+            // Look for left wall.
+            let xLeft = x;
+            let yxLeft = null;
+            let yxLeftDown = yxDown;
+            let settleLeft = false;
+            while (yxToSquare[yxLeftDown] !== undefined && yxToSquare[yxLeftDown] !== "|") {
+                xLeft--;
+                yxLeft = csUtil.gridVectorToYx([y, xLeft]);
+                if (yxToSquare[yxLeft] !== undefined && yxToSquare[yxLeft] === "#") {
+                    settleLeft = true;
+                    break;
+                }
+                yxToSquare[yxLeft] = "|";
+                yxLeftDown = csUtil.gridVectorToYx([y + 1, xLeft]);
+            }
+            // Continue the left flow.
+            if (yxToSquare[yxLeftDown] === undefined) {
+                flowVs.push([y, xLeft]);
+            }
+            // Look for right wall.
+            let xRight = x;
+            let yxRight = null;
+            let yxRightDown = yxDown;
+            let settleRight = false;
+            while (yxToSquare[yxRightDown] !== undefined && yxToSquare[yxRightDown] !== "|") {
+                xRight++;
+                yxRight = csUtil.gridVectorToYx([y, xRight]);
+                if (yxToSquare[yxRight] !== undefined && yxToSquare[yxRight] === "#") {
+                    settleRight = true;
+                    break;
+                }
+                yxToSquare[yxRight] = "|";
+                yxRightDown = csUtil.gridVectorToYx([y + 1, xRight]);
+            }
+            // Continue the right flow.
+            if (yxToSquare[yxRightDown] === undefined) {
+                flowVs.push([y, xRight]);
+            }
+            // Quit when not bound by walls.
+            if (!settleLeft || !settleRight) {
+                break;
+            }
+            // Settle.
+            for (let xSettle = xLeft + 1; xSettle <= xRight - 1; xSettle++) {
+                const yxSettle = csUtil.gridVectorToYx([y, xSettle]);
+                yxToSquare[yxSettle] = "~";
+            }
+            y--;
+            yxToSquare[csUtil.gridVectorToYx([y, x])] = "|"; // May be sand when two equal-height flows have merged.
+        }
+    }
+
+//    const xMin = 495, xMax = 506;
+//    const xMin = 414, xMax = 576;
+//    for (let y = yMin; y <= yMax; y++) {
+//        let row = "";
+//        for (let x = xMin - 1; x <= xMax + 1; x++) {
+//            const yx = csUtil.gridVectorToYx([y, x]);
+//            const square = yxToSquare[yx];
+//            if (square === undefined) {
+//                row += ".";
+//            } else {
+//                row += square;
+//            }
+//        }
+//        console.log(row);
+//    }
+
+    let waterSquares = 0;
+    for (const yx in yxToSquare) {
+        if ((part === 1 && yxToSquare[yx] === "|") || yxToSquare[yx] === "~") {
+            waterSquares++;
+        }
+    }
+    return waterSquares;
 }
 
 if (require.main === module) {
