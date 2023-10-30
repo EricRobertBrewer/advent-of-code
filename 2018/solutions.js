@@ -25,6 +25,7 @@ const SOLUTIONS = {
     16: d16_ChronalClassification,
     17: d17_ReservoirResearch,
     18: d18_SettlersOfTheNorthPole,
+    19: d19_GoWithTheFlow,
 };
 
 function main() {
@@ -1445,6 +1446,39 @@ function d18_SettlersOfTheNorthPole(lines, part) {
         }
     }
     return trees * lumbers;
+}
+
+function d19_GoWithTheFlow(lines, part) {
+    const bound = parseInt(lines[0][lines[0].length - 1]);
+    const instructions = new Array();
+    for (let i = 1; i < lines.length; i++) {
+        const tokens = lines[i].split(" ");
+        instructions.push([tokens[0], parseInt(tokens[1]), parseInt(tokens[2]), parseInt(tokens[3])]);
+    }
+
+    const r = [0, 0, 0, 0, 0, 0];
+    if (part === 2) {
+        r[0] = 1;
+    }
+    let ip = 0;
+    while (ip >= 0 && ip < instructions.length) {
+        if (ip === 1) {
+            const n = r[5];
+            let divisor_sum = 0;
+            for (let i = 1; i <= n; i++) {
+                if (n % i === 0) {
+                    divisor_sum += i;
+                }
+            }
+            return divisor_sum;
+        }
+        r[bound] = ip;
+        const inst = instructions[ip];
+        const opcode = inst[0], a = inst[1], b = inst[2], c = inst[3];
+        _d16_execute(r, opcode, a, b, c);
+        ip = r[bound];
+        ip++;
+    }
 }
 
 if (require.main === module) {
