@@ -26,6 +26,7 @@ const SOLUTIONS = {
     17: d17_ReservoirResearch,
     18: d18_SettlersOfTheNorthPole,
     19: d19_GoWithTheFlow,
+    20: d20_ARegularMap,
 };
 
 function main() {
@@ -1478,6 +1479,73 @@ function d19_GoWithTheFlow(lines, part) {
         _d16_execute(r, opcode, a, b, c);
         ip = r[bound];
         ip++;
+    }
+}
+
+function d20_ARegularMap(lines, part) {
+    const s = lines[0];
+    if (s[0] !== "^" || s[s.length - 1] !== "$") {
+        throw new Error("Illegal surrounding characters in regular expression: " + s);
+    }
+    const ip = [0];
+    const yxStart = csUtil.gridVectorToYx([0, 0]);
+    const yxToD = new Object();
+    yxToD[yxStart] = 0;
+    const cToDelta = {"N": [-1, 0], "E": [0, 1], "S": [1, 0], "W": [0, -1]};
+    const yxEnd = _d20_traverse_regex(s.substring(1, s.length - 1), ip, yxStart, yxToD, cToDelta);
+
+    if (part === 1) {
+        let yxMax = null;
+        for (const yx in yxToD) {
+            if (yxMax === null || yxToD[yx] > yxToD[yxMax]) {
+                yxMax = yx;
+            }
+        }
+        return yxToD[yxMax];
+    }
+
+    let far = 0;
+    for (const yx in yxToD) {
+        if (yxToD[yx] >= 1000) {
+            far++;
+        }
+    }
+    return far;
+}
+
+function _d20_traverse_regex(s, ip, yxStart, yxToD, cToDelta) {
+    let yx = yxStart;
+    while (ip[0] < s.length) {
+        const c = s[ip[0]];
+        if (c === "(") {
+            // Recurse starting from the current position.
+            ip[0]++;
+            yx = _d20_traverse_regex(s, ip, yx, yxToD, cToDelta);
+            continue;
+        } else if (c === "|") {
+            // Traverse again starting from the beginning.
+            ip[0]++;
+            yx = yxStart;
+            continue;
+        } else if (c === ")") {
+            // Give new position back to caller.
+            // Assumes branch ending positions are uniform if they continue, as per:
+            // | Regardless of which option is taken, the route continues from the position it is left at
+            // | after taking those steps.
+            ip[0]++;
+            return yx;
+        }
+
+        // Process direction.
+        const delta = cToDelta[c];
+        const v = csUtil.gridYxToVector(yx);
+        const vStep = [v[0] + delta[0], v[1] + delta[1]];
+        const yxStep = csUtil.gridVectorToYx(vStep);
+        if (yxToD[yxStep] === undefined || yxToD[yx] + 1 < yxToD[yxStep]) {
+            yxToD[yxStep] = yxToD[yx] + 1; // Relax edge.
+        }
+        yx = yxStep;
+        ip[0]++;
     }
 }
 
