@@ -27,6 +27,7 @@ const SOLUTIONS = {
     18: d18_SettlersOfTheNorthPole,
     19: d19_GoWithTheFlow,
     20: d20_ARegularMap,
+    21: d21_ChronalConversion,
 };
 
 function main() {
@@ -1546,6 +1547,41 @@ function _d20_traverse_regex(s, ip, yxStart, yxToD, cToDelta) {
         }
         yx = yxStep;
         ip[0]++;
+    }
+}
+
+function d21_ChronalConversion(lines, part) {
+    const bound = parseInt(lines[0][lines[0].length - 1]);
+    const instructions = new Array();
+    for (let i = 1; i < lines.length; i++) {
+        const tokens = lines[i].split(" ");
+        instructions.push([tokens[0], parseInt(tokens[1]), parseInt(tokens[2]), parseInt(tokens[3])]);
+    }
+
+    const r = [0, 0, 0, 0, 0, 0];
+    let ip = 0;
+    const zSet = new Set();
+    let zPrev = null;
+    while (ip >= 0 && ip < instructions.length) {
+        if (ip === 30) {
+            const z = r[5];
+            if (part === 1) {
+                return z;
+            }
+            // TODO: ~128985 ms; could do bit-wise division.
+            if (!zSet.has(z)) {
+                zSet.add(z);
+                zPrev = z;
+            } else {
+                return zPrev;
+            }
+        }
+        r[bound] = ip;
+        const inst = instructions[ip];
+        const opcode = inst[0], a = inst[1], b = inst[2], c = inst[3];
+        _d16_execute(r, opcode, a, b, c);
+        ip = r[bound];
+        ip++;
     }
 }
 
