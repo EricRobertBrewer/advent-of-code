@@ -28,6 +28,7 @@ const SOLUTIONS = {
     19: d19_GoWithTheFlow,
     20: d20_ARegularMap,
     21: d21_ChronalConversion,
+    22: d22_ModeMaze,
 };
 
 function main() {
@@ -1583,6 +1584,114 @@ function d21_ChronalConversion(lines, part) {
         ip = r[bound];
         ip++;
     }
+}
+
+function d22_ModeMaze(lines, part) {
+    const depth = parseInt(lines[0].split(": ")[1]);
+    const pointTarget = lines[1].split(": ")[1].split(",").map(s => parseInt(s));
+    const xTarget = pointTarget[0];
+    const yTarget = pointTarget[1];
+    const yxTarget = csUtil.gridVectorToYx([yTarget, xTarget]);
+
+    const yxToGeologic = new Object();
+    const yxToErosion = new Object();
+    yxToGeologic[yxTarget] = 0;
+    yxToErosion[yxTarget] = depth % 20183;
+
+    if (part === 1) {
+        let risk = 0;
+        for (let y = 0; y <= yTarget; y++) {
+            for (let x = 0; x <= xTarget; x++) {
+                const yx = csUtil.gridVectorToYx([y, x]);
+                const erosion = _d22_getErosionLevel(yx, yxToGeologic, yxToErosion, depth);
+                risk += erosion % 3;
+            }
+        }
+        return risk;
+    }
+
+    const deltas = [[-1, 0], [0, 1], [1, 0], [0, -1]];
+    const stateInit = "0,0,1"; // "y,x,tool" - 0: neither; 1: torch; 2: climbing gear.
+    const dToFrontier = new Object(); // A lazy priority queue.
+    dToFrontier[0] = new Array();
+    dToFrontier[0].push(stateInit)
+    const stateToD = new Object();
+    stateToD[stateInit] = 0;
+    const visited = new Set();
+    let d = 0;
+    while (true) {
+        while (dToFrontier[d] !== undefined && dToFrontier[d].length > 0) {
+            const state = dToFrontier[d].shift();
+            if (visited.has(state)) {
+                continue;
+            }
+            visited.add(state);
+            const a = state.split(",").map(s => parseInt(s));
+            const y = a[0], x = a[1], tool = a[2];
+            if (y === yTarget && x === xTarget && tool === 1) {
+                return d;
+            }
+            const stateSteps = new Array();
+            const dSteps = new Array();
+            // Move where possible with the same tool.
+            for (const delta of deltas) {
+                const yStep = y + delta[0], xStep = x + delta[1];
+                if (yStep < 0 || xStep < 0) {
+                    continue; // Out of bounds.
+                }
+                const yxStep = csUtil.gridVectorToYx([yStep, xStep]);
+                const erosionStep = _d22_getErosionLevel(yxStep, yxToGeologic, yxToErosion, depth);
+                if (erosionStep % 3 === tool) {
+                    continue; // Incompatible tool.
+                }
+                stateSteps.push([yStep, xStep, tool].join(","));
+                dSteps.push(d + 1);
+            }
+            // Change tool.
+            const yx = csUtil.gridVectorToYx([y, x]);
+            const erosion = _d22_getErosionLevel(yx, yxToGeologic, yxToErosion, depth);
+            for (let toolStep = 0; toolStep < 3; toolStep++) {
+                if (toolStep === tool || erosion % 3 === toolStep) {
+                    continue; // Same or incompatible tool.
+                }
+                stateSteps.push([y, x, toolStep].join(","));
+                dSteps.push(d + 7);
+            }
+            // Push frontier.
+            for (let i = 0; i < stateSteps.length; i++) {
+                const stateStep = stateSteps[i];
+                const dStep = dSteps[i];
+                if (stateToD[stateStep] === undefined || dStep < stateToD[stateStep]) {
+                    stateToD[stateStep] = dStep;
+                    if (dToFrontier[dStep] === undefined) {
+                        dToFrontier[dStep] = new Array();
+                    }
+                    dToFrontier[dStep].push(stateStep);
+                }
+            }
+        }
+        d++;
+    }
+}
+
+function _d22_getErosionLevel(yx, yxToGeologic, yxToErosion, depth) {
+    if (yxToErosion[yx] === undefined) {
+        const v = csUtil.gridYxToVector(yx);
+        const y = v[0], x = v[1];
+        if (y === 0) {
+            yxToGeologic[yx] = 16807 * x;
+        } else if (x === 0) {
+            yxToGeologic[yx] = 48271 * y;
+        } else {
+            const yxLeft = csUtil.gridVectorToYx([y, x - 1]);
+            const erosionLeft = _d22_getErosionLevel(yxLeft, yxToGeologic, yxToErosion, depth);
+            const yxUp = csUtil.gridVectorToYx([y - 1, x]);
+            const erosionUp = _d22_getErosionLevel(yxUp, yxToGeologic, yxToErosion, depth);
+            yxToGeologic[yx] = erosionLeft * erosionUp;
+        }
+        yxToErosion[yx] = (yxToGeologic[yx] + depth) % 20183;
+    }
+    return yxToErosion[yx];
 }
 
 if (require.main === module) {
