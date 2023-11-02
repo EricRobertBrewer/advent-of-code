@@ -1618,6 +1618,7 @@ function d22_ModeMaze(lines, part) {
     const stateToD = new Object();
     stateToD[stateInit] = 0;
     const visited = new Set();
+    const backtrace = new Object();
     let d = 0;
     while (true) {
         while (dToFrontier[d] !== undefined && dToFrontier[d].length > 0) {
@@ -1629,6 +1630,20 @@ function d22_ModeMaze(lines, part) {
             const a = state.split(",").map(s => parseInt(s));
             const y = a[0], x = a[1], tool = a[2];
             if (y === yTarget && x === xTarget && tool === 1) {
+                const path = new Array();
+                let stateBack = state;
+                while (stateBack !== undefined) {
+                    path.push(stateBack);
+                    stateBack = backtrace[stateBack];
+                }
+                for (let i = path.length - 1; i >= 0; i--) {
+                    const stateForward = path[i];
+                    const b = stateForward.split(",").map(s => parseInt(s));
+                    const yxForward = csUtil.gridVectorToYx([b[0], b[1]]);
+                    const erosion = _d22_getErosionLevel(yxForward, yxToGeologic, yxToErosion, depth);
+                    const terrain = erosion % 3;
+                    console.log("" + (path.length - 1 - i) + ": " + stateForward + " (" + erosion + ", " + terrain + ")");
+                }
                 return d;
             }
             const stateSteps = new Array();
@@ -1667,6 +1682,7 @@ function d22_ModeMaze(lines, part) {
                         dToFrontier[dStep] = new Array();
                     }
                     dToFrontier[dStep].push(stateStep);
+                    backtrace[stateStep] = state;
                 }
             }
         }
