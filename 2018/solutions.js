@@ -29,6 +29,7 @@ const SOLUTIONS = {
     20: d20_ARegularMap,
     21: d21_ChronalConversion,
     22: d22_ModeMaze,
+    23: d23_ExperimentalEmergencyTeleportation,
 };
 
 function main() {
@@ -1708,6 +1709,105 @@ function _d22_getErosionLevel(yx, yxToGeologic, yxToErosion, depth) {
         yxToErosion[yx] = (yxToGeologic[yx] + depth) % 20183;
     }
     return yxToErosion[yx];
+}
+
+function d23_ExperimentalEmergencyTeleportation(lines, part) {
+    const positions = new Array();
+    const radii = new Array();
+    for (let i = 0; i < lines.length; i++) {
+        const positionRadius = lines[i].split(">, r=");
+        const position = positionRadius[0].split("pos=<")[1].split(",").map(s => parseInt(s));
+        positions.push(position);
+        const radius = parseInt(positionRadius[1]);
+        radii.push(radius);
+    }
+
+    if (part === 1) {
+        const indexRadiusMax = radii.reduce((i, radius, j) => radius > radii[i] ? j : i, 0);
+        const positionMax = positions[indexRadiusMax];
+        const radiusMax = radii[indexRadiusMax];
+        let inRange = 0;
+        for (let i = 0; i < positions.length; i++) {
+            const d = _d23_getManhattanDistance(positions[i], positionMax);
+            if (d <= radiusMax) {
+                inRange++;
+            }
+        }
+        return inRange;
+    }
+
+    // Identify overlapping relationships between bots.
+    const indexToNeighborToOverlap = new Object();
+    for (let i = 0; i < positions.length; i++) {
+        indexToNeighborToOverlap[i.toString()] = new Object();
+    }
+    for (let i = 0; i < positions.length - 1; i++) {
+        const position = positions[i];
+        const radius = radii[i];
+        for (let j = i + 1; j < positions.length; j++) {
+            const positionOther = positions[j];
+            const radiusOther = radii[j];
+            const d = _d23_getManhattanDistance(position, positionOther);
+            const overlap = radius + radiusOther - d;
+            if (overlap >= 0) {
+                indexToNeighborToOverlap[i.toString()][j.toString()] = overlap;
+                indexToNeighborToOverlap[j.toString()][i.toString()] = overlap;
+            }
+        }
+    }
+
+    // Find the max clique.
+    while (true) {
+        // Calculate degrees of bots.
+        let degreeMin = null;
+        let degreeMinIndex = null;
+        let degreeMax = null;
+        for (const index in indexToNeighborToOverlap) {
+            const neighborToOverlap = indexToNeighborToOverlap[index];
+            const degree = Object.keys(neighborToOverlap).length;
+            if (degreeMin === null || degree < degreeMin) {
+                degreeMin = degree;
+                degreeMinIndex = index;
+            }
+            if (degreeMax === null || degree > degreeMax) {
+                degreeMax = degree;
+            }
+        }
+        if (degreeMin === degreeMax) {
+            break;
+        }
+        // Prune bots of least degree.
+        const degreeMinNeighborToOverlap = indexToNeighborToOverlap[degreeMinIndex];
+        for (const neighbor in degreeMinNeighborToOverlap) {
+            delete indexToNeighborToOverlap[neighbor][degreeMinIndex];
+        }
+        delete indexToNeighborToOverlap[degreeMinIndex];
+    }
+
+    // Calculate intercepts of faces.
+    const grads = [[-1, -1], [-1, 1], [1, -1], [1, 1]]; // Partial derivatives with respect to x of faces.
+    let interceptsLowAll = null;
+    let interceptsHighAll = null;
+    for (const index in indexToNeighborToOverlap) {
+        const i = parseInt(index);
+        const position = positions[i];
+        const x = position[0], y = position[1], z = position[2];
+        const radius = radii[i];
+        const interceptsLow = grads.map(signs => x - radius - signs[0] * y - signs[1] * z);
+        const interceptsHigh = grads.map(signs => x + radius - signs[0] * y - signs[1] * z);
+        if (interceptsLowAll === null) {
+            interceptsLowAll = interceptsLow;
+            interceptsHighAll = interceptsHigh;
+            continue;
+        }
+        interceptsLowAll = interceptsLowAll.map((intercept, j) => Math.max(intercept, interceptsLow[j]));
+        interceptsHighAll = interceptsHighAll.map((intercept, j) => Math.min(intercept, interceptsHigh[j]));
+    }
+    return interceptsLowAll[0]; // Since equation is `<intercept> = x + y + z`.
+}
+
+function _d23_getManhattanDistance(a, b) {
+    return a.reduce((total, x, i) => total + Math.abs(b[i] - x), 0);
 }
 
 if (require.main === module) {
