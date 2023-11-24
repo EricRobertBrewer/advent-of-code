@@ -31,6 +31,7 @@ const SOLUTIONS = {
     22: d22_ModeMaze,
     23: d23_ExperimentalEmergencyTeleportation,
     24: d24_ImmuneSystemSimulator20XX,
+    25: d25_FourDimensionalAdventure
 };
 
 function main() {
@@ -1987,6 +1988,44 @@ function _d24_copyGroups(groups, boost) {
         return groupCopy;
     });
     return groupsCopy;
+}
+
+function d25_FourDimensionalAdventure(lines, part) {
+    const points = lines.map(line => line.split(",").map(s => parseInt(s)));
+
+    const d = points.map(a => points.map(b => 0));
+    for (let i = 0; i < points.length - 1; i++) {
+        const point = points[i];
+        for (let j = i + 1; j < points.length; j++) {
+            const other = points[j];
+            const dist = _d23_getManhattanDistance(point, other);
+            d[i][j] = dist;
+            d[j][i] = dist;
+        }
+    }
+
+    let constellations = 0;
+    const visited = points.map(point => false);
+    for (let index = 0; index < points.length; index++) {
+        if (visited[index]) {
+            continue;
+        }
+        let frontier = [index];
+        while (frontier.length > 0) {
+            const i = frontier.shift();
+            if (visited[i]) {
+                continue;
+            }
+            visited[i] = true;
+            for (let j = 0; j < d[i].length; j++) {
+                if (d[i][j] <= 3) {
+                    frontier.push(j);
+                }
+            }
+        }
+        constellations++;
+    }
+    return constellations;
 }
 
 if (require.main === module) {
