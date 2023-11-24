@@ -30,6 +30,7 @@ const SOLUTIONS = {
     21: d21_ChronalConversion,
     22: d22_ModeMaze,
     23: d23_ExperimentalEmergencyTeleportation,
+    24: d24_ImmuneSystemSimulator20XX,
 };
 
 function main() {
@@ -725,7 +726,7 @@ function d12_SubterraneanSustainability(lines, part) {
         const pot = j - initialPrefix.length;
         const plant = lines[0][j];
         potToPlant[pot] = plant;
-        if (plant === '#') {
+        if (plant === "#") {
             if (left === null) {
                 left = pot;
             }
@@ -1808,6 +1809,184 @@ function d23_ExperimentalEmergencyTeleportation(lines, part) {
 
 function _d23_getManhattanDistance(a, b) {
     return a.reduce((total, x, i) => total + Math.abs(b[i] - x), 0);
+}
+
+function d24_ImmuneSystemSimulator20XX(lines, part) {
+    let readSide = null;
+    const sides = new Array();
+    const groups = new Array();
+    for (const line of lines) {
+        if (line.length === 0) {
+            continue;
+        }
+        if (line[line.length - 1] === ":") {
+            readSide = line.substring(0, line.length - 1);
+            sides.push(readSide);
+            continue;
+        }
+        const group = new Object();
+        group["side"] = readSide;
+        const parenStart = line.indexOf("(");
+        const parenEnd = line.indexOf(")");
+        const description = parenStart === -1 ? line : line.substring(0, parenStart) + line.substring(parenEnd + 2);
+        const tokens = description.split(" ");
+        group["units"] = parseInt(tokens[0]);
+        group["hp"] = parseInt(tokens[4]);
+        if (parenStart !== -1) {
+            const qualities = line.substring(parenStart + 1, parenEnd).split("; ");
+            for (const quality of qualities) {
+                const affinityTypes = quality.split(" to ");
+                const affinity = affinityTypes[0];
+                const types = affinityTypes[1].split(", ");
+                group[affinity] = types;
+            }
+        }
+        group["atk"] = parseInt(tokens[12]);
+        group["type"] = tokens[13];
+        group["init"] = parseInt(tokens[17]);
+//        console.log(group);
+        groups.push(group);
+    }
+
+    if (part === 1) {
+        const winner = _d24_getCombatWinner(groups);
+        console.log("winner: " + winner["side"]);
+        return winner["units"];
+    }
+
+    let boostLeft = 1;
+    let boostRight = null;
+    while (true) {
+        const boost = boostRight === null ? boostLeft : Math.floor((boostLeft + boostRight) / 2);
+        const groupsBoostMinus1 = _d24_copyGroups(groups, boost - 1);
+        const groupsBoost = _d24_copyGroups(groups, boost);
+        const winnerBoostMinus1 = _d24_getCombatWinner(groupsBoostMinus1);
+        const winnerBoost = _d24_getCombatWinner(groupsBoost);
+
+        if (winnerBoostMinus1["side"] !== "Immune System" && winnerBoost["side"] === "Immune System") {
+            console.log("boost: " + boost);
+            return winnerBoost["units"];
+        }
+
+        if (winnerBoost["side"] !== "Immune System") {
+            if (boostRight === null) {
+                boostLeft *= 2;
+            } else {
+                boostLeft = boost;
+            }
+        } else if (boostRight === null) {
+            boostRight = boostLeft;
+            boostLeft /= 2;
+        } else {
+            boostRight = boost;
+        }
+    }
+}
+
+function _d24_getCombatWinner(groups) {
+    while (true) {
+        // Select targets.
+        const orderTarget = groups.map((group, i) => i).sort((i, j) => {
+            const a = groups[i], b = groups[j];
+            const aPower = a["units"] * a["atk"];
+            const bPower = b["units"] * b["atk"];
+            if (aPower !== bPower) {
+                return aPower > bPower ? -1 : 1;
+            }
+            return a["init"] > b["init"] ? -1 : (a["init"] < b["init"] ? 1 : 0);
+        });
+        const indexToTarget = new Object();
+        const targetToIndex = new Object();
+        for (const i of orderTarget) {
+            const group = groups[i];
+            if (group["units"] <= 0) {
+                continue; // Dead.
+            }
+            let damageMax = null;
+            let powerOtherMax = null;
+            let target = null;
+            for (let j = 0; j < groups.length; j++) {
+                const other = groups[j];
+                if (group["side"] === other["side"] || other["units"] <= 0 || targetToIndex[j.toString()] !== undefined) {
+                    continue; // Same team, already dead or already selected.
+                }
+                const modifier = _d24_getModifier(group, other);
+                const damage = modifier * group["units"] * group["atk"];
+                if (damage === 0) {
+                    continue; // "If it cannot deal any defending groups damage, it does not choose a target."
+                }
+                const powerOther = other["units"] * other["atk"];
+                if (damageMax === null || damage > damageMax ||
+                        (damage === damageMax && powerOther > powerOtherMax) ||
+                        (damage === damageMax && powerOther === powerOtherMax && other["init"] > groups[target]["init"])) {
+                    damageMax = damage;
+                    powerOtherMax = powerOther;
+                    target = j;
+                }
+            }
+            if (target !== null) {
+                indexToTarget[i.toString()] = target;
+                targetToIndex[target.toString()] = i;
+            }
+        }
+
+        // Attack.
+        let tie = true;
+        const orderAttack = groups.map((group, i) => i).sort((i, j) => {
+            const a = groups[i], b = groups[j];
+            return a["init"] > b["init"] ? -1 : (a["init"] < b["init"] ? 1 : 0);
+        });
+        for (const i of orderAttack) {
+            const group = groups[i];
+            const target = indexToTarget[i.toString()];
+            if (group["units"] <= 0 || target === undefined) {
+                continue; // Dead or no target.
+            }
+            const other = groups[target];
+            const modifier = _d24_getModifier(group, other);
+            const damage = modifier * group["units"] * group["atk"];
+            const loss = Math.min(other["units"], Math.floor(damage / other["hp"]));
+            other["units"] -= loss;
+            if (loss > 0) {
+                tie = false;
+            }
+        }
+
+        // Check for end of combat.
+        const groupsAlive = groups.filter(group => group["units"] > 0);
+        if (groupsAlive.every(group => group["side"] === groupsAlive[0]["side"])) {
+            return {"side": groupsAlive[0]["side"], "units": groupsAlive.reduce((total, group) => total + group["units"], 0)};
+        }
+
+        if (tie) {
+            return {"side": "Tie", "units": groups.reduce((total, group) => total + group["units"], 0)};
+        }
+    }
+}
+
+function _d24_getModifier(group, other) {
+    if (other["immune"] !== undefined && other["immune"].includes(group["type"])) {
+        return 0;
+    }
+    if (other["weak"] !== undefined && other["weak"].includes(group["type"])) {
+        return 2;
+    }
+    return 1;
+}
+
+function _d24_copyGroups(groups, boost) {
+    const groupsCopy = groups.map(group => {
+        const groupCopy = new Object();
+        for (const key in group) {
+            if (key === "atk" && group["side"] === "Immune System") {
+                groupCopy[key] = group[key] + boost;
+            } else {
+                groupCopy[key] = group[key];
+            }
+        }
+        return groupCopy;
+    });
+    return groupsCopy;
 }
 
 if (require.main === module) {
