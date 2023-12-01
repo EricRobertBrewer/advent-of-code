@@ -4,6 +4,7 @@ import (
     "fmt"
     "os"
     "strconv"
+    "strings"
     "time"
 
     "ericrobertbrewer.com/aoc/aoc"
@@ -14,7 +15,7 @@ const YEAR = 2023
 type Solver func(lines []string, part int) int
 
 var SOLVERS = map[int]Solver {
-    1: d01_,
+    1: d01_Trebuchet,
 }
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
     answer := solve(day, part, lines)
     duration := time.Now().Sub(start)
     fmt.Println(answer)
-    fmt.Printf("%.3f s\n", duration.Seconds())
+    fmt.Printf("Time: %.3f s\n", duration.Seconds())
 }
 
 func solve(day int, part int, lines []string) int {
@@ -49,10 +50,34 @@ func solve(day int, part int, lines []string) int {
     panic(fmt.Sprintf("No solution found for day: %d", day))
 }
 
-func d01_(lines []string, part int) int {
-    fmt.Println(len(lines))
-//     for i, line := range lines {
-//         fmt.Println(i, line)
-//     }
-    return 1
+func d01_Trebuchet(lines []string, part int) int {
+    nameToValue := map[string]int {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    }
+    sum := 0
+    for _, line := range lines {
+        digitFirst := -1
+        digitLast := -1
+        for j, c := range line {
+            if c >= '1' && c <= '9' {
+                if digitFirst == -1 {
+                    digitFirst = int(c - '0')
+                }
+                digitLast = int(c - '0')
+            } else if part == 2 {
+                front := line[:j + 1]
+                for name, value := range nameToValue {
+                    if strings.HasSuffix(front, name) {
+                        if digitFirst == -1 {
+                            digitFirst = value
+                        }
+                        digitLast = value
+                        break
+                    }
+                }
+            }
+        }
+        sum += 10 * digitFirst + digitLast
+    }
+    return sum
 }

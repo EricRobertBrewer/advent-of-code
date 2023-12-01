@@ -27,7 +27,7 @@ func DownloadInputIfNeeded(year int, day int) []string {
                 "export %s=<my_token>", ENV_VAR, ENV_VAR))
         }
         client := &http.Client{}
-        req, _ := http.NewRequest("GET", fmt.Sprintf("https://adventofcode.com/%d/day/%d/input", year - 1, day), nil)
+        req, _ := http.NewRequest("GET", fmt.Sprintf("https://adventofcode.com/%d/day/%d/input", year, day), nil)
         req.Header.Add("cookie", fmt.Sprintf("session=%s", token))
         resp, err := client.Do(req)
         if err != nil {
@@ -50,10 +50,10 @@ func ExampleInput(year int, day int) []string {
     yearDir := filepath.Join(INPUT_DIR, strconv.Itoa(year))
     path := filepath.Join(yearDir, fmt.Sprintf("%02d-example.txt", day))
     file, err := os.Open(path)
+    defer file.Close()
     if err != nil {
         panic(err)
     }
-    defer file.Close()
     return readLines(file)
 }
 
