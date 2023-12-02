@@ -16,6 +16,7 @@ type Solver func(lines []string, part int) int
 
 var SOLVERS = map[int]Solver {
     1: d01_Trebuchet,
+    2: d02_CubeConundrum,
 }
 
 func main() {
@@ -80,4 +81,61 @@ func d01_Trebuchet(lines []string, part int) int {
         sum += 10 * digitFirst + digitLast
     }
     return sum
+}
+
+func d02_CubeConundrum(lines []string, part int) int {
+    if part == 1 {
+        sumPossible := 0
+        colorToMax := map[string]int {"red": 12, "green": 13, "blue": 14}
+        for i, line := range lines {
+            gameSubsets := strings.Split(line, ": ")
+            subsets := strings.Split(gameSubsets[1], "; ")
+            possible := true
+            for _, subset := range subsets {
+                subsetSum := 0
+                nSpaceColors := strings.Split(subset, ", ")
+                for _, nSpaceColor := range nSpaceColors {
+                    nColor := strings.Split(nSpaceColor, " ")
+                    n, _ := strconv.Atoi(nColor[0])
+                    color := nColor[1]
+                    if n > colorToMax[color] {
+                        possible = false
+                        break
+                    }
+                    subsetSum += n
+                }
+                if subsetSum > colorToMax["red"] + colorToMax["green"] + colorToMax["blue"] {
+                    possible = false
+                }
+                if !possible {
+                    break
+                }
+            }
+            if possible {
+                sumPossible += i + 1
+            }
+        }
+        return sumPossible
+    }
+
+    sumPower := 0
+    for _, line := range lines {
+        colorToMin := map[string]int {"red": -1, "green": -1, "blue": -1}
+        gameSubsets := strings.Split(line, ": ")
+        subsets := strings.Split(gameSubsets[1], "; ")
+        for _, subset := range subsets {
+            nSpaceColors := strings.Split(subset, ", ")
+            for _, nSpaceColor := range nSpaceColors {
+                nColor := strings.Split(nSpaceColor, " ")
+                n, _ := strconv.Atoi(nColor[0])
+                color := nColor[1]
+                if colorToMin[color] == -1 || n > colorToMin[color] {
+                    colorToMin[color] = n
+                }
+            }
+        }
+        power := colorToMin["red"] * colorToMin["green"] * colorToMin["blue"]
+        sumPower += power
+    }
+    return sumPower
 }
