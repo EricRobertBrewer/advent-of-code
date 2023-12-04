@@ -17,6 +17,16 @@ type Solver func(lines []string, part int) int
 var SOLVERS = map[int]Solver {
     1: d01_Trebuchet,
     2: d02_CubeConundrum,
+    3: d03_GearRatios,
+}
+
+type Point struct {
+    I, J int
+}
+
+type PointS struct {
+    I, J int
+    S string
 }
 
 func main() {
@@ -138,4 +148,67 @@ func d02_CubeConundrum(lines []string, part int) int {
         sumPower += power
     }
     return sumPower
+}
+
+func d03_GearRatios(lines []string, part int) int {
+    var pointNs []PointS
+    for i, line := range lines {
+        numberStart := -1
+        for j, c := range line {
+            if c >= '0' && c <= '9' {
+                if numberStart == -1 {
+                    numberStart = j
+                }
+            } else {
+                if numberStart != -1 {
+                    pointNs = append(pointNs, PointS{i, numberStart, line[numberStart:j]})
+                }
+                numberStart = -1
+            }
+        }
+        if numberStart != -1 {
+            pointNs = append(pointNs, PointS{i, numberStart, line[numberStart:]})
+        }
+    }
+
+    sumNumber := 0
+    gearToPointNs := make(map[Point][]PointS)
+    for _, pointN := range pointNs {
+        isPart := false
+        for i := max(0, pointN.I - 1); i <= min(len(lines) - 1, pointN.I + 1); i++ {
+            for j := max(0, pointN.J - 1); j <= min(len(lines[pointN.I]) - 1, pointN.J + len(pointN.S)); j++ {
+                if i == pointN.I && j >= pointN.J && j < pointN.J + len(pointN.S) {
+                    continue
+                }
+                if lines[i][j] != '.' {
+                    isPart = true
+                    if lines[i][j] == '*' {
+                        gear := Point{i, j}
+                        if _, ok := gearToPointNs[gear]; !ok {
+                            gearToPointNs[gear] = []PointS{}
+                        }
+                        gearToPointNs[gear] = append(gearToPointNs[gear], pointN)
+                    }
+                }
+            }
+        }
+        if isPart {
+            n, _ := strconv.Atoi(pointN.S)
+            sumNumber += n
+        }
+    }
+
+    if part == 1 {
+        return sumNumber
+    }
+
+    sumRatio := 0
+    for _, gearPointNs := range gearToPointNs {
+        if len(gearPointNs) == 2 {
+            n0, _ := strconv.Atoi(gearPointNs[0].S)
+            n1, _ := strconv.Atoi(gearPointNs[1].S)
+            sumRatio += n0 * n1
+        }
+    }
+    return sumRatio
 }
