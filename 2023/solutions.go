@@ -18,6 +18,7 @@ var SOLVERS = map[int]Solver {
     1: d01_Trebuchet,
     2: d02_CubeConundrum,
     3: d03_GearRatios,
+    4: d04_Scratchcards,
 }
 
 type Point struct {
@@ -211,4 +212,60 @@ func d03_GearRatios(lines []string, part int) int {
         }
     }
     return sumRatio
+}
+
+func d04_Scratchcards(lines []string, part int) int {
+    var winningSets []map[int]struct{}
+    var cardSets []map[int]struct{}
+    for _, line := range lines {
+        winningSsCardSs := strings.Split(strings.Split(line, ": ")[1], " | ")
+        winningSet := make(map[int]struct{})
+        for _, winningS := range strings.Split(winningSsCardSs[0], " ") {
+            n, err := strconv.Atoi(winningS)
+            if err != nil {
+                continue
+            }
+            winningSet[n] = struct{}{}
+        }
+        winningSets = append(winningSets, winningSet)
+        cardSet := make(map[int]struct{})
+        for _, cardS := range strings.Split(winningSsCardSs[1], " ") {
+            n, err := strconv.Atoi(cardS)
+            if err != nil {
+                continue
+            }
+            cardSet[n] = struct{}{}
+        }
+        cardSets = append(cardSets, cardSet)
+    }
+
+    total := 0
+    copies := make([]int, len(winningSets))
+    for i := range copies {
+        copies[i] = 1
+    }
+    for i, winningSet := range winningSets {
+        cardSet := cardSets[i]
+        matches := 0
+        for n := range winningSet {
+            if _, ok := cardSet[n]; ok {
+                matches++
+            }
+        }
+        if part == 1 {
+            if matches > 0 {
+                score := 1
+                for m := 0; m < matches - 1; m++ {
+                    score *= 2
+                }
+                total += score
+            }
+        } else {
+            for di := 1; di < 1 + matches; di++ {
+                copies[i + di] += copies[i]
+            }
+            total += copies[i]
+        }
+    }
+    return total
 }
