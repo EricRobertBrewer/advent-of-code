@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "os"
+    "slices"
     "strconv"
     "strings"
     "time"
@@ -19,6 +20,7 @@ var SOLVERS = map[int]Solver {
     2: d02_CubeConundrum,
     3: d03_GearRatios,
     4: d04_Scratchcards,
+    5: d05_IfYouGiveASeedAFertilizer,
 }
 
 type Point struct {
@@ -268,4 +270,103 @@ func d04_Scratchcards(lines []string, part int) int {
         }
     }
     return total
+}
+
+func d05_IfYouGiveASeedAFertilizer(lines []string, part int) int {
+    var seeds []int
+    for _, seedS := range strings.Split(lines[0], " ")[1:] {
+        seed, _ := strconv.Atoi(seedS)
+        seeds = append(seeds, seed)
+    }
+    sources := []string{
+        "seed", "soil", "fertilizer", "water", "light", "temperature", "humidity", "location",
+    }
+    var sourceMapRanges [][][]int
+    i := 1
+    for i < len(lines) {
+        sourceIndex := len(sourceMapRanges)
+        i++ // Blank line preceding map name.
+        mapNameParts := strings.Split(strings.Split(lines[i], " map:")[0], "-")
+        if mapNameParts[0] != sources[sourceIndex] || mapNameParts[2] != sources[sourceIndex + 1] {
+            panic(fmt.Sprintf("Unexpected map name at line %d: %s", i, lines[i]))
+        }
+        i++ // Move to start of map descriptions.
+        var mapRanges [][]int
+        for i < len(lines) && len(lines[i]) > 0 {
+            var mapRange []int
+            for _, valueS := range strings.Split(lines[i], " ") {
+                value, _ := strconv.Atoi(valueS)
+                mapRange = append(mapRange, value)
+            }
+            if len(mapRange) != 3 {
+                panic(fmt.Sprintf("Unexpected source-to-destination map: %d", lines[i]))
+            }
+            mapRanges = append(mapRanges, mapRange)
+            i++ // Move to next map, or to blank line, or to EOF.
+        }
+        sourceMapRanges = append(sourceMapRanges, mapRanges)
+    }
+
+    if part == 1 {
+        var locations []int
+        for _, seed := range seeds {
+            value := seed
+            for i := 0; i < len(sourceMapRanges); i++ {
+                for _, mapRange := range sourceMapRanges[i] {
+                    if value >= mapRange[1] && value < mapRange[1] + mapRange[2] {
+                        value = value - mapRange[1] + mapRange[0]
+                        break
+                    }
+                }
+            }
+            locations = append(locations, value)
+        }
+        return slices.Min(locations)
+    }
+
+    var seedRanges [][]int
+    for j := 0; j < len(seeds) / 2; j++ {
+        seedRanges = append(seedRanges, seeds[2 * j:2 * j + 2])
+    }
+    var locationRanges [][][]int
+    for _, seedRange := range seedRanges {
+        valueRanges := [][]int{seedRange}
+        for i := 0; i < len(sourceMapRanges); i++ {
+            var valueRangesNext [][]int
+            for _, mapRange := range sourceMapRanges[i] {
+                mapStart, mapEnd := mapRange[1], mapRange[1] + mapRange[2] - 1
+                for j := 0; j < len(valueRanges); j++ {
+                    valueRange := valueRanges[j]
+                    valueStart, valueEnd := valueRange[0], valueRange[0] + valueRange[1] - 1
+                    if valueEnd < mapStart || mapEnd < valueStart {
+                        continue // No overlap.
+                    }
+                    if valueStart < mapStart { // Dangling front.
+                        valueRanges = append(valueRanges, []int{valueStart, mapStart - valueStart})
+                    }
+                    if valueEnd > mapEnd { // Dangling back.
+                        valueRanges = append(valueRanges, []int{mapEnd + 1, valueEnd - mapEnd})
+                    }
+                    startNextSource := max(valueStart, mapStart)
+                    startNextDest := startNextSource - mapRange[1] + mapRange[0]
+                    valueRangeNext := []int{startNextDest, min(valueEnd, mapEnd) - startNextSource}
+                    valueRangesNext = append(valueRangesNext, valueRangeNext)
+                    valueRanges = append(valueRanges[:j], valueRanges[j + 1:]...) // Remove current value range.
+                    j--
+                }
+            }
+            valueRangesNext = append(valueRangesNext, valueRanges...) // Copy leftovers.
+            valueRanges = valueRangesNext
+        }
+        locationRanges = append(locationRanges, valueRanges)
+    }
+    locationMin := -1
+    for _, ranges := range locationRanges {
+        for _, locationRange := range ranges {
+            if locationMin == -1 || locationRange[0] < locationMin {
+                locationMin = locationRange[0]
+            }
+        }
+    }
+    return locationMin
 }
