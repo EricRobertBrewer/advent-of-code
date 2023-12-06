@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "os"
+    "regexp"
     "slices"
     "strconv"
     "strings"
@@ -21,6 +22,7 @@ var SOLVERS = map[int]Solver {
     3: d03_GearRatios,
     4: d04_Scratchcards,
     5: d05_IfYouGiveASeedAFertilizer,
+    6: d06_WaitForIt,
 }
 
 type Point struct {
@@ -52,9 +54,9 @@ func main() {
 
     start := time.Now()
     answer := solve(day, part, lines)
-    duration := time.Now().Sub(start)
+    duration := time.Since(start)
     fmt.Println(answer)
-    fmt.Printf("Time: %.3f s\n", duration.Seconds())
+    fmt.Printf("Time: %.6f s\n", duration.Seconds())
 }
 
 func solve(day int, part int, lines []string) int {
@@ -369,4 +371,43 @@ func d05_IfYouGiveASeedAFertilizer(lines []string, part int) int {
         }
     }
     return locationMin
+}
+
+func d06_WaitForIt(lines []string, part int) int {
+    var times []int
+    var distances []int
+    if part == 1 {
+        spaces := regexp.MustCompile(" +")
+        for _, timeS := range spaces.Split(lines[0], -1)[1:] {
+            t, _ := strconv.Atoi(timeS)
+            times = append(times, t)
+        }
+        for _, distanceS := range spaces.Split(lines[1], -1)[1:] {
+            d, _ := strconv.Atoi(distanceS)
+            distances = append(distances, d)
+        }
+    } else {
+        t, _ := strconv.Atoi(strings.Split(strings.ReplaceAll(lines[0], " ", ""), ":")[1])
+        times = append(times, t)
+        d, _ := strconv.Atoi(strings.Split(strings.ReplaceAll(lines[1], " ", ""), ":")[1])
+        distances = append(distances, d)
+    }
+
+    var beats []int
+    for i, t := range times {
+        d := distances[i]
+        beat := 0
+        for start := 0; start <= t; start++ {
+            dNew := start * (t - start)
+            if dNew > d {
+                beat++
+            }
+        }
+        beats = append(beats, beat)
+    }
+    product := 1
+    for _, beat := range beats {
+        product *= beat
+    }
+    return product
 }
