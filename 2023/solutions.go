@@ -396,12 +396,23 @@ func d06_WaitForIt(lines []string, part int) int {
     var beats []int
     for i, t := range times {
         d := distances[i]
-        beat := 0
-        for start := 0; start <= t; start++ {
-            dNew := start * (t - start)
-            if dNew > d {
-                beat++
+        beat := -1
+        left, right := 0, int(t / 2)
+        for left <= right {
+            pivot := int((left + right) / 2)
+            dPivot := pivot * (t - pivot)
+            dPivotMinusOne := (pivot - 1) * (t - (pivot - 1))
+            if dPivot <= d {
+                left = pivot + 1
+            } else if (dPivotMinusOne > d) {
+                right = pivot
+            } else {
+                beat = t - pivot - pivot + 1
+                break
             }
+        }
+        if beat == -1 {
+            panic(fmt.Sprintf("Unable to find number of winning ways for time/distance: %d / %d", t, d))
         }
         beats = append(beats, beat)
     }
