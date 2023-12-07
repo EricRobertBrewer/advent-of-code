@@ -5,6 +5,7 @@ import (
     "os"
     "regexp"
     "slices"
+    "sort"
     "strconv"
     "strings"
     "time"
@@ -23,6 +24,7 @@ var SOLVERS = map[int]Solver {
     4: d04_Scratchcards,
     5: d05_IfYouGiveASeedAFertilizer,
     6: d06_WaitForIt,
+    7: d07_CamelCards,
 }
 
 type Point struct {
@@ -421,4 +423,119 @@ func d06_WaitForIt(lines []string, part int) int {
         product *= beat
     }
     return product
+}
+
+func d07_CamelCards(lines []string, part int) int {
+    const typeFiveOfAKind = 6
+    const typeFourOfAKind = 5
+    const typeFullHouse = 4
+    const typeThreeOfAKind = 3
+    const typeTwoPair = 2
+    const typeOnePair = 1
+    const typeHighCard = 0
+    var cardOrder string
+    if part == 1 {
+        cardOrder = "AKQJT98765432" // 'J' == jack
+    } else {
+        cardOrder = "AKQT98765432J" // 'J' == joker
+    }
+    cardToValue := make(map[rune]int)
+    for i, c := range cardOrder {
+        cardToValue[c] = len(cardOrder) - i
+    }
+
+    var indices []int
+    var hands [][]rune
+    var bids []int
+    for i, line := range lines {
+        indices = append(indices, i)
+        handBid := strings.Split(line, " ")
+        hand := []rune(handBid[0])
+        hands = append(hands, hand)
+        bid, _ := strconv.Atoi(handBid[1])
+        bids = append(bids, bid)
+    }
+
+    var handTypes []int
+    for _, hand := range hands {
+        // Count cards.
+        cardToCount := make(map[rune]int)
+        for _, c := range hand {
+            if _, ok := cardToCount[c]; !ok {
+                cardToCount[c] = 0
+            }
+            cardToCount[c]++
+        }
+        // Jokers wild.
+        if part == 2 {
+            if jCount, ok := cardToCount['J']; ok {
+                if jCount == 5 { // Five jokers -> five aces
+                    cardToCount = map[rune]int{'A': 5}
+                } else { // Increase other highest card count.
+                    cardMax := '-'
+                    countMax := -1
+                    for card, count := range cardToCount {
+                        if card == 'J' {
+                            continue
+                        }
+                        if countMax == -1 || count > countMax {
+                            cardMax = card
+                            countMax = count
+                        }
+                    }
+                    cardToCount[cardMax] += jCount
+                    cardToCount['J'] = 0
+                }
+            }
+        }
+        // Count counts.
+        countToCards := make(map[int][]rune)
+        for card, count := range cardToCount {
+            if _, ok := countToCards[count]; !ok {
+                countToCards[count] = make([]rune, 0)
+            }
+            countToCards[count] = append(countToCards[count], card)
+        }
+        // Determine hand strength.
+        _, ok5 := countToCards[5]
+        _, ok4 := countToCards[4]
+        _, ok3 := countToCards[3]
+        cards2, ok2 := countToCards[2]
+        handType := typeHighCard
+        if ok5 {
+            handType = typeFiveOfAKind
+        } else if ok4 {
+            handType = typeFourOfAKind
+        } else if ok3 && ok2 {
+            handType = typeFullHouse
+        } else if ok3 {
+            handType = typeThreeOfAKind
+        } else if ok2 && len(cards2) > 1 {
+            handType = typeTwoPair
+        } else if ok2 {
+            handType = typeOnePair
+        }
+        handTypes = append(handTypes, handType)
+    }
+
+    sort.Slice(indices, func(i, j int) bool {
+        ii := indices[i]
+        ji := indices[j]
+        if handTypes[ii] != handTypes[ji] {
+            return handTypes[ii] > handTypes[ji]
+        }
+        for pos := 0; pos < 5; pos++ {
+            if hands[ii][pos] != hands[ji][pos] {
+                return cardToValue[hands[ii][pos]] > cardToValue[hands[ji][pos]]
+            }
+        }
+        return false
+    })
+
+    totalWinnings := 0
+    for rankInverse, index := range indices {
+        rank := len(indices) - rankInverse
+        totalWinnings += rank * bids[index]
+    }
+    return totalWinnings
 }
