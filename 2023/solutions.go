@@ -11,6 +11,7 @@ import (
     "time"
 
     "ericrobertbrewer.com/aoc/aoc"
+    "ericrobertbrewer.com/aoc/cs"
 )
 
 const YEAR = 2023
@@ -25,6 +26,7 @@ var SOLVERS = map[int]Solver {
     5: d05_IfYouGiveASeedAFertilizer,
     6: d06_WaitForIt,
     7: d07_CamelCards,
+    8: d08_HauntedWasteland,
 }
 
 type Point struct {
@@ -538,4 +540,108 @@ func d07_CamelCards(lines []string, part int) int {
         totalWinnings += rank * bids[index]
     }
     return totalWinnings
+}
+
+func d08_HauntedWasteland(lines []string, part int) int {
+    var instructions []rune
+    for _, c := range lines[0] {
+        if c != 'R' && c != 'L' {
+            panic(fmt.Sprintf("Unexpected instructions: %s", lines[0]))
+        }
+        instructions = append(instructions, c)
+    }
+    network := make(map[string][]string)
+    for _, line := range lines[2:] {
+        nodeLeftRight := strings.Split(line, " = ")
+        node := nodeLeftRight[0]
+        leftRight := strings.Split(strings.Trim(strings.Trim(nodeLeftRight[1], "("), ")"), ", ")
+        network[node] = leftRight
+    }
+
+    if part == 1 {
+        node := "AAA"
+        step := 0
+        index := 0
+        for node != "ZZZ" {
+            c := instructions[index]
+            if c == 'R' {
+                node = network[node][1]
+            } else {
+                node = network[node][0]
+            }
+            index = (index + 1) % len(instructions)
+            step++
+        }
+        return step
+    }
+
+    // Determine starting nodes.
+    var nodes []string
+    nodeToLast := make(map[string]rune)
+    for node, _ := range network {
+        var last rune
+        for _, c := range node {
+            last = c
+        }
+        if last == 'A' {
+            nodes = append(nodes, node)
+        }
+        nodeToLast[node] = last
+    }
+
+    // Find loops.
+    type NodeIndex struct {
+        node string
+        index int
+    }
+    nodeToZSteps := make(map[string][]int) // Possible end points in loop.
+    nodeToLoopStart := make(map[string]int) // Number of steps to enter loop.
+    nodeToLoopEnd := make(map[string]int) // Number of steps to re-enter loop.
+    for _, node := range nodes {
+        nodeToZSteps[node] = make([]int, 0)
+        nodeIndexToStep := make(map[NodeIndex]int)
+        nodeIndexToStep[NodeIndex{node, 0}] = 0
+        nodeCurrent := node
+        step := 0
+        index := 0
+        for true {
+            c := instructions[index]
+            if c == 'R' {
+                nodeCurrent = network[nodeCurrent][1]
+            } else {
+                nodeCurrent = network[nodeCurrent][0]
+            }
+            index = (index + 1) % len(instructions)
+            step++
+            if nodeToLast[nodeCurrent] == 'Z' {
+                nodeToZSteps[node] = append(nodeToZSteps[node], step)
+            }
+            nodeIndex := NodeIndex{nodeCurrent, index}
+            if cacheStep, ok := nodeIndexToStep[nodeIndex]; ok {
+                nodeToLoopStart[node] = cacheStep
+                nodeToLoopEnd[node] = step
+                break
+            }
+            nodeIndexToStep[nodeIndex] = step
+        }
+    }
+
+    passThroughOrigin := true
+    for _, node := range nodes {
+        if len(nodeToZSteps[node]) != 1 || nodeToLoopEnd[node] - nodeToLoopStart[node] != nodeToZSteps[node][0] {
+            passThroughOrigin = false
+            break
+        }
+    }
+    if passThroughOrigin {
+        // A special case where the number of steps to reach the only terminal state
+        // in each loop is exactly the same as the length of the loop.
+        var factors []int
+        for _, node := range nodes {
+            factors = append(factors, nodeToZSteps[node][0])
+        }
+        return cs.LCM(factors...)
+    }
+    // We're not asked to solve general case.
+    return 1
 }
