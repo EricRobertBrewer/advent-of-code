@@ -27,6 +27,7 @@ var SOLVERS = map[int]Solver {
     6: d06_WaitForIt,
     7: d07_CamelCards,
     8: d08_HauntedWasteland,
+    9: d09_MirageMaintenance,
 }
 
 type Point struct {
@@ -644,4 +645,48 @@ func d08_HauntedWasteland(lines []string, part int) int {
     }
     // We're not asked to solve general case.
     return 1
+}
+
+func d09_MirageMaintenance(lines []string, part int) int {
+    var histories [][]int
+    for _, line := range lines {
+        var history []int
+        for _, s := range strings.Split(line, " ") {
+            x, _ := strconv.Atoi(s)
+            history = append(history, x)
+        }
+        histories = append(histories, history)
+    }
+
+    sumNext := 0
+    for _, history := range histories {
+        sequences := [][]int{history}
+        for true {
+            hasNonZero := false
+            var sequenceNext []int
+            sequence := sequences[len(sequences) - 1]
+            for j := 1; j < len(sequence); j++ {
+                x := sequence[j] - sequence[j - 1]
+                if x != 0 {
+                    hasNonZero = true
+                }
+                sequenceNext = append(sequenceNext, x)
+            }
+            if hasNonZero {
+                sequences = append(sequences, sequenceNext)
+            } else {
+                xNext := 0
+                for i := len(sequences) - 1; i >= 0; i-- {
+                    if part == 1 {
+                        xNext += sequences[i][len(sequences[i]) - 1]
+                    } else {
+                        xNext = sequences[i][0] - xNext
+                    }
+                }
+                sumNext += xNext
+                break
+            }
+        }
+    }
+    return sumNext
 }
