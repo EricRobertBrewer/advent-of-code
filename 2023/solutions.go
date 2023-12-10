@@ -28,6 +28,7 @@ var SOLVERS = map[int]Solver {
     7: d07_CamelCards,
     8: d08_HauntedWasteland,
     9: d09_MirageMaintenance,
+    10: d10_PipeMaze,
 }
 
 type Point struct {
@@ -689,4 +690,124 @@ func d09_MirageMaintenance(lines []string, part int) int {
         }
     }
     return sumNext
+}
+
+func d10_PipeMaze(lines []string, part int) int {
+    var maze [][]rune
+    var startPoint []int = nil
+    for i, line := range lines {
+        var row []rune
+        for j, c := range line {
+            if c == 'S' {
+                if startPoint != nil {
+                    panic(fmt.Sprintf("Multiple start points found: (%d, %d); (%d, %d)", startPoint[0], startPoint[1], i, j))
+                }
+                startPoint = []int{i, j}
+            }
+            row = append(row, c)
+        }
+        maze = append(maze, row)
+    }
+    if startPoint == nil {
+        panic(fmt.Sprintf("No start point found."))
+    }
+
+    const directionUp = 0
+    const directionRight = 1
+    const directionDown = 2
+    const directionLeft = 3
+    deltas := [][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} // Up, right, down, left.
+    pipeDirections := []map[rune]int{
+        {'7': directionLeft, '|': directionUp, 'F': directionRight},
+        {'J': directionUp, '-': directionRight, '7': directionDown},
+        {'L': directionRight, '|': directionDown, 'J': directionLeft},
+        {'F': directionDown, '-': directionLeft, 'L': directionUp},
+    }
+    directionsPipe := [][]rune{
+        {'|', 'L', '|', 'J'},
+        {'L', '-', 'F', '-'},
+        {'|', 'F', '|', '7'},
+        {'J', '-', '7', '-'},
+    }
+
+    var startDirections []int
+    for direction, delta := range deltas {
+        point := []int{startPoint[0] + delta[0], startPoint[1] + delta[1]}
+        if point[0] < 0 || point[0] >= len(lines) || point[1] < 0 || point[1] >= len(lines[point[0]]) {
+            continue
+        }
+        c := maze[point[0]][point[1]]
+        if _, ok := pipeDirections[direction][c]; ok {
+            startDirections = append(startDirections, direction)
+        }
+    }
+
+    for _, startDirection := range startDirections {
+        var path [][]int
+        point := []int{startPoint[0], startPoint[1]}
+        direction := startDirection
+        circuit := true
+        step := 0
+        for step == 0 || point[0] != startPoint[0] || point[1] != startPoint[1] {
+            path = append(path, point)
+            delta := deltas[direction]
+            pointNext := []int{point[0] + delta[0], point[1] + delta[1]}
+            c := maze[pointNext[0]][pointNext[1]]
+            if c != 'S' {
+                directionNext, ok := pipeDirections[direction][c]
+                if !ok {
+                    circuit = false
+                    break
+                }
+                direction = directionNext
+            }
+            point = pointNext
+            step++
+        }
+        if !circuit {
+            continue
+        }
+        if part == 1 {
+            return int(step / 2)
+        }
+        
+        // Find total area of enclosures.
+        maze[startPoint[0]][startPoint[1]] = directionsPipe[startDirection][(direction + 2) % 4] // Replace 'S'.
+        pipes := make([][]bool, len(maze))
+        for i := 0; i < len(pipes); i++ {
+            pipes[i] = make([]bool, len(maze[i]))
+        }
+        for _, point := range path {
+            pipes[point[0]][point[1]] = true
+        }
+        area := 0
+        for i := 1; i < len(maze) - 1; i++ {
+            inside := false // Flag that flips value when crossing a wall.
+            above := false // State flag used when following pipe path.
+            for j := 0; j < len(maze[i]) - 1; j++ {
+                if pipes[i][j] {
+                    c := maze[i][j]
+                    if c == '|' {
+                        inside = !inside
+                    } else if c == 'F' {
+                        above = true
+                    } else if c == 'L' {
+                        above = false
+                    } else if c == 'J' {
+                        if above {
+                            inside = !inside
+                        }
+                    } else if c == '7' {
+                        if !above {
+                            inside = !inside
+                        }
+                    }
+                } else if inside {
+                    area++
+                }
+            }
+        }
+        return area
+    }
+    panic(fmt.Sprintf("Unable to find circuit."))
 }
