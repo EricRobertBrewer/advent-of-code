@@ -841,29 +841,43 @@ func d11_CosmicExpansion(lines []string, part int) int {
     } else {
         expand = 1000000
     }
+    rowDistances := _d11_distanceMatrix(rowsHaveGalaxy, expand)
+    columnDistances := _d11_distanceMatrix(columnsHaveGalaxy, expand)
 
     sumDistance := 0
     for a := 0; a < len(galaxies) - 1; a++ {
         galaxyA := galaxies[a]
         for b := a + 1; b < len(galaxies); b++ {
             galaxyB := galaxies[b]
-            d := 0
-            for i := min(galaxyA[0], galaxyB[0]); i < max(galaxyA[0], galaxyB[0]); i++ {
-                if rowsHaveGalaxy[i] {
-                    d += 1
-                } else {
-                    d += expand
-                }
-            }
-            for j := min(galaxyA[1], galaxyB[1]); j < max(galaxyA[1], galaxyB[1]); j++ {
-                if columnsHaveGalaxy[j] {
-                    d += 1
-                } else {
-                    d += expand
-                }
-            }
-            sumDistance += d
+            sumDistance += rowDistances[galaxyA[0]][galaxyB[0]] + columnDistances[galaxyA[1]][galaxyB[1]]
         }
     }
     return sumDistance
+}
+
+func _d11_distanceMatrix(smallSteps []bool, dBig int) [][]int {
+    distances := make([][]int, len(smallSteps))
+    for i := 0; i < len(smallSteps); i++ {
+        distances[i] = make([]int, len(smallSteps))
+    }
+    // Fill out adjacent distances (diagonal).
+    for i := 1; i < len(distances); i++ {
+        var d int
+        if smallSteps[i] {
+            d = 1
+        } else {
+            d = dBig
+        }
+        distances[i - 1][i] = d
+        distances[i][i - 1] = d
+    }
+    // Fill out remaining pair-wise distances.
+    for i := 0; i < len(distances) - 2; i++ {
+        for di := i + 2; di < len(distances); di++ {
+            d := distances[i][di - 1] + distances[di - 1][di]
+            distances[i][di] = d
+            distances[di][i] = d
+        }
+    }
+    return distances
 }
