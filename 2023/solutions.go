@@ -29,6 +29,7 @@ var SOLVERS = map[int]Solver {
     8: d08_HauntedWasteland,
     9: d09_MirageMaintenance,
     10: d10_PipeMaze,
+    11: d11_CosmicExpansion,
 }
 
 type Point struct {
@@ -770,7 +771,7 @@ func d10_PipeMaze(lines []string, part int) int {
         if part == 1 {
             return int(step / 2)
         }
-        
+
         // Find total area of enclosures.
         maze[startPoint[0]][startPoint[1]] = directionsPipe[startDirection][(direction + 2) % 4] // Replace 'S'.
         pipes := make([][]bool, len(maze))
@@ -810,4 +811,59 @@ func d10_PipeMaze(lines []string, part int) int {
         return area
     }
     panic(fmt.Sprintf("Unable to find circuit."))
+}
+
+func d11_CosmicExpansion(lines []string, part int) int {
+    var image [][]rune
+    var galaxies [][]int
+    rowsHaveGalaxy := make([]bool, len(lines))
+    columnsHaveGalaxy := make([]bool, len(lines[0]))
+    for i, line := range lines {
+        if len(line) != len(lines[0]) {
+            panic(fmt.Sprintf("Image is not a square, lines: 0, %d", i))
+        }
+        var row []rune
+        for j, c := range line {
+            if c == '#' {
+                rowsHaveGalaxy[i] = true
+                columnsHaveGalaxy[j] = true
+                galaxy := []int{i, j}
+                galaxies = append(galaxies, galaxy)
+            }
+            row = append(row, c)
+        }
+        image = append(image, row)
+    }
+
+    var expand int
+    if part == 1 {
+        expand = 2
+    } else {
+        expand = 1000000
+    }
+
+    sumDistance := 0
+    for a := 0; a < len(galaxies) - 1; a++ {
+        galaxyA := galaxies[a]
+        for b := a + 1; b < len(galaxies); b++ {
+            galaxyB := galaxies[b]
+            d := 0
+            for i := min(galaxyA[0], galaxyB[0]); i < max(galaxyA[0], galaxyB[0]); i++ {
+                if rowsHaveGalaxy[i] {
+                    d += 1
+                } else {
+                    d += expand
+                }
+            }
+            for j := min(galaxyA[1], galaxyB[1]); j < max(galaxyA[1], galaxyB[1]); j++ {
+                if columnsHaveGalaxy[j] {
+                    d += 1
+                } else {
+                    d += expand
+                }
+            }
+            sumDistance += d
+        }
+    }
+    return sumDistance
 }
