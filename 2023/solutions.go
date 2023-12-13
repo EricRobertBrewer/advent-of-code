@@ -30,6 +30,7 @@ var SOLVERS = map[int]Solver {
     9: d09_MirageMaintenance,
     10: d10_PipeMaze,
     11: d11_CosmicExpansion,
+    13: d13_PointOfIncidence,
 }
 
 type Point struct {
@@ -880,4 +881,70 @@ func _d11_distanceMatrix(smallSteps []bool, dBig int) [][]int {
         }
     }
     return distances
+}
+
+func d13_PointOfIncidence(lines []string, part int) int {
+    var patterns [][][]rune
+    var pattern [][]rune
+    for _, line := range lines {
+        if len(line) == 0 {
+            patterns = append(patterns, pattern)
+            pattern = nil
+            continue
+        }
+        var row []rune
+        for _, c := range line {
+            row = append(row, c)
+        }
+        pattern = append(pattern, row)
+    }
+    patterns = append(patterns, pattern)
+
+    answer := 0
+    for p, pattern := range patterns {
+        // Check horizontal reflection.
+        iHorizontal := -1
+        for i := 0; i < len(pattern) - 1; i++ {
+            smudge := 0
+            for di := 0; i - di >= 0 && i + 1 + di < len(pattern); di++ {
+                for j := 0; j < len(pattern[i]); j++ {
+                    if pattern[i - di][j] != pattern[i + 1 + di][j] {
+                        smudge++
+                    }
+                }
+            }
+            if (part == 1 && smudge == 0) || (part != 1 && smudge == 1) {
+                iHorizontal = i
+                break
+            }
+        }
+        if iHorizontal != -1 {
+            answer += 100 * (iHorizontal + 1)
+            continue
+        }
+
+        // Check vertical reflection.
+        jVertical := -1
+        for j := 0; j < len(pattern[0]) - 1; j++ {
+            smudge := 0
+            for dj := 0; j - dj >= 0 && j + 1 + dj < len(pattern[0]); dj++ {
+                for i := 0; i < len(pattern); i++ {
+                    if pattern[i][j - dj] != pattern[i][j + 1 + dj] {
+                        smudge++
+                    }
+                }
+            }
+            if (part == 1 && smudge == 0) || (part != 1 && smudge == 1) {
+                jVertical = j
+                break
+            }
+        }
+        if jVertical != -1 {
+            answer += jVertical + 1
+            continue
+        }
+
+        panic(fmt.Sprintf("Unable to find reflection for pattern index: %d", p))
+    }
+    return answer
 }
