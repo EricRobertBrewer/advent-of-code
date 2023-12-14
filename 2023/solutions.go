@@ -30,6 +30,7 @@ var SOLVERS = map[int]Solver {
     9: d09_MirageMaintenance,
     10: d10_PipeMaze,
     11: d11_CosmicExpansion,
+    12: d12_HotSprings,
     13: d13_PointOfIncidence,
     14: d14_ParabolicReflectorDish,
 }
@@ -882,6 +883,168 @@ func _d11_distanceMatrix(smallSteps []bool, dBig int) [][]int {
         }
     }
     return distances
+}
+
+func d12_HotSprings(lines []string, part int) int {
+    fold := 1
+    if part != 1 {
+        fold = 5
+    }
+
+    var rowSprings []string
+    var rowGroups [][]int
+    for _, line := range lines {
+        springsGroups := strings.Split(line, " ")
+        var springs strings.Builder
+        var groups []int
+        for f := 0; f < fold; f++ {
+            if f > 0 {
+                springs.WriteString("?")
+            }
+            springs.WriteString(springsGroups[0])
+            for _, s := range strings.Split(springsGroups[1], ",") {
+                group, _ := strconv.Atoi(s)
+                groups = append(groups, group)
+            }
+        }
+        rowSprings = append(rowSprings, springs.String())
+        rowGroups = append(rowGroups, groups)
+    }
+
+    answer := 0
+    for row, springs := range rowSprings {
+        groups := rowGroups[row]
+        fmt.Println(row, springs, groups)
+        var sequence []rune
+        for _, c := range springs {
+            sequence = append(sequence, c)
+        }
+        kUnknownLeft := 0 // Index of groups.
+        kUnknownRight := len(groups) - 1
+        jUnknownLeft := 0 // Index of sequence.
+        jUnknownRight := len(sequence) - 1
+
+        // Expand filled cells from left.
+        for jUnknownLeft <= jUnknownRight {
+            c := sequence[jUnknownLeft]
+            if c == '?' {
+                break
+            }
+            if c == '#' {
+                jEnd := jUnknownLeft + groups[kUnknownLeft] - 1
+                for jUnknownLeft < jEnd {
+                    jUnknownLeft++
+                    sequence[jUnknownLeft] = '#'
+                }
+                if jUnknownLeft + 1 < len(sequence) {
+                    jUnknownLeft++
+                    sequence[jUnknownLeft] = '.'
+                }
+                kUnknownLeft++
+            }
+            jUnknownLeft++
+        }
+
+        // Expand filled cells from right.
+        for jUnknownRight >= jUnknownLeft {
+            c := sequence[jUnknownRight]
+            if c == '?' {
+                break
+            }
+            if c == '#' {
+                jStart := jUnknownRight - groups[kUnknownRight] + 1
+                for jUnknownRight > jStart {
+                    jUnknownRight--
+                    sequence[jUnknownRight] = '#'
+                }
+                if jUnknownRight - 1 >= 0 {
+                    jUnknownRight--
+                    sequence[jUnknownRight] = '.'
+                }
+                kUnknownRight--
+            }
+            jUnknownRight--
+        }
+
+        // Find subsequences of damaged springs (#) and union of damaged/unknown springs (#, ?).
+        gapSpans := _d12_spans(sequence, jUnknownLeft, jUnknownRight, '#', '?')
+        damagedSpans := _d12_spans(sequence, jUnknownLeft, jUnknownRight, '#')
+
+        n := _d12_arrangements(sequence, groups[kUnknownLeft:kUnknownRight + 1], gapSpans, damagedSpans)
+        answer += n
+    }
+    return answer
+}
+
+func _d12_spans(springs []rune, jStart, jEnd int, matches ...rune) [][]int {
+    var spans [][]int // Closed interval.
+    var start int = -1
+    for j := jStart; j <= jEnd; j++ {
+        c := springs[j]
+        isMatch := false
+        for _, match := range matches {
+            if c == match {
+                isMatch = true
+                break
+            }
+        }
+        if isMatch {
+            if start == -1 {
+                start = j
+            }
+        } else {
+            if start != -1 {
+                spans = append(spans, []int{start, j - 1})
+            }
+            start = -1
+        }
+    }
+    if start != -1 {
+        spans = append(spans, []int{start, jEnd})
+    }
+    return spans
+}
+
+func _d12_arrangements(sequence []rune, groups []int, gapSpans [][]int, damagedSpans [][]int) int {
+    if len(groups) == 0 { // All groups are in gaps.
+        if len(damagedSpans) == 0 { // All damaged cells are accounted for.
+            return 1
+        }
+        return 0
+    }
+    if len(gapSpans) == 0 {
+        return 0
+    }
+    n := 0
+    g := 0 // Gap index.
+    for j := gapSpans[0][0]; j + groups[0] - 1 <= gapSpans[len(gapSpans) - 1][1]; j++ {
+        for j + groups[0] - 1 > gapSpans[g][1] {
+            g++
+            if g >= len(gapSpans) {
+                return n
+            }
+            j = gapSpans[g][0]
+        }
+        if len(damagedSpans) > 0 && j > damagedSpans[0][0] {
+            break // Can't move past first damaged cell.
+        }
+        if j + groups[0] < len(sequence) && sequence[j + groups[0]] == '#' {
+            continue // Can't be placed immediately to the left of a damaged cell.
+        }
+        var gapSpansNext [][]int
+        if j + groups[0] + 1 <= gapSpans[g][1] {
+            // Modify start of first gap span.
+            gapSpansNext = append([][]int{{j + groups[0] + 1, gapSpans[g][1]}}, gapSpans[g + 1:]...)
+        } else {
+            gapSpansNext = gapSpans[g + 1:]
+        }
+        d := 0 // Number of damaged spans covered.
+        for d < len(damagedSpans) && j + groups[0] - 1 >= damagedSpans[d][1] {
+            d++
+        }
+        n += _d12_arrangements(sequence, groups[1:], gapSpansNext, damagedSpans[d:])
+    }
+    return n
 }
 
 func d13_PointOfIncidence(lines []string, part int) int {
