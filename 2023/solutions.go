@@ -31,6 +31,7 @@ var SOLVERS = map[int]Solver {
     10: d10_PipeMaze,
     11: d11_CosmicExpansion,
     13: d13_PointOfIncidence,
+    14: d14_ParabolicReflectorDish,
 }
 
 type Point struct {
@@ -947,4 +948,121 @@ func d13_PointOfIncidence(lines []string, part int) int {
         panic(fmt.Sprintf("Unable to find reflection for pattern index: %d", p))
     }
     return answer
+}
+
+func d14_ParabolicReflectorDish(lines []string, part int) int {
+    var platform [][]rune
+    for _, line := range lines {
+        platform = append(platform, []rune(line))
+    }
+
+    if part == 1 {
+        load := 0
+        for j := 0; j < len(platform[0]); j++ {
+            for i := 0; i < len(platform); i++ {
+                c := platform[i][j]
+                if c == 'O' {
+                    di := i
+                    for di - 1 >= 0 && platform[di - 1][j] == '.' {
+                        di--
+                    }
+                    platform[i][j] = '.' // Order of this and below matters.
+                    platform[di][j] = 'O'
+                    load += len(platform) - di
+                }
+            }
+        }
+        return load
+    }
+
+    tilesToCycle := make(map[string]int)
+    skipped := false
+    cycle := 0
+    const cycles = 1000000000
+    for cycle < cycles {
+        // Tilt north.
+        for j := 0; j < len(platform[0]); j++ {
+            for i := 0; i < len(platform); i++ {
+                c := platform[i][j]
+                if c == 'O' {
+                    di := i
+                    for di - 1 >= 0 && platform[di - 1][j] == '.' {
+                        di--
+                    }
+                    platform[i][j] = '.' // Order of this and below matters.
+                    platform[di][j] = 'O'
+                }
+            }
+        }
+        // Tilt west.
+        for i := 0; i < len(platform); i++ {
+            for j := 0; j < len(platform[i]); j++ {
+                c := platform[i][j]
+                if c == 'O' {
+                    dj := j
+                    for dj - 1 >= 0 && platform[i][dj - 1] == '.' {
+                        dj--
+                    }
+                    platform[i][j] = '.'
+                    platform[i][dj] = 'O'
+                }
+            }
+        }
+        // Tilt south.
+        for j := 0; j < len(platform[0]); j++ {
+            for i := len(platform) - 1; i >= 0; i-- {
+                c := platform[i][j]
+                if c == 'O' {
+                    di := i
+                    for di + 1 < len(platform) && platform[di + 1][j] == '.' {
+                        di++
+                    }
+                    platform[i][j] = '.' // Order of this and below matters.
+                    platform[di][j] = 'O'
+                }
+            }
+        }
+        // Tilt east.
+        for i := 0; i < len(platform); i++ {
+            for j := len(platform[i]) - 1; j >= 0; j-- {
+                c := platform[i][j]
+                if c == 'O' {
+                    dj := j
+                    for dj + 1 < len(platform[i]) && platform[i][dj + 1] == '.' {
+                        dj++
+                    }
+                    platform[i][j] = '.'
+                    platform[i][dj] = 'O'
+                }
+            }
+        }
+        cycle++
+
+        if !skipped {
+            var tilesSlice []rune
+            for _, row := range platform {
+                tilesSlice = append(tilesSlice, row...)
+            }
+            tiles := string(tilesSlice)
+            cycleCache, ok := tilesToCycle[tiles]
+            if !ok {
+                tilesToCycle[tiles] = cycle
+            } else {
+                interval := cycle - cycleCache
+                repeat := (cycles - cycle) / interval
+                cycle += repeat * interval
+                skipped = true
+            }
+        }
+    }
+    load := 0
+    for i := 0; i < len(platform); i++ {
+        for j := 0; j < len(platform[i]); j++ {
+            c := platform[i][j]
+            if c == 'O' {
+                load += len(platform) - i
+            }
+        }
+    }
+    return load
 }
