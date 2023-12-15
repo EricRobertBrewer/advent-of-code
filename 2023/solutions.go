@@ -33,6 +33,7 @@ var SOLVERS = map[int]Solver {
     12: d12_HotSprings,
     13: d13_PointOfIncidence,
     14: d14_ParabolicReflectorDish,
+    15: d15_LensLibrary,
 }
 
 type Point struct {
@@ -1152,7 +1153,7 @@ func d14_ParabolicReflectorDish(lines []string, part int) int {
                     for di - 1 >= 0 && platform[di - 1][j] == '.' {
                         di--
                     }
-                    platform[i][j] = '.' // Order of this and below matters.
+                    platform[i][j] = '.' // Order of this and below matters in case i == di.
                     platform[di][j] = 'O'
                 }
             }
@@ -1218,6 +1219,7 @@ func d14_ParabolicReflectorDish(lines []string, part int) int {
             }
         }
     }
+
     load := 0
     for i := 0; i < len(platform); i++ {
         for j := 0; j < len(platform[i]); j++ {
@@ -1228,4 +1230,65 @@ func d14_ParabolicReflectorDish(lines []string, part int) int {
         }
     }
     return load
+}
+
+func d15_LensLibrary(lines []string, part int) int {
+    steps := strings.Split(lines[0], ",")
+
+    if part == 1 {
+        answer := 0
+        for _, step := range steps {
+            answer += _d15_hash(step)
+        }
+        return answer
+    }
+
+    type Lens struct {
+        Label string
+        Focal int
+    }
+    boxes := make([][]Lens, 256)
+    for _, step := range steps {
+        parts := strings.Split(step, "=")
+        label := ""
+        focal := -1
+        if len(parts) == 2 {
+            label = parts[0]
+            focal, _ = strconv.Atoi(parts[1])
+        } else {
+            label = strings.Split(step, "-")[0]
+        }
+        h := _d15_hash(label)
+        found := false
+        for j := 0; j < len(boxes[h]); j++ {
+            if boxes[h][j].Label == label {
+                if focal != -1 {
+                    boxes[h][j].Focal = focal
+                } else {
+                    boxes[h] = append(boxes[h][:j], boxes[h][j + 1:]...)
+                }
+                found = true
+                break
+            }
+        }
+        if !found && focal != -1 {
+            boxes[h] = append(boxes[h], Lens{label, focal})
+        }
+    }
+
+    power := 0
+    for i, box := range boxes {
+        for j, lens := range box {
+            power += (i + 1) * (j + 1) * lens.Focal
+        }
+    }
+    return power
+}
+
+func _d15_hash(s string) int {
+    x := 0
+    for _, c := range s {
+        x = ((x + int(c)) * 17) % 256
+    }
+    return x
 }
