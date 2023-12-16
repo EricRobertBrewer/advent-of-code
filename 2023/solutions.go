@@ -34,6 +34,7 @@ var SOLVERS = map[int]Solver {
     13: d13_PointOfIncidence,
     14: d14_ParabolicReflectorDish,
     15: d15_LensLibrary,
+    16: d16_TheFloorWillBeLava,
 }
 
 type Point struct {
@@ -43,6 +44,16 @@ type Point struct {
 type PointS struct {
     I, J int
     S string
+}
+
+const directionUp = 0
+const directionRight = 1
+const directionDown = 2
+const directionLeft = 3
+var deltas = [...][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} // Up, right, down, left.
+
+type Point3 struct {
+    I, J, K int
 }
 
 func main() {
@@ -717,11 +728,6 @@ func d10_PipeMaze(lines []string, part int) int {
         panic(fmt.Sprintf("No start point found."))
     }
 
-    const directionUp = 0
-    const directionRight = 1
-    const directionDown = 2
-    const directionLeft = 3
-    deltas := [][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} // Up, right, down, left.
     pipeDirections := []map[rune]int{
         {'7': directionLeft, '|': directionUp, 'F': directionRight},
         {'J': directionUp, '-': directionRight, '7': directionDown},
@@ -1291,4 +1297,72 @@ func _d15_hash(s string) int {
         x = ((x + int(c)) * 17) % 256
     }
     return x
+}
+
+func d16_TheFloorWillBeLava(lines []string, part int) int {
+    var grid [][]rune
+    for _, line := range lines {
+        grid = append(grid, []rune(line))
+    }
+
+    if part == 1 {
+        return _d16_energized(grid, 0, 0, 1)
+    }
+
+    energizedMax := -1
+    for i := 0; i < len(grid); i++ {
+        energizedMax = max(energizedMax, _d16_energized(grid, i, 0, 1))
+        energizedMax = max(energizedMax, _d16_energized(grid, i, len(grid) - 1, 3))
+        energizedMax = max(energizedMax, _d16_energized(grid, 0, i, 2))
+        energizedMax = max(energizedMax, _d16_energized(grid, len(grid) - 1, 0, 0))
+    }
+    return energizedMax
+}
+
+func _d16_energized(grid [][]rune, iStart, jStart, directionStart int) int {
+    cToDirections := map[rune][][]int{
+        '.': {{0}, {1}, {2}, {3}},
+        '/': {{1}, {0}, {3}, {2}},
+        '\\': {{3}, {2}, {1}, {0}},
+        '|': {{0}, {0, 2}, {2}, {0, 2}},
+        '-': {{1, 3}, {1}, {1, 3}, {3}},
+    }
+    
+    gridBeams := make([][][]int, len(grid))
+    for i := 0; i < len(gridBeams); i++ {
+        gridBeams[i] = make([][]int, len(grid[i]))
+    }
+    var q []Point3
+    for _, direction := range cToDirections[grid[iStart][jStart]][directionStart] {
+        q = append(q, Point3{iStart, jStart, direction})
+    }
+    for len(q) > 0 {
+        pointBeam := q[0]
+        q = q[1:]
+        i, j, direction := pointBeam.I, pointBeam.J, pointBeam.K
+        for !slices.Contains(gridBeams[i][j], direction) {
+            gridBeams[i][j] = append(gridBeams[i][j], direction)
+            delta := deltas[direction]
+            i, j = i + delta[0], j + delta[1]
+            if i < 0 || i >= len(grid) || j < 0 || j >= len(grid[i]) {
+                break // Out of bounds.
+            }
+            c := grid[i][j]
+            directions := cToDirections[c][direction]
+            if len(directions) > 1 {
+                q = append(q, Point3{i, j, directions[1]})
+            }
+            direction = directions[0]
+        }
+    }
+
+    energized := 0
+    for i := 0; i < len(gridBeams); i++ {
+        for j := 0; j < len(gridBeams[i]); j++ {
+            if len(gridBeams[i][j]) > 0 {
+                energized++
+            }
+        }
+    }
+    return energized
 }
