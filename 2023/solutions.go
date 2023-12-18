@@ -36,6 +36,7 @@ var SOLVERS = map[int]Solver {
     15: d15_LensLibrary,
     16: d16_TheFloorWillBeLava,
     17: d17_ClumsyCrucible,
+    18: d18_LavaductLagoon,
 }
 
 type Point struct {
@@ -1450,4 +1451,105 @@ func d17_ClumsyCrucible(lines []string, part int) int {
         }
     }
     return 1
+}
+
+func d18_LavaductLagoon(lines []string, part int) int {
+    nameToDirection := map[string]int{"U": DIRECTION_UP, "R": DIRECTION_RIGHT, "D": DIRECTION_DOWN, "L": DIRECTION_LEFT}
+    var directions []int
+    var lengths []int
+    for _, line := range lines {
+        tokens := strings.Split(line, " ")
+        if part == 1 {
+            directions = append(directions, nameToDirection[tokens[0]])
+            length, _ := strconv.Atoi(tokens[1])
+            lengths = append(lengths, length)
+        } else {
+            color := []rune(tokens[2][2:8])
+            directions = append(directions, int(color[5] - '0'))
+            length := 0
+            for i := 0; i < 5; i++ {
+                length *= 16
+                if color[i] >= '0' && color[i] <= '9' {
+                    length += int(color[i] - '0')
+                } else {
+                    length += int(10 + color[i] - 'a')
+                }
+            }
+            lengths = append(lengths, length)
+        }
+    }
+
+    // TODO: Time: 1766.420956 s
+    pointToHole := make(map[Point]rune)
+    iToHoles := make(map[int][]int)
+    iMin, iMax := 0, 0
+    i, j := 0, 0
+    for index, direction := range directions {
+        length := lengths[index]
+        delta := DELTAS[direction]
+        if delta[0] != 0 {
+            for d := 0; d < length; d++ {
+                i += delta[0]
+                iMin = min(iMin, i)
+                iMax = max(iMax, i)
+                pointToHole[Point{i, j}] = '#'
+                iToHoles[i] = append(iToHoles[i], j)
+            }
+        } else {
+            j += delta[1] * length
+            pointToHole[Point{i, j}] = '#'
+            iToHoles[i] = append(iToHoles[i], j)
+        }
+    }
+
+    holes := 0
+    stateAbove := -1
+    stateNeither := 0
+    stateBelow := 1
+    for i = iMin; i <= iMax; i++ {
+        slices.Sort(iToHoles[i])
+        var jLast int
+        hasJLast := false
+        inside := false
+        state := stateNeither
+        for _, j := range iToHoles[i] {
+            if !hasJLast {
+                holes++
+                hasJLast = true
+            } else if inside || state != stateNeither {
+                holes += j - jLast
+            } else {
+                holes++
+            }
+            jLast = j
+
+            _, okAbove := pointToHole[Point{i - 1, j}]
+            _, okBelow := pointToHole[Point{i + 1, j}]
+            if okAbove && okBelow {
+                // Straight through a vertical wall.
+                inside = !inside
+            } else if okAbove {
+                // A wall above, but not below.
+                if state == stateNeither {
+                    state = stateBelow
+                } else {
+                    if state == stateAbove {
+                        inside = !inside
+                    }
+                    state = stateNeither
+                }
+            } else {
+                // A wall below, but not above.
+                if state == stateNeither {
+                    state = stateAbove
+                } else {
+                    if state == stateBelow {
+                        inside = !inside
+                    }
+                    state = stateNeither
+                }
+            }
+        }
+    }
+    return holes
 }
