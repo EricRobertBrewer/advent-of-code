@@ -35,6 +35,7 @@ var SOLVERS = map[int]Solver {
     14: d14_ParabolicReflectorDish,
     15: d15_LensLibrary,
     16: d16_TheFloorWillBeLava,
+    17: d17_ClumsyCrucible,
 }
 
 type Point struct {
@@ -46,14 +47,18 @@ type PointS struct {
     S string
 }
 
-const directionUp = 0
-const directionRight = 1
-const directionDown = 2
-const directionLeft = 3
-var deltas = [...][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} // Up, right, down, left.
+const DIRECTION_UP = 0
+const DIRECTION_RIGHT = 1
+const DIRECTION_DOWN = 2
+const DIRECTION_LEFT = 3
+var DELTAS = [...][]int{{-1, 0}, {0, 1}, {1, 0}, {0, -1}} // Up, right, down, left.
 
 type Point3 struct {
     I, J, K int
+}
+
+type Point4 struct {
+    I, J, K, L int
 }
 
 func main() {
@@ -729,10 +734,10 @@ func d10_PipeMaze(lines []string, part int) int {
     }
 
     pipeDirections := []map[rune]int{
-        {'7': directionLeft, '|': directionUp, 'F': directionRight},
-        {'J': directionUp, '-': directionRight, '7': directionDown},
-        {'L': directionRight, '|': directionDown, 'J': directionLeft},
-        {'F': directionDown, '-': directionLeft, 'L': directionUp},
+        {'7': DIRECTION_LEFT, '|': DIRECTION_UP, 'F': DIRECTION_RIGHT},
+        {'J': DIRECTION_UP, '-': DIRECTION_RIGHT, '7': DIRECTION_DOWN},
+        {'L': DIRECTION_RIGHT, '|': DIRECTION_DOWN, 'J': DIRECTION_LEFT},
+        {'F': DIRECTION_DOWN, '-': DIRECTION_LEFT, 'L': DIRECTION_UP},
     }
     directionsPipe := [][]rune{
         {'|', 'L', '|', 'J'},
@@ -742,7 +747,7 @@ func d10_PipeMaze(lines []string, part int) int {
     }
 
     var startDirections []int
-    for direction, delta := range deltas {
+    for direction, delta := range DELTAS {
         point := []int{startPoint[0] + delta[0], startPoint[1] + delta[1]}
         if point[0] < 0 || point[0] >= len(lines) || point[1] < 0 || point[1] >= len(lines[point[0]]) {
             continue
@@ -761,7 +766,7 @@ func d10_PipeMaze(lines []string, part int) int {
         step := 0
         for step == 0 || point[0] != startPoint[0] || point[1] != startPoint[1] {
             path = append(path, point)
-            delta := deltas[direction]
+            delta := DELTAS[direction]
             pointNext := []int{point[0] + delta[0], point[1] + delta[1]}
             c := maze[pointNext[0]][pointNext[1]]
             if c != 'S' {
@@ -1342,7 +1347,7 @@ func _d16_energized(grid [][]rune, iStart, jStart, directionStart int) int {
         i, j, direction := pointBeam.I, pointBeam.J, pointBeam.K
         for !slices.Contains(gridBeams[i][j], direction) {
             gridBeams[i][j] = append(gridBeams[i][j], direction)
-            delta := deltas[direction]
+            delta := DELTAS[direction]
             i, j = i + delta[0], j + delta[1]
             if i < 0 || i >= len(grid) || j < 0 || j >= len(grid[i]) {
                 break // Out of bounds.
@@ -1365,4 +1370,84 @@ func _d16_energized(grid [][]rune, iStart, jStart, directionStart int) int {
         }
     }
     return energized
+}
+
+func d17_ClumsyCrucible(lines []string, part int) int {
+    var lossMap [][]int
+    for _, line := range lines {
+        var row []int
+        for _, c := range line {
+            row = append(row, int(c - '0'))
+        }
+        lossMap = append(lossMap, row)
+    }
+
+    stepsMin, stepsMax := 1, 3
+    if part != 1 {
+        stepsMin, stepsMax = 4, 10
+    }
+
+    // Lazy Dijkstra.
+    lossToPointHistories := make(map[int][][]Point4)
+    // No steps taken in any direction; invalid back pointer.
+    lossToPointHistories[0] = [][]Point4{{Point4{0, 0, -1, 0}, Point4{-1, -1, -1, -1}}}
+    pointHistoryToLoss := make(map[Point4]int)
+    backtrace := make(map[Point4]Point4)
+    lossCurrent := -1
+    for true {
+        lossCurrent++
+        if _, ok := lossToPointHistories[lossCurrent]; !ok {
+            continue
+        }
+        for _, pointHistories := range lossToPointHistories[lossCurrent] {
+            pointHistory := pointHistories[0]
+            if _, ok := pointHistoryToLoss[pointHistory]; ok {
+                continue // Already minimized.
+            }
+            pointHistoryToLoss[pointHistory] = lossCurrent
+            // Fill backtrace.
+            pointHistoryPrev := pointHistories[1]
+            if pointHistoryPrev.I != -1 {
+                backtrace[pointHistory] = pointHistoryPrev
+            }
+            // Check for termination.
+            if pointHistory.I == len(lossMap) - 1 && pointHistory.J == len(lossMap[pointHistory.I]) - 1 && pointHistory.L >= stepsMin {
+                var path []Point4
+                pointHistoryReverse, ok := pointHistory, true
+                for ok {
+                    path = append([]Point4{pointHistoryReverse}, path...)
+                    pointHistoryReverse, ok = backtrace[pointHistoryReverse]
+                }
+                lossTotal := -lossMap[0][0]
+                for i, point := range path {
+                    lossTotal += lossMap[point.I][point.J]
+                    fmt.Println(i, point, lossTotal)
+                }
+                return lossCurrent
+            }
+            // Check every direction.
+            for direction, delta := range DELTAS {
+                if pointHistory.K != -1 && direction == (pointHistory.K + 2) % len(DELTAS) {
+                    continue // Can't reverse direction.
+                }
+                i, j := pointHistory.I + delta[0], pointHistory.J + delta[1]
+                if i < 0 || i >= len(lossMap) || j < 0 || j >= len(lossMap[i]) {
+                    continue // Out of bounds.
+                }
+                steps := 1
+                if direction == pointHistory.K {
+                    if pointHistory.L == stepsMax {
+                        continue // Can't travel in same direction more than three steps.
+                    }
+                    steps = pointHistory.L + 1
+                } else if pointHistory.K != -1 && pointHistory.L < stepsMin {
+                    continue
+                }
+                loss := lossCurrent + lossMap[i][j]
+                pointHistoryNext := Point4{i, j, direction, steps}
+                lossToPointHistories[loss] = append(lossToPointHistories[loss], []Point4{pointHistoryNext, pointHistory})
+            }
+        }
+    }
+    return 1
 }
