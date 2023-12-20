@@ -37,6 +37,7 @@ var SOLVERS = map[int]Solver {
     16: d16_TheFloorWillBeLava,
     17: d17_ClumsyCrucible,
     18: d18_LavaductLagoon,
+    19: d19_Aplenty,
 }
 
 type Point struct {
@@ -1552,4 +1553,151 @@ func d18_LavaductLagoon(lines []string, part int) int {
         }
     }
     return holes
+}
+
+func d19_Aplenty(lines []string, dayPart int) int {
+    type Rule struct {
+        category, operator rune
+        value int
+        toWorkflow string
+    }
+    type Part map[rune]int
+    workflowToRules := make(map[string][]Rule)
+    workflowToTerminal := make(map[string]string)
+    var parts []Part
+    readRules := true
+    for _, line := range lines {
+        if len(line) == 0 {
+            readRules = false
+            continue
+        }
+        if readRules {
+            braceIndex := strings.Index(line, "{")
+            workflow := line[:braceIndex]
+            rulesS := strings.Split(line[braceIndex + 1:len(line) - 1], ",")
+            workflowToTerminal[workflow] = rulesS[len(rulesS) - 1]
+            rulesS = rulesS[:len(rulesS) - 1]
+            var rules []Rule
+            for _, ruleS := range rulesS {
+                conditionToWorkflow := strings.Split(ruleS, ":")
+                condition := conditionToWorkflow[0]
+                toWorkflow := conditionToWorkflow[1]
+                value, _ := strconv.Atoi(condition[2:])
+                categoryOperator := []rune(condition[:2])
+                category := categoryOperator[0]
+                operator := categoryOperator[1]
+                if operator != '<' && operator != '>' {
+                    panic(fmt.Sprintf("Unexpected rule operator: %q", operator))
+                }
+                rule := Rule{category, operator, value, toWorkflow}
+                rules = append(rules, rule)
+            }
+            workflowToRules[workflow] = rules
+        } else {
+            part := make(map[rune]int)
+            categoryRatingsS := strings.Split(line[1:len(line) - 1], ",")
+            for _, categoryRatingS := range categoryRatingsS {
+                categoryRating := strings.Split(categoryRatingS, "=")
+                category := []rune(categoryRating[0])[0]
+                rating, _ := strconv.Atoi(categoryRating[1])
+                part[category] = rating
+            }
+            parts = append(parts, part)
+        }
+    }
+
+    if dayPart == 1 {
+        var partsAccepted []Part
+        var partsRejected []Part
+        for _, part := range parts {
+            workflow := "in"
+            for workflow != "A" && workflow != "R" {
+                moved := false
+                for _, rule := range workflowToRules[workflow] {
+                    if (rule.operator == '<' && part[rule.category] < rule.value) ||
+                            (rule.operator == '>' && part[rule.category] > rule.value) {
+                        workflow = rule.toWorkflow
+                        moved = true
+                        break
+                    }
+                }
+                if !moved {
+                    workflow = workflowToTerminal[workflow]
+                }
+            }
+            if workflow == "A" {
+                partsAccepted = append(partsAccepted, part)
+            } else {
+                partsRejected = append(partsRejected, part)
+            }
+        }
+
+        answer := 0
+        for _, part := range partsAccepted {
+            for _, rating := range part {
+                answer += rating
+            }
+        }
+        return answer
+    }
+
+    type PartInterval map[rune][]int
+    var partIntervalsAccepted []PartInterval
+    var partIntervalsRejected []PartInterval
+    qPartIntervals := []PartInterval{PartInterval{'x': {1, 4000}, 'm': {1, 4000}, 'a': {1, 4000}, 's': {1, 4000}}}
+    qWorkflows := []string{"in"}
+    for len(qPartIntervals) > 0 {
+        partInterval := qPartIntervals[0]
+        qPartIntervals = qPartIntervals[1:]
+        workflow := qWorkflows[0]
+        qWorkflows = qWorkflows[1:]
+        if workflow == "A" {
+            partIntervalsAccepted = append(partIntervalsAccepted, partInterval)
+        } else if workflow == "R" {
+            partIntervalsRejected = append(partIntervalsRejected, partInterval)
+        } else {
+            for _, rule := range workflowToRules[workflow] {
+                if rule.operator == '<' && partInterval[rule.category][0] >= rule.value {
+                    continue // Start of interval is too high.
+                }
+                if rule.operator == '>' && partInterval[rule.category][1] <= rule.value {
+                    continue // End of interval is too low.
+                }
+                // Send interval to which this rule applies to specified workflow.
+                partIntervalNext := make(PartInterval)
+                for category, interval := range partInterval {
+                    if category == rule.category {
+                        if rule.operator == '<' {
+                            partIntervalNext[category] = []int{interval[0], rule.value - 1}
+                        } else {
+                            partIntervalNext[category] = []int{rule.value + 1, interval[1]}
+                        }
+                    } else {
+                        partIntervalNext[category] = []int{interval[0], interval[1]}
+                    }
+                }
+                qPartIntervals = append(qPartIntervals, partIntervalNext)
+                qWorkflows = append(qWorkflows, rule.toWorkflow)
+                // Keep remainder of interval for further processing.
+                if rule.operator == '<' {
+                    partInterval[rule.category] = []int{rule.value, partInterval[rule.category][1]}
+                } else {
+                    partInterval[rule.category] = []int{partInterval[rule.category][0], rule.value}
+                }
+            }
+            // Send remainder to terminal workflow.
+            qPartIntervals = append(qPartIntervals, partInterval)
+            qWorkflows = append(qWorkflows, workflowToTerminal[workflow])
+        }
+    }
+
+    answer := 0
+    for _, partInterval := range partIntervalsAccepted {
+        product := 1
+        for _, interval := range partInterval {
+            product *= interval[1] - interval[0] + 1
+        }
+        answer += product
+    }
+    return answer
 }
