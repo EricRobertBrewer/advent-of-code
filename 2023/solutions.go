@@ -38,6 +38,7 @@ var SOLVERS = map[int]Solver {
     17: d17_ClumsyCrucible,
     18: d18_LavaductLagoon,
     19: d19_Aplenty,
+    20: d20_PulsePropagation,
 }
 
 type Point struct {
@@ -1700,4 +1701,98 @@ func d19_Aplenty(lines []string, dayPart int) int {
         answer += product
     }
     return answer
+}
+
+func d20_PulsePropagation(lines []string, part int) int {
+    const typeBroadcaster = 0
+    const typeFlipFlop = 1
+    const typeConjunction = 2
+    moduleToType := map[string]int{"broadcaster": typeBroadcaster}
+    moduleToDestinations := make(map[string][]string)
+    moduleToState := make(map[string]bool) // Flip-flop on/off state.
+    moduleToSourceToMemory := make(map[string]map[string]bool) // Conjunction per-input memory.
+    moduleToSources := make(map[string][]string)
+    for _, line := range lines {
+        moduleDestinations := strings.Split(line, " -> ")
+        module := moduleDestinations[0]
+        if module != "broadcaster" {
+            prefix := module[:1]
+            module = module[1:]
+            if prefix == "%" {
+                moduleToType[module] = typeFlipFlop
+                moduleToState[module] = false // Off.
+            } else if prefix == "&" {
+                moduleToType[module] = typeConjunction
+                moduleToSourceToMemory[module] = make(map[string]bool)
+            } else {
+                panic(fmt.Sprintf("Unexpected module name: %s%s", prefix, module))
+            }
+        }
+        destinations := strings.Split(moduleDestinations[1], ", ")
+        moduleToDestinations[module] = destinations
+        for _, destination := range destinations {
+            moduleToSources[destination] = append(moduleToSources[destination], module)
+        }
+    }
+    // Set all source memory to low.
+    for module, destinations := range moduleToDestinations {
+        for _, destination := range destinations {
+            if moduleToType[destination] == typeConjunction {
+                moduleToSourceToMemory[destination][module] = false
+            }
+        }
+    }
+
+    countLow, countHigh := 0, 0
+    push := 0
+    for push < 1000 {
+        qSourceModule := [][]string{{"button", "broadcaster"}}
+        qPulse := []bool{false}
+        for len(qSourceModule) > 0 {
+            sourceModule := qSourceModule[0]
+            qSourceModule = qSourceModule[1:]
+            pulse := qPulse[0]
+            qPulse = qPulse[1:]
+            source, module := sourceModule[0], sourceModule[1]
+            if moduleToType[module] == typeBroadcaster {
+                for _, destination := range moduleToDestinations[module] {
+                    qSourceModule = append(qSourceModule, []string{module, destination})
+                    qPulse = append(qPulse, pulse)
+                }
+            } else if moduleToType[module] == typeFlipFlop {
+                if !pulse {
+                    moduleToState[module] = !moduleToState[module]
+                    for _, destination := range moduleToDestinations[module] {
+                        qSourceModule = append(qSourceModule, []string{module, destination})
+                        qPulse = append(qPulse, moduleToState[module])
+                    }
+                }
+            } else if moduleToType[module] == typeConjunction {
+                moduleToSourceToMemory[module][source] = pulse
+                hasLow := false
+                for _, memory := range moduleToSourceToMemory[module] {
+                    if !memory {
+                        hasLow = true
+                        break
+                    }
+                }
+                pulseNext := true
+                if !hasLow {
+                    pulseNext = false
+                }
+                for _, destination := range moduleToDestinations[module] {
+                    qSourceModule = append(qSourceModule, []string{module, destination})
+                    qPulse = append(qPulse, pulseNext)
+                }
+            }
+            if pulse {
+                countHigh++
+            } else {
+                countLow++
+            }
+        }
+        push++
+    }
+    fmt.Println(countLow, countHigh)
+    return countLow * countHigh
 }
