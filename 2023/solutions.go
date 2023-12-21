@@ -39,6 +39,7 @@ var SOLVERS = map[int]Solver {
     18: d18_LavaductLagoon,
     19: d19_Aplenty,
     20: d20_PulsePropagation,
+    21: d21_StepCounter,
 }
 
 type Point struct {
@@ -1795,4 +1796,57 @@ func d20_PulsePropagation(lines []string, part int) int {
     }
     fmt.Println(countLow, countHigh)
     return countLow * countHigh
+}
+
+func d21_StepCounter(lines []string, part int) int {
+    var garden [][]rune
+    iStart, jStart := -1, -1
+    for i, line := range lines {
+        row := []rune(line)
+        garden = append(garden, row)
+        for j, c := range row {
+            if c == 'S' {
+                if iStart != -1 {
+                    panic(fmt.Sprintf("Multiple starting locations found: (%d, %d); (%d, %d)", iStart, jStart, i, j))
+                }
+                iStart, jStart = i, j
+            }
+        }
+    }
+
+    if part == 1 {
+        steps := 64
+        stepTiles := [][][]int{{{iStart, jStart}}}
+        visited := make([][]bool, len(garden))
+        for i := 0; i < len(visited); i++ {
+            visited[i] = make([]bool, len(garden[i]))
+        }
+        visited[iStart][jStart] = true
+        for len(stepTiles) <= steps {
+            var tilesNext [][]int
+            for _, tile := range stepTiles[len(stepTiles) - 1] {
+                i, j := tile[0], tile[1]
+                for _, delta := range DELTAS {
+                    iNext, jNext := i + delta[0], j + delta[1]
+                    if iNext < 0 || iNext >= len(garden) || jNext < 0 || jNext >= len(garden[iNext]) {
+                        continue // Out of bounds.
+                    }
+                    if garden[iNext][jNext] == '#' || visited[iNext][jNext] {
+                        continue // Rock or already visited.
+                    }
+                    tilesNext = append(tilesNext, []int{iNext, jNext})
+                    visited[iNext][jNext] = true
+                }
+            }
+            stepTiles = append(stepTiles, tilesNext)
+        }
+
+        answer := 0
+        for step := steps; step >= 0; step -= 2 {
+            answer += len(stepTiles[step])
+        }
+        return answer
+    }
+
+    return 1
 }
