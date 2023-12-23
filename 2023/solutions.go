@@ -40,6 +40,7 @@ var SOLVERS = map[int]Solver {
     19: d19_Aplenty,
     20: d20_PulsePropagation,
     21: d21_StepCounter,
+    22: d22_SandSlabs,
 }
 
 type Point struct {
@@ -1844,6 +1845,111 @@ func d21_StepCounter(lines []string, part int) int {
         answer := 0
         for step := steps; step >= 0; step -= 2 {
             answer += len(stepTiles[step])
+        }
+        return answer
+    }
+
+    return 1
+}
+
+func d22_SandSlabs(lines []string, part int) int {
+    brickStarts := []*Point3{}
+    brickEnds := []*Point3{}
+    for _, line := range lines {
+        brickStartSEndS := strings.Split(line, "~")
+        startTokens := strings.Split(brickStartSEndS[0], ",")
+        xStart, _ := strconv.Atoi(startTokens[0])
+        yStart, _ := strconv.Atoi(startTokens[1])
+        zStart, _ := strconv.Atoi(startTokens[2])
+        brickStarts = append(brickStarts, &Point3{xStart, yStart, zStart})
+        endTokens := strings.Split(brickStartSEndS[1], ",")
+        xEnd, _ := strconv.Atoi(endTokens[0])
+        yEnd, _ := strconv.Atoi(endTokens[1])
+        zEnd, _ := strconv.Atoi(endTokens[2])
+        brickEnds = append(brickEnds, &Point3{xEnd, yEnd, zEnd})
+    }
+
+    // Set initial positions.
+    pointToBrick := make(map[Point3]int)
+    for brick, start := range brickStarts {
+        end := brickEnds[brick]
+        for x := start.I; x <= end.I; x++ {
+            for y := start.J; y <= end.J; y++ {
+                for z := start.K; z <= end.K; z++ {
+                    pointToBrick[Point3{x, y, z}] = brick
+                }
+            }
+        }
+    }
+
+    // Fall until all bricks are settled.
+    settled := false
+    for !settled {
+        settled = true
+        for brick, start := range brickStarts {
+            end := brickEnds[brick]
+            // Fall.
+            for start.K > 1 {
+                fall := true
+                for x := start.I; x <= end.I && fall; x++ {
+                    for y := start.J; y <= end.J && fall; y++ {
+                        if _, ok := pointToBrick[Point3{x, y, start.K - 1}]; ok {
+                            fall = false
+                            break
+                        }
+                    }
+                }
+                if !fall {
+                    break
+                }
+                for x := start.I; x <= end.I; x++ {
+                    for y := start.J; y <= end.J; y++ {
+                        // Remove previous position; set current position.
+                        delete(pointToBrick, Point3{x, y, end.K})
+                        pointToBrick[Point3{x, y, start.K - 1}] = brick
+                    }
+                }
+                start.K--
+                end.K--
+                settled = false
+            }
+        }
+    }
+
+    // Determine supporting bricks.
+    brickBelows := []map[int]struct{}{}
+    brickAboves := []map[int]struct{}{}
+    for brick, start := range brickStarts {
+        end := brickEnds[brick]
+        aboves := make(map[int]struct{})
+        belows := make(map[int]struct{})
+        for x := start.I; x <= end.I; x++ {
+            for y := start.J; y <= end.J; y++ {
+                if above, ok := pointToBrick[Point3{x, y, end.K + 1}]; ok {
+                    aboves[above] = struct{}{}
+                }
+                if below, ok := pointToBrick[Point3{x, y, start.K - 1}]; ok {
+                    belows[below] = struct{}{}
+                }
+            }
+        }
+        brickAboves = append(brickAboves, aboves)
+        brickBelows = append(brickBelows, belows)
+    }
+
+    if part == 1 {
+        answer := 0
+        for _, aboves := range brickAboves {
+            useless := true
+            for above, _ := range aboves {
+                if len(brickBelows[above]) < 2 {
+                    useless = false
+                    break
+                }
+            }
+            if useless {
+                answer++
+            }
         }
         return answer
     }
