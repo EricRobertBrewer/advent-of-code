@@ -41,6 +41,7 @@ var SOLVERS = map[int]Solver {
     20: d20_PulsePropagation,
     21: d21_StepCounter,
     22: d22_SandSlabs,
+    23: d23_ALongWalk,
 }
 
 type Point struct {
@@ -1955,4 +1956,74 @@ func d22_SandSlabs(lines []string, part int) int {
     }
 
     return 1
+}
+
+func d23_ALongWalk(lines []string, part int) int {
+    grid := [][]rune{}
+    for _, line := range lines {
+        grid = append(grid, []rune(line))
+    }
+    jStart, jEnd := -1, -1
+    for j, c := range grid[0] {
+        if c == '.' {
+            if jStart != -1 {
+                panic(fmt.Sprintf("Multiple starting columns found: %d, %d", jStart, j))
+            }
+            jStart = j
+        }
+    }
+    for j, c := range grid[len(grid) - 1] {
+        if c == '.' {
+            if jEnd != -1 {
+                panic(fmt.Sprintf("Multiple ending columns found: %d, %d", jEnd, j))
+            }
+            jEnd = j
+        }
+    }
+
+    slopeToBlockedDirection := map[rune]int{'^': 2, '>': 3, 'v': 0, '<': 1}
+
+    // TODO: Time: 1152.350957 s; Create new graph of adjacent forks - tiles from which multiple directions can be traversed.
+    stepsEnd := []int{}
+    stack := [][]int{{0, jStart, 0}}
+    visited := make([][]bool, len(grid))
+    for i, _ := range grid {
+        visited[i] = make([]bool, len(grid[i]))
+    }
+    for len(stack) > 0 {
+        positionStep := stack[len(stack) - 1]
+        i, j, step := positionStep[0], positionStep[1], positionStep[2]
+        if i == len(grid) - 1 && j == jEnd {
+            stepsEnd = append(stepsEnd, step)
+            stack = stack[:len(stack) - 1]
+        } else if visited[i][j] {
+            stack = stack[:len(stack) - 1]
+            visited[i][j] = false
+        } else {
+            for direction, delta := range DELTAS {
+                iNext, jNext := i + delta[0], j + delta[1]
+                if iNext < 0 || iNext >= len(grid) || jNext < 0 || jNext >= len(grid[iNext]) {
+                    continue // Out of bounds.
+                }
+                if grid[iNext][jNext] == '#' || visited[iNext][jNext] {
+                    continue // Forest or already in path.
+                }
+                if part == 1 {
+                    if blockedDirection, ok := slopeToBlockedDirection[grid[iNext][jNext]]; ok && direction == blockedDirection {
+                        continue // Slope.
+                    }
+                }
+                stack = append(stack, []int{iNext, jNext, step + 1})
+            }
+            visited[i][j] = true
+        }
+    }
+
+    stepsMax := -1
+    for _, steps := range stepsEnd {
+        if stepsMax == -1 || steps > stepsMax {
+            stepsMax = steps
+        }
+    }
+    return stepsMax
 }
