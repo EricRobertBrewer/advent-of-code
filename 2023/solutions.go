@@ -42,6 +42,7 @@ var SOLVERS = map[int]Solver {
     21: d21_StepCounter,
     22: d22_SandSlabs,
     23: d23_ALongWalk,
+    24: d24_NeverTellMeTheOdds,
 }
 
 type Point struct {
@@ -2026,4 +2027,57 @@ func d23_ALongWalk(lines []string, part int) int {
         }
     }
     return stepsMax
+}
+
+func d24_NeverTellMeTheOdds(lines []string, part int) int {
+    positions := [][3]int{}
+    velocities := [][3]int{}
+    for _, line := range lines {
+        positionSVelocityS := strings.Split(line, " @ ")
+        positionTokens := strings.Split(positionSVelocityS[0], ", ")
+        px, _ := strconv.Atoi(positionTokens[0])
+        py, _ := strconv.Atoi(positionTokens[1])
+        pz, _ := strconv.Atoi(positionTokens[2])
+        positions = append(positions, [3]int{px, py, pz})
+        velocityTokens := strings.Split(positionSVelocityS[1], ", ")
+        vx, _ := strconv.Atoi(velocityTokens[0])
+        vy, _ := strconv.Atoi(velocityTokens[1])
+        vz, _ := strconv.Atoi(velocityTokens[2])
+        velocities = append(velocities, [3]int{vx, vy, vz})
+    }
+
+    if part == 1 {
+        xMin, xMax := 200000000000000.0, 400000000000000.0
+        yMin, yMax := 200000000000000.0, 400000000000000.0
+        answer := 0
+        for i := 0; i < len(positions) - 1; i++ {
+            p0 := positions[i]
+            px0, py0 := float64(p0[0]), float64(p0[1])
+            v0 := velocities[i]
+            vx0, vy0 := float64(v0[0]), float64(v0[1])
+            m0 := vy0 / vx0
+            for j := i + 1; j < len(positions); j++ {
+                p1 := positions[j]
+                px1, py1 := float64(p1[0]), float64(p1[1])
+                v1 := velocities[j]
+                if v0[1] * v1[0] == v1[1] * v0[0] {
+                    continue // Parallel.
+                }
+                vx1, vy1 := float64(v1[0]), float64(v1[1])
+                m1 := vy1 / vx1
+                x := (m0 * px0 - m1 * px1 + py1 - py0) / (m0 - m1)
+                t0, t1 := (x - px0) / vx0, (x - px1) / vx1
+                if t0 < 0.0 || t1 < 0.0 {
+                    continue // Past.
+                }
+                y := m0 * (x - px0) + py0
+                if x >= xMin && x <= xMax && y >= yMin && y <= yMax {
+                    answer++
+                }
+            }
+        }
+        return answer
+    }
+
+    return len(positions)
 }
