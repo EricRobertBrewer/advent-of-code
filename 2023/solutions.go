@@ -43,6 +43,7 @@ var SOLVERS = map[int]Solver {
     22: d22_SandSlabs,
     23: d23_ALongWalk,
     24: d24_NeverTellMeTheOdds,
+    25: d25_Snowverload,
 }
 
 type Point struct {
@@ -2080,4 +2081,124 @@ func d24_NeverTellMeTheOdds(lines []string, part int) int {
     }
 
     return len(positions)
+}
+
+func d25_Snowverload(lines []string, part int) int {
+    componentToOthers := make(map[string][]string)
+    for _, line := range lines {
+        componentOthersS := strings.Split(line, ": ")
+        component := componentOthersS[0]
+        if _, ok := componentToOthers[component]; !ok {
+            componentToOthers[component] = []string{}
+        }
+        others := strings.Split(componentOthersS[1], " ")
+        for _, other := range others {
+            componentToOthers[component] = append(componentToOthers[component], other)
+            if _, ok := componentToOthers[other]; !ok {
+                componentToOthers[other] = []string{}
+            }
+            componentToOthers[other] = append(componentToOthers[other], component)
+        }
+    }
+
+    components := []string{}
+    for component, _ := range componentToOthers {
+        components = append(components, component)
+    }
+
+    // Count edge usage in pair-wise max flow.
+    // TODO: Time: 3427.343777 s; maybe measure shortest pair-wise distances(?).
+    edgeToCount := make(map[[2]string]int)
+    for i := 0; i < len(components) - 1; i++ {
+        for j := i + 1; j < len(components); j++ {
+            // Naive max flow (breadth-first).
+            edgesUsed := make(map[[2]string]struct{})
+            for true {
+                frontier := []string{components[i]}
+                visited := map[string]struct{}{components[i]: struct{}{}}
+                backtrace := make(map[string]string)
+                reached := false
+                for len(frontier) > 0 {
+                    component := frontier[0]
+                    frontier = frontier[1:]
+                    // Check for termination.
+                    if component == components[j] {
+                        reached = true
+                        break
+                    }
+                    // Visit neighbors.
+                    for _, other := range componentToOthers[component] {
+                        edge := _d25_edge(component, other)
+                        if _, ok := edgesUsed[edge]; ok {
+                            continue // Ignore edges used in previous flows.
+                        }
+                        if _, ok := visited[other]; ok {
+                            continue
+                        }
+                        frontier = append(frontier, other)
+                        visited[other] = struct{}{}
+                        backtrace[other] = component
+                    }
+                }
+                if !reached {
+                    break
+                }
+                // Mark edges as used.
+                component := components[j]
+                for true {
+                    componentPrev, ok := backtrace[component]
+                    if !ok {
+                        break
+                    }
+                    edge := _d25_edge(component, componentPrev)
+                    edgesUsed[edge] = struct{}{}
+                    component = componentPrev
+                }
+            }
+            for edge, _ := range edgesUsed {
+                if _, ok := edgeToCount[edge]; !ok {
+                    edgeToCount[edge] = 0
+                }
+                edgeToCount[edge]++
+            }
+        }
+    }
+
+    edges := [][2]string{}
+    for edge, _ := range edgeToCount {
+        edges = append(edges, edge)
+    }
+    sort.Slice(edges, func(i, j int) bool {
+        return edgeToCount[edges[i]] > edgeToCount[edges[j]] // Descending
+    })
+    for i, edge := range edges[:10] {
+        fmt.Println(i, edge, edgeToCount[edge])
+    }
+
+    // Count size of one partition.
+    frontier := []string{components[0]}
+    visited := make(map[string]struct{})
+    for len(frontier) > 0 {
+        component := frontier[0]
+        frontier = frontier[1:]
+        if _, ok := visited[component]; ok {
+            continue
+        }
+        visited[component] = struct{}{}
+        for _, other := range componentToOthers[component] {
+            edge := _d25_edge(component, other)
+            if count, ok := edgeToCount[edge]; ok && count >= edgeToCount[edges[2]] {
+                continue // Block top three edges.
+            }
+            frontier = append(frontier, other)
+        }
+    }
+    return len(visited) * (len(components) - len(visited))
+}
+
+func _d25_edge(component, other string) [2]string {
+    if component < other {
+        return [2]string{component, other}
+    }
+    return [2]string{other, component}
 }
