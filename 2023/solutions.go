@@ -1873,6 +1873,69 @@ func d22_SandSlabs(lines []string, part int) int {
     }
 
     // Set initial positions.
+    pointToBrick := _d22_makePointToBrick(brickStarts, brickEnds)
+
+    // Fall until all bricks are settled.
+    _d22_dropBricks(brickStarts, brickEnds, pointToBrick)
+
+    if part == 1 {
+        // Determine supporting bricks.
+        brickBelows := []map[int]struct{}{}
+        brickAboves := []map[int]struct{}{}
+        for brick, start := range brickStarts {
+            end := brickEnds[brick]
+            aboves := make(map[int]struct{})
+            belows := make(map[int]struct{})
+            for x := start.I; x <= end.I; x++ {
+                for y := start.J; y <= end.J; y++ {
+                    if above, ok := pointToBrick[Point3{x, y, end.K + 1}]; ok {
+                        aboves[above] = struct{}{}
+                    }
+                    if below, ok := pointToBrick[Point3{x, y, start.K - 1}]; ok {
+                        belows[below] = struct{}{}
+                    }
+                }
+            }
+            brickAboves = append(brickAboves, aboves)
+            brickBelows = append(brickBelows, belows)
+        }
+
+        answer := 0
+        for _, aboves := range brickAboves {
+            useless := true
+            for above, _ := range aboves {
+                if len(brickBelows[above]) < 2 {
+                    useless = false
+                    break
+                }
+            }
+            if useless {
+                answer++
+            }
+        }
+        return answer
+    }
+
+    answer := 0
+    for brickRemove, _ := range brickStarts {
+        brickStartsCopy := []*Point3{}
+        brickEndsCopy := []*Point3{}
+        for brick, start := range brickStarts {
+            if brick == brickRemove {
+                continue
+            }
+            end := brickEnds[brick]
+            brickStartsCopy = append(brickStartsCopy, &Point3{start.I, start.J, start.K})
+            brickEndsCopy = append(brickEndsCopy, &Point3{end.I, end.J, end.K})
+        }
+        pointToBrickCopy := _d22_makePointToBrick(brickStartsCopy, brickEndsCopy)
+        bricksFallen := _d22_dropBricks(brickStartsCopy, brickEndsCopy, pointToBrickCopy)
+        answer += len(bricksFallen)
+    }
+    return answer
+}
+
+func _d22_makePointToBrick(brickStarts, brickEnds []*Point3) map[Point3]int {
     pointToBrick := make(map[Point3]int)
     for brick, start := range brickStarts {
         end := brickEnds[brick]
@@ -1884,8 +1947,12 @@ func d22_SandSlabs(lines []string, part int) int {
             }
         }
     }
+    return pointToBrick
+}
 
-    // Fall until all bricks are settled.
+func _d22_dropBricks(brickStarts, brickEnds []*Point3, pointToBrick map[Point3]int) map[int]struct{} {
+    bricksFallen := make(map[int]struct{})
+
     settled := false
     for !settled {
         settled = true
@@ -1915,49 +1982,12 @@ func d22_SandSlabs(lines []string, part int) int {
                 start.K--
                 end.K--
                 settled = false
+                bricksFallen[brick] = struct{}{}
             }
         }
     }
 
-    // Determine supporting bricks.
-    brickBelows := []map[int]struct{}{}
-    brickAboves := []map[int]struct{}{}
-    for brick, start := range brickStarts {
-        end := brickEnds[brick]
-        aboves := make(map[int]struct{})
-        belows := make(map[int]struct{})
-        for x := start.I; x <= end.I; x++ {
-            for y := start.J; y <= end.J; y++ {
-                if above, ok := pointToBrick[Point3{x, y, end.K + 1}]; ok {
-                    aboves[above] = struct{}{}
-                }
-                if below, ok := pointToBrick[Point3{x, y, start.K - 1}]; ok {
-                    belows[below] = struct{}{}
-                }
-            }
-        }
-        brickAboves = append(brickAboves, aboves)
-        brickBelows = append(brickBelows, belows)
-    }
-
-    if part == 1 {
-        answer := 0
-        for _, aboves := range brickAboves {
-            useless := true
-            for above, _ := range aboves {
-                if len(brickBelows[above]) < 2 {
-                    useless = false
-                    break
-                }
-            }
-            if useless {
-                answer++
-            }
-        }
-        return answer
-    }
-
-    return 1
+    return bricksFallen
 }
 
 func d23_ALongWalk(lines []string, part int) int {
