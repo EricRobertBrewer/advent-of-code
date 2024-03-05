@@ -2,7 +2,8 @@
 
 @file:Import(
         "AocUtil.kts",
-        "solutions/Day01_TheTyranyOfTheRocketEquation.kts"
+        "solutions/Day01_TheTyranyOfTheRocketEquation.kts",
+        "solutions/Day02_1202ProgramAlarm.kts"
 )
 
 import kotlin.time.measureTime
@@ -33,7 +34,8 @@ fun main() {
 }
 
 val solvers = mapOf(
-        1 to Day01_TheTyranyOfTheRocketEquation::getAnswer
+        1 to Day01_TheTyranyOfTheRocketEquation::getAnswer,
+        2 to Day02_1202ProgramAlarm::getAnswer
 )
 
 fun solve(day: Int, part: Int, lines: List<String>): Long {
