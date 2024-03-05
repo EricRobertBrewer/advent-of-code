@@ -39,6 +39,11 @@ java -cp 2017/bin com.ericrobertbrewer.adventofcode.Solutions <day> <part>
 node 2018/solutions.js <day> <part>
 ```
 
+### 2019 ([Kotlin](https://kotlinlang.org/docs/command-line.html))
+
+```shell
+kotlin 2019/Solve.main.kts <day> <part>
+```
 ### 2022 (Python)
 
 ```shell
