@@ -5,6 +5,7 @@
         "solutions/Day01_TheTyranyOfTheRocketEquation.kts",
         "solutions/Day02_1202ProgramAlarm.kts",
         "solutions/Day03_CrossedWires.kts",
+        "solutions/Day04_SecureContainer.kts",
 )
 
 import kotlin.time.measureTime
@@ -38,6 +39,7 @@ val solvers = mapOf(
         1 to Day01_TheTyranyOfTheRocketEquation::getAnswer,
         2 to Day02_1202ProgramAlarm::getAnswer,
         3 to Day03_CrossedWires::getAnswer,
+        4 to Day04_SecureContainer::getAnswer,
 )
 
 fun solve(day: Int, part: Int, lines: List<String>): Long {
