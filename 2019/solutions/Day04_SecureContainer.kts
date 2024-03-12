@@ -52,21 +52,17 @@ class Day04_SecureContainer {
         }
 
         private fun pairPredicate2(digits: IntArray): Boolean {
-            return digits.indices.any(fun(it: Int): Boolean {
+            return digits.indices.any {
                 if (it == 0) {
-                    return false
-                }
-                if (digits[it] != digits[it - 1]) {
-                    return false // Not a pair.
-                }
-                if (it > 1 && digits[it - 1] == digits[it - 2]) {
-                    return false // First of pair is repeated.
-                }
-                if (it < digits.count() - 1 && digits[it] == digits[it + 1]) {
-                    return false // Second of pair is repeated.
-                }
-                return true
-            })
+                    false
+                } else if (digits[it] != digits[it - 1]) {
+                    false // Not a pair.
+                } else if (it > 1 && digits[it - 1] == digits[it - 2]) {
+                    false // First of pair is repeated.
+                } else if (it < digits.count() - 1 && digits[it] == digits[it + 1]) {
+                    false // Second of pair is repeated.
+                } else true
+            }
         }
     }
 }

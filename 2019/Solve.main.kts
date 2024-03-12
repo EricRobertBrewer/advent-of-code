@@ -6,6 +6,7 @@
         "solutions/Day02_1202ProgramAlarm.kts",
         "solutions/Day03_CrossedWires.kts",
         "solutions/Day04_SecureContainer.kts",
+        "solutions/Day05_SunnyWithAChanceOfAsteroids.kts",
 )
 
 import kotlin.time.measureTime
@@ -24,11 +25,10 @@ fun main() {
         example = args[2] == "-x" || args[2] == "--example"
     }
 
-    var lines: List<String>
-    if (example) {
-        lines = AocUtil.getExampleInput(year, day)
+    val lines = if (example) {
+        AocUtil.getExampleInput(year, day)
     } else {
-        lines = AocUtil.getOrDownloadInput(year, day)
+        AocUtil.getOrDownloadInput(year, day)
     }
 
     val duration = measureTime { println(solve(day, part, lines)) }
@@ -40,6 +40,7 @@ val solvers = mapOf(
         2 to Day02_1202ProgramAlarm::getAnswer,
         3 to Day03_CrossedWires::getAnswer,
         4 to Day04_SecureContainer::getAnswer,
+        5 to Day05_SunnyWithAChanceOfAsteroids::getAnswer,
 )
 
 fun solve(day: Int, part: Int, lines: List<String>): Long {
