@@ -8,17 +8,17 @@ class Day07_AmplificationCircuit {
     companion object {
 
         fun getAnswer(lines: List<String>, part: Int): Long {
-            val program = lines[0].split(",").map { it.toInt() }
+            val program = lines[0].split(",").map { it.toLong() }
 
             val phaseSettings = Cs.getPermutations(if (part == 1) listOf(0, 1, 2, 3, 4) else listOf(5, 6, 7, 8, 9))
             var phaseSettingMax: List<Int>? = null
-            var signalMax: Int? = null
+            var signalMax: Long? = null
             for (phaseSetting in phaseSettings) {
                 val intcodes = List(5) { Intcode(program) }
                 for (index in phaseSetting.indices) {
-                    intcodes[index].pushInput(phaseSetting[index])
+                    intcodes[index].pushInput(phaseSetting[index].toLong())
                 }
-                var output = 0
+                var output = 0L
                 while (true) {
                     var index = 0
                     try {
@@ -46,7 +46,7 @@ class Day07_AmplificationCircuit {
                 }
             }
             println(phaseSettingMax)
-            return signalMax!!.toLong()
+            return signalMax!!
         }
     }
 }

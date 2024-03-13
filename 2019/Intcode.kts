@@ -1,68 +1,110 @@
-class Intcode(program: List<Int>) {
+class Intcode(program: List<Long>) {
 
     companion object {
 
-        private fun getValue(memory: List<Int>, i: Int, parameterMode: Int): Int {
-            return if (parameterMode == 0) memory[memory[i]] else memory[i]
-        }
+        private const val MODE_POSITION = 0L
+        private const val MODE_IMMEDIATE = 1L
+        private const val MODE_RELATIVE = 2L
     }
 
-    private val memory = program.toMutableList()
+    private val memory = mutableMapOf<Int, Long>()
     private var i = 0 // Instruction pointer.
-    private val inputs = mutableListOf<Int>()
+    private var r = 0 // Relative base.
+    private val inputs = mutableListOf<Long>()
 
-    fun pushInput(input: Int) {
+    init {
+        program.indices.forEach { memory[it] = program[it] }
+    }
+
+    fun pushInput(input: Long) {
         inputs.add(input)
     }
 
-    fun run(): Int {
-        while (i < memory.count()) {
-            val opcode = memory[i] % 100 // DE
-            if (opcode == 99) {
+    fun run(): Long {
+        while (true) {
+            if (!memory.containsKey(i)) {
+                throw IndexOutOfBoundsException("Unable to find opcode in memory at address: $i")
+            }
+            val opcode = memory[i]!! % 100 // DE
+            if (opcode == 99L) {
                 throw HaltException()
             }
-            val mode0 = (memory[i] / 100) % 10 // C
-            val mode1 = (memory[i] / 1000) % 10 // B
-            val mode2 = (memory[i] / 10000) % 10 // A
-            val a = if (opcode != 3) getValue(memory, i + 1, mode0) else -1
-            val b = if (opcode != 3 && opcode != 4) getValue(memory, i + 2, mode1) else -1
+            val mode0 = (memory[i]!! / 100) % 10 // C
+            val mode1 = (memory[i]!! / 1000) % 10 // B
+            val mode2 = (memory[i]!! / 10000) % 10 // A
+            val a = if (opcode != 3L) getParameterValue(i + 1, mode0) else -1L
+            val b = if (opcode != 3L && opcode != 4L && opcode != 9L) getParameterValue(i + 2, mode1) else -1L
+            val address = when (opcode) {
+                3L -> getParameterAddress(i + 1, mode0)
+                1L, 2L, 7L, 8L -> getParameterAddress(i + 3, mode2)
+                else -> -1
+            }
             when (opcode) {
-                1 -> { // Add
-                    memory[memory[i + 3]] = a + b
+                1L -> { // Add
+                    memory[address] = a + b
                     i += 4
                 }
-                2 -> { // Multiply
-                    memory[memory[i + 3]] = a * b
+                2L -> { // Multiply
+                    memory[address] = a * b
                     i += 4
                 }
-                3 -> { // Input
+                3L -> { // Input
                     val input = inputs[0]
                     inputs.removeAt(0)
-                    memory[memory[i + 1]] = input
+                    memory[address] = input
                     i += 2
                 }
-                4 -> { // Output
+                4L -> { // Output
                     i += 2
                     return a
                 }
-                5 -> { // Jump-if-true
-                    i = if (a != 0) b else i + 3
+                5L -> { // Jump-if-true
+                    i = if (a != 0L) b.toInt() else i + 3
                 }
-                6 -> { // Jump-if-false
-                    i = if (a == 0) b else i + 3
+                6L -> { // Jump-if-false
+                    i = if (a == 0L) b.toInt() else i + 3
                 }
-                7 -> { // Less-than
-                    memory[memory[i + 3]] = if (a < b) 1 else 0
+                7L -> { // Less-than
+                    memory[address] = if (a < b) 1 else 0
                     i += 4
                 }
-                8 -> { // Equal
-                    memory[memory[i + 3]] = if (a == b) 1 else 0
+                8L -> { // Equal
+                    memory[address] = if (a == b) 1 else 0
                     i += 4
+                }
+                9L -> {
+                    r += a.toInt()
+                    i += 2
                 }
                 else -> throw IllegalArgumentException("Unexpected opcode for instruction at `${i}`: $opcode")
             }
         }
-        throw IndexOutOfBoundsException("Instruction pointer value exceeded memory limit: $i / ${memory.count()}")
+    }
+
+    private fun getParameterValue(index: Int, mode: Long): Long {
+        val value = memory[index] ?: 0L
+        return when (mode) {
+            MODE_POSITION -> memory[value.toInt()] ?: 0L
+            MODE_IMMEDIATE -> value
+            MODE_RELATIVE -> memory[r + value.toInt()] ?: 0L
+            else -> {
+                throw IllegalArgumentException("Unexpected parameter mode: $mode")
+            }
+        }
+    }
+
+    private fun getParameterAddress(index: Int, mode: Long): Int {
+        val value = memory[index]!!.toInt()
+        return when (mode) {
+            MODE_POSITION -> value
+            MODE_IMMEDIATE -> {
+                throw RuntimeException("Unexpected immediate parameter mode for address.")
+            }
+            MODE_RELATIVE -> r + value
+            else -> {
+                throw IllegalArgumentException("Unexpected parameter mode: $mode")
+            }
+        }
     }
 }
 
