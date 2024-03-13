@@ -14,8 +14,8 @@ class Day07_AmplificationCircuit {
             var phaseSettingMax: List<Int>? = null
             var signalMax: Int? = null
             for (phaseSetting in phaseSettings) {
-                val intcodes = List<Intcode>(5, { Intcode(program) })
-                for (index in 0..phaseSetting.count() - 1) {
+                val intcodes = List(5) { Intcode(program) }
+                for (index in phaseSetting.indices) {
                     intcodes[index].pushInput(phaseSetting[index])
                 }
                 var output = 0

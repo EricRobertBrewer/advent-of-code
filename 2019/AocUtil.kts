@@ -5,6 +5,7 @@ import java.net.URL
 class AocUtil {
 
     companion object {
+
         private const val INPUT_DIR = "./input"
         private const val ENV_VAR = "AOC_SESSION"
 

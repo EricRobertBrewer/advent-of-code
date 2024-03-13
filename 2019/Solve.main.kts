@@ -9,6 +9,7 @@
         "solutions/Day05_SunnyWithAChanceOfAsteroids.main.kts",
         "solutions/Day06_UniversalOrbitMap.kts",
         "solutions/Day07_AmplificationCircuit.main.kts",
+        "solutions/Day08_SpaceImageFormat.kts",
 )
 
 import kotlin.time.measureTime
@@ -45,6 +46,7 @@ val solvers = mapOf(
         5 to Day05_SunnyWithAChanceOfAsteroids::getAnswer,
         6 to Day06_UniversalOrbitMap::getAnswer,
         7 to Day07_AmplificationCircuit::getAnswer,
+        8 to Day08_SpaceImageFormat::getAnswer,
 )
 
 fun solve(day: Int, part: Int, lines: List<String>): Long {
