@@ -1,0 +1,52 @@
+@file:Import(
+        "../Cs.kts",
+        "../Intcode.kts",
+)
+
+class Day07_AmplificationCircuit {
+
+    companion object {
+
+        fun getAnswer(lines: List<String>, part: Int): Long {
+            val program = lines[0].split(",").map { it.toInt() }
+
+            val phaseSettings = Cs.getPermutations(if (part == 1) listOf(0, 1, 2, 3, 4) else listOf(5, 6, 7, 8, 9))
+            var phaseSettingMax: List<Int>? = null
+            var signalMax: Int? = null
+            for (phaseSetting in phaseSettings) {
+                val intcodes = List<Intcode>(5, { Intcode(program) })
+                for (index in 0..phaseSetting.count() - 1) {
+                    intcodes[index].pushInput(phaseSetting[index])
+                }
+                var output = 0
+                while (true) {
+                    var index = 0
+                    try {
+                        while (index < intcodes.count()) {
+                            val intcode = intcodes[index]
+                            intcode.pushInput(output)
+                            output = intcode.run()
+                            index++
+                        }
+                        if (part == 1) {
+                            break
+                        }
+                    } catch (e: HaltException) {
+                        if (part == 1 || index != 0) {
+                            // Part 1 shouldn't halt;
+                            // Part 2 should halt only while running amplifier A, i.e., after E has produced output.
+                            throw e
+                        }
+                        break
+                    }
+                }
+                if (signalMax == null || output > signalMax) {
+                    phaseSettingMax = phaseSetting
+                    signalMax = output
+                }
+            }
+            println(phaseSettingMax)
+            return signalMax!!.toLong()
+        }
+    }
+}
