@@ -4,13 +4,14 @@
         "AocUtil.kts",
         "solutions/Day01_TheTyranyOfTheRocketEquation.kts",
         "solutions/Day02_1202ProgramAlarm.kts",
-        "solutions/Day03_CrossedWires.kts",
+        "solutions/Day03_CrossedWires.main.kts",
         "solutions/Day04_SecureContainer.kts",
         "solutions/Day05_SunnyWithAChanceOfAsteroids.main.kts",
         "solutions/Day06_UniversalOrbitMap.kts",
         "solutions/Day07_AmplificationCircuit.main.kts",
         "solutions/Day08_SpaceImageFormat.kts",
         "solutions/Day09_SensorBoost.main.kts",
+        "solutions/Day10_MonitoringStation.main.kts",
 )
 
 import kotlin.time.measureTime
@@ -49,6 +50,7 @@ val solvers = mapOf(
         7 to Day07_AmplificationCircuit::getAnswer,
         8 to Day08_SpaceImageFormat::getAnswer,
         9 to Day09_SensorBoost::getAnswer,
+        10 to Day10_MonitoringStation::getAnswer,
 )
 
 fun solve(day: Int, part: Int, lines: List<String>): Long {

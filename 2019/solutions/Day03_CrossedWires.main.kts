@@ -1,3 +1,5 @@
+@file:Import("../Cs.kts")
+
 import kotlin.math.abs
 
 class Day03_CrossedWires {
@@ -31,22 +33,6 @@ class Day03_CrossedWires {
                 }
             }
             return answer!!.toLong()
-        }
-
-        private data class Point(val y: Int, val x: Int) {
-
-            override fun equals(other: Any?): Boolean {
-                if (other == null || other !is Point) {
-                    return false
-                }
-                return other.y == y && other.x == x
-            }
-
-            override fun hashCode(): Int {
-                var result = y
-                result = 31 * result + x
-                return result
-            }
         }
 
         private val deltas = arrayOf(intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(1, 0), intArrayOf(0, -1))
