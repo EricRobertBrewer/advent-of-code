@@ -1,4 +1,7 @@
-@file:Import("../AocUtil.kts", "../Intcode.kts")
+@file:Import(
+        "../AocUtil.kts",
+        "../Intcode.kts",
+)
 
 solve(9, fun(lines: List<String>, part: Int): Long {
     val program = lines[0].split(",").map { it.toLong() }
@@ -9,7 +12,7 @@ solve(9, fun(lines: List<String>, part: Int): Long {
 //            while (true) {
 //                try {
 //                    print(intcode.run())
-//                } catch (_: HaltException) {
+//                } catch (_: IntcodeHalt) {
 //                    break
 //                }
 //                print(",")

@@ -1,4 +1,7 @@
-@file:Import("../AocUtil.kts", "../Cs.kts")
+@file:Import(
+        "../AocUtil.kts",
+        "../Cs.kts",
+)
 
 import kotlin.math.abs
 

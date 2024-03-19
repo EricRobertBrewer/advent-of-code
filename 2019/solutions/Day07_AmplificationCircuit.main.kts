@@ -28,7 +28,7 @@ solve(7, fun(lines: List<String>, part: Int): Long {
                 if (part == 1) {
                     break
                 }
-            } catch (e: HaltException) {
+            } catch (e: IntcodeHalt) {
                 if (part == 1 || index != 0) {
                     // Part 1 shouldn't halt;
                     // Part 2 should halt only while running amplifier A, i.e., after E has produced output.

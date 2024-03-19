@@ -1,4 +1,7 @@
-@file:Import("../AocUtil.kts", "../Cs.kts")
+@file:Import(
+        "../AocUtil.kts",
+        "../Cs.kts",
+)
 
 solve(10, fun(lines: List<String>, part: Int): Long {
     val points = mutableListOf<Point>()

@@ -1,4 +1,7 @@
-@file:Import("../AocUtil.kts", "../Intcode.kts")
+@file:Import(
+        "../AocUtil.kts",
+        "../Intcode.kts",
+)
 
 solve(5, fun(lines: List<String>, part: Int): Long {
     val program = lines[0].split(",").map { it.toLong() }
@@ -15,7 +18,7 @@ solve(5, fun(lines: List<String>, part: Int): Long {
                 throw RuntimeException("Unexpected output for instruction: $output")
             }
             output = outputNext
-        } catch (_: HaltException) {
+        } catch (_: IntcodeHalt) {
             break
         }
     }

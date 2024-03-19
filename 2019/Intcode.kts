@@ -27,7 +27,7 @@ class Intcode(program: List<Long>) {
             }
             val opcode = memory[i]!! % 100 // DE
             if (opcode == 99L) {
-                throw HaltException()
+                throw IntcodeHalt()
             }
             val mode0 = (memory[i]!! / 100) % 10 // C
             val mode1 = (memory[i]!! / 1000) % 10 // B
@@ -108,4 +108,4 @@ class Intcode(program: List<Long>) {
     }
 }
 
-class HaltException: RuntimeException()
+class IntcodeHalt: RuntimeException()
