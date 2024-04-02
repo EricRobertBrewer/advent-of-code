@@ -12,9 +12,10 @@ solve(7, fun(lines: List<String>, part: Int): Long {
     var phaseSettingMax: List<Int>? = null
     var signalMax: Long? = null
     for (phaseSetting in phaseSettings) {
-        val intcodes = List(5) { Intcode(program) }
+        val queues = List(5) { IntcodeQueue() }
+        val intcodes = List(5) { Intcode(program, queues[it]) }
         for (index in phaseSetting.indices) {
-            intcodes[index].pushInput(phaseSetting[index].toLong())
+            queues[index].pushInput(phaseSetting[index].toLong())
         }
         var output = 0L
         while (true) {
@@ -22,7 +23,7 @@ solve(7, fun(lines: List<String>, part: Int): Long {
             try {
                 while (index < intcodes.count()) {
                     val intcode = intcodes[index]
-                    intcode.pushInput(output)
+                    queues[index].pushInput(output)
                     output = intcode.run()
                     index++
                 }

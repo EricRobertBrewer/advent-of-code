@@ -9,8 +9,9 @@ solve(5, fun(lines: List<String>, part: Int): Long {
 
     val input = if (part == 1) 1L else 5L
 
-    val intcode = Intcode(program)
-    intcode.pushInput(input)
+    val queue = IntcodeQueue()
+    val intcode = Intcode(program, queue)
+    queue.pushInput(input)
     var output: Long? = null
     while (true) {
         try {

@@ -1,4 +1,24 @@
-class Intcode(program: List<Long>) {
+fun interface IntcodeInputProvider {
+
+    fun getInput(): Long
+}
+
+class IntcodeQueue: IntcodeInputProvider {
+
+    private val inputs = mutableListOf<Long>()
+
+    fun pushInput(input: Long) {
+        inputs.add(input)
+    }
+
+    override fun getInput(): Long {
+        val input = inputs[0]
+        inputs.removeAt(0)
+        return input
+    }
+}
+
+class Intcode(program: List<Long>, private val provider: IntcodeInputProvider) {
 
     companion object {
 
@@ -10,14 +30,9 @@ class Intcode(program: List<Long>) {
     private val memory = mutableMapOf<Int, Long>()
     private var i = 0 // Instruction pointer.
     private var r = 0 // Relative base.
-    private val inputs = mutableListOf<Long>()
 
     init {
         program.indices.forEach { memory[it] = program[it] }
-    }
-
-    fun pushInput(input: Long) {
-        inputs.add(input)
     }
 
     fun run(): Long {
@@ -49,8 +64,7 @@ class Intcode(program: List<Long>) {
                     i += 4
                 }
                 3L -> { // Input
-                    val input = inputs[0]
-                    inputs.removeAt(0)
+                    val input = provider.getInput()
                     memory[address] = input
                     i += 2
                 }

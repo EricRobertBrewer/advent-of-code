@@ -11,7 +11,8 @@ val deltas = arrayOf(intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(1, 0), intA
 solve(11, fun(lines: List<String>, part: Int): Long {
     val program = lines[0].split(",").map { it.toLong() }
 
-    val intcode = Intcode(program)
+    val queue = IntcodeQueue()
+    val intcode = Intcode(program, queue)
     val panelToColor = mutableMapOf<Point, Int>()
     var panel = Point(0, 0)
     var direction = 0
@@ -22,7 +23,7 @@ solve(11, fun(lines: List<String>, part: Int): Long {
 
     try {
         while (true) {
-            intcode.pushInput(panelToColor[panel]?.toLong() ?: 0L)
+            queue.pushInput(panelToColor[panel]?.toLong() ?: 0L)
             val color = intcode.run()
             val turn = intcode.run()
             panelToColor[panel] = color.toInt()
