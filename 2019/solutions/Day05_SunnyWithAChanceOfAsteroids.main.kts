@@ -3,6 +3,7 @@
         "../Intcode.kts",
 )
 
+
 solve(5, fun(lines: List<String>, part: Int): Long {
     val program = lines[0].split(",").map { it.toLong() }
 

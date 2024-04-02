@@ -1,5 +1,6 @@
 @file:Import("../AocUtil.kts")
 
+
 solve(1, fun(lines: List<String>, part: Int): Long {
     val modules = lines.map { it.toLong() }
 

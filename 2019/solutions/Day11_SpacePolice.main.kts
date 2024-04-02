@@ -4,7 +4,9 @@
         "../Intcode.kts",
 )
 
+
 val deltas = arrayOf(intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(1, 0), intArrayOf(0, -1))
+
 
 solve(11, fun(lines: List<String>, part: Int): Long {
     val program = lines[0].split(",").map { it.toLong() }

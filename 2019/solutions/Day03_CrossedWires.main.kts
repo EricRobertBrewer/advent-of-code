@@ -5,8 +5,10 @@
 
 import kotlin.math.abs
 
+
 val deltas = arrayOf(intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(1, 0), intArrayOf(0, -1))
 val directionToIndex = mapOf('U' to 0, 'R' to 1, 'D' to 2, 'L' to 3)
+
 
 solve(3, fun(lines: List<String>, part: Int): Long {
     val paths0 = lines[0].split(",")

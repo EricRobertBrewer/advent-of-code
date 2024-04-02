@@ -1,5 +1,6 @@
 @file:Import("../AocUtil.kts")
 
+
 solve(4, fun(lines: List<String>, part: Int): Long {
     val rangeStartEndS = lines[0].split("-")
     val rangeStart = rangeStartEndS[0].toInt()

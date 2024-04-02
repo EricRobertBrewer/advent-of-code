@@ -1,5 +1,6 @@
 @file:Import("../AocUtil.kts")
 
+
 solve(6, fun(lines: List<String>, part: Int): Long {
     val orbits = mutableMapOf<String, String>()
     for (line in lines) {

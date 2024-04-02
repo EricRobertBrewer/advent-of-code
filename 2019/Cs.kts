@@ -15,6 +15,30 @@ fun gcd(a: Int, b: Int): Int {
     return x
 }
 
+fun gcd(a: Long, b: Long): Long {
+    if (a == 0L) return abs(b)
+    if (b == 0L) return abs(a)
+    var x = abs(a)
+    var y = abs(b)
+    while (x != y) {
+        if (x > y) {
+            x -= y
+        } else {
+            y -= x
+        }
+    }
+    return x
+}
+
+fun lcm(vararg arr: Long): Long {
+    if (arr.isEmpty()) return 0
+    var y = arr[0]
+    for (x in arr.slice(1..arr.count() - 1)) {
+        y *= x / gcd(y, x)
+    }
+    return y
+}
+
 fun <T> getPermutations(a: List<T>): List<List<T>> {
     if (a.count() == 1) {
         return listOf(listOf(a[0]))

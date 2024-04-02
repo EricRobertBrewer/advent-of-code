@@ -3,6 +3,7 @@
         "../Cs.kts",
 )
 
+
 solve(10, fun(lines: List<String>, part: Int): Long {
     val points = mutableListOf<Point>()
     for (y in lines.indices) {

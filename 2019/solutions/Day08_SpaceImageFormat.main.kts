@@ -1,5 +1,6 @@
 @file:Import("../AocUtil.kts")
 
+
 solve(8, fun(lines: List<String>, part: Int): Long {
     val sif = lines[0]
     val width = 25

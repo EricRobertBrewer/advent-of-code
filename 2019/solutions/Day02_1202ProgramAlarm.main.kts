@@ -1,5 +1,6 @@
 @file:Import("../AocUtil.kts")
 
+
 solve(2, fun(lines: List<String>, part: Int): Long {
     val program = lines[0].split(",").map { it.toInt() }
     if (part == 1) {
