@@ -1,3 +1,6 @@
+import java.util.LinkedList
+
+
 fun interface IntcodeInputProvider {
 
     fun getInput(): Long
@@ -5,16 +8,14 @@ fun interface IntcodeInputProvider {
 
 class IntcodeQueue: IntcodeInputProvider {
 
-    private val inputs = mutableListOf<Long>()
+    private val inputs = LinkedList<Long>()
 
     fun pushInput(input: Long) {
         inputs.add(input)
     }
 
     override fun getInput(): Long {
-        val input = inputs[0]
-        inputs.removeAt(0)
-        return input
+        return inputs.removeFirst()
     }
 }
 

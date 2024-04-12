@@ -1,4 +1,5 @@
 import kotlin.math.abs
+import java.util.LinkedList
 
 fun gcd(a: Int, b: Int): Int {
     if (a == 0) return abs(b)
@@ -79,4 +80,57 @@ data class Point(val y: Int, val x: Int) {
         result = 31 * result + x
         return result
     }
+
+    override fun toString(): String {
+        return "(${y}, ${x})"
+    }
+}
+
+fun dijkstraGridPath(pointToC: Map<Point, Char>, start: Point, end: Point, spaces: Set<Char>): List<Point> {
+    if (start.equals(end)) return listOf()
+
+    val deltas = arrayOf(arrayOf(-1, 0), arrayOf(0, 1), arrayOf(1, 0), arrayOf(0, -1)) // N E S W
+    val q = LinkedList<Point>() // "Grid" assumes that adjacent distances are 1; thus, queue == min heap.
+    q.add(start)
+    val backtrace = mutableMapOf(start to start) // All keys have been queued but not necessarily explored.
+    while (q.isNotEmpty()) {
+        val p = q.removeFirst()
+
+        for (delta in deltas) {
+            val o = Point(p.y + delta[0], p.x + delta[1])
+            if (o.equals(end)) {
+                backtrace[o] = p
+                val path = mutableListOf<Point>()
+                var tail = end
+                while (!tail.equals(start)) {
+                    path.add(0, tail)
+                    tail = backtrace[tail]!!
+                }
+                return path
+            }
+            if (pointToC.containsKey(o) && spaces.contains(pointToC[o]!!) && !backtrace.containsKey(o)) {
+                q.add(o)
+                backtrace[o] = p
+            }
+        }
+    }
+    throw RuntimeException("Unable to find path from ${start} to ${end}.")
+}
+
+fun dijkstraGridDistance(pointToC: Map<Point, Char>, start: Point, spaces: Set<Char>): Map<Point, Int> {
+    val deltas = arrayOf(arrayOf(-1, 0), arrayOf(0, 1), arrayOf(1, 0), arrayOf(0, -1)) // N E S W
+    val q = LinkedList<Point>() // "Grid" assumes that adjacent distances are 1; thus, queue == min heap.
+    q.add(start)
+    val pointToD = mutableMapOf(start to 0)
+    while (q.isNotEmpty()) {
+        val p = q.removeFirst()
+        for (delta in deltas) {
+            val o = Point(p.y + delta[0], p.x + delta[1])
+            if (pointToC.containsKey(o) && spaces.contains(pointToC[o]!!) && !pointToD.containsKey(o)) {
+                q.add(o)
+                pointToD[o] = pointToD[p]!! + 1
+            }
+        }
+    }
+    return pointToD
 }
