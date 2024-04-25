@@ -3,7 +3,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.time.measureTime
 
-private val year = 2019
+val year = 2019
+
 private val inputPath = "./input"
 private val envVar = "AOC_SESSION"
 
