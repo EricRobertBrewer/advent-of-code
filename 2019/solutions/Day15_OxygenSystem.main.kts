@@ -16,7 +16,6 @@ solve(15, fun(lines: List<String>, part: Int): Long {
     val pointToC = mutableMapOf(locationStart to '.')
     val frontier = mutableListOf<Point>() // Stack.
     deltas.forEach { frontier.add(Point(locationStart.y + it[0], locationStart.x + it[1])) }
-    val spaces = setOf('.')
 
     var location = locationStart
     var oxygenLocation: Point? = null
@@ -25,7 +24,7 @@ solve(15, fun(lines: List<String>, part: Int): Long {
         if (pointToC.containsKey(target)) continue
 
         // Move through empty spaces next to target.
-        val path = dijkstraGridPath(pointToC, location, target, spaces)
+        val path = dijkstraGridPath(pointToC, location, target)
         for (i in 0..path.count() - 2) {
             val point = path[i]
             val direction = getDeltaIndex(location, point) + 1 // +1: Map to program input format.
@@ -53,7 +52,7 @@ solve(15, fun(lines: List<String>, part: Int): Long {
             }
             2L -> {
                 if (part == 1) {
-                    val endPath = dijkstraGridPath(pointToC, locationStart, target, spaces)
+                    val endPath = dijkstraGridPath(pointToC, locationStart, target)
                     return endPath.count().toLong()
                 }
                 if (oxygenLocation != null) throw RuntimeException("Multiple oxygen locations: $oxygenLocation $target")
@@ -64,7 +63,7 @@ solve(15, fun(lines: List<String>, part: Int): Long {
     }
 
     if (oxygenLocation == null) throw RuntimeException("No oxygen location found.")
-    val pointToD = dijkstraGridDistance(pointToC, oxygenLocation!!, spaces)
+    val pointToD = dijkstraGridDistance(pointToC, oxygenLocation!!)
     return pointToD.values.max().toLong()
 })
 

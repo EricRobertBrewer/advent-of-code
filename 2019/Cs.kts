@@ -86,10 +86,15 @@ data class Point(val y: Int, val x: Int) {
     }
 }
 
-fun dijkstraGridPath(pointToC: Map<Point, Char>, start: Point, end: Point, spaces: Set<Char>): List<Point> {
+fun dijkstraGridPath(
+    pointToC: Map<Point, Char>,
+    start: Point,
+    end: Point,
+    spaces: Set<Char> = setOf('.'),
+): List<Point> {
     if (start.equals(end)) return listOf()
 
-    val deltas = arrayOf(arrayOf(-1, 0), arrayOf(0, 1), arrayOf(1, 0), arrayOf(0, -1)) // N E S W
+    val deltas = arrayOf(intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(1, 0), intArrayOf(0, -1)) // N E S W
     val q = LinkedList<Point>() // "Grid" assumes that adjacent distances are 1; thus, queue == min heap.
     q.add(start)
     val backtrace = mutableMapOf(start to start) // All keys have been queued but not necessarily explored.
@@ -117,8 +122,13 @@ fun dijkstraGridPath(pointToC: Map<Point, Char>, start: Point, end: Point, space
     throw RuntimeException("Unable to find path from ${start} to ${end}.")
 }
 
-fun dijkstraGridDistance(pointToC: Map<Point, Char>, start: Point, spaces: Set<Char>): Map<Point, Int> {
-    val deltas = arrayOf(arrayOf(-1, 0), arrayOf(0, 1), arrayOf(1, 0), arrayOf(0, -1)) // N E S W
+fun dijkstraGridDistance(
+    pointToC: Map<Point, Char>,
+    start: Point,
+    spaces: Set<Char> = setOf('.'),
+    terminals: Set<Point> = setOf(),
+): Map<Point, Int> {
+    val deltas = arrayOf(intArrayOf(-1, 0), intArrayOf(0, 1), intArrayOf(1, 0), intArrayOf(0, -1)) // N E S W
     val q = LinkedList<Point>() // "Grid" assumes that adjacent distances are 1; thus, queue == min heap.
     q.add(start)
     val pointToD = mutableMapOf(start to 0)
@@ -126,8 +136,11 @@ fun dijkstraGridDistance(pointToC: Map<Point, Char>, start: Point, spaces: Set<C
         val p = q.removeFirst()
         for (delta in deltas) {
             val o = Point(p.y + delta[0], p.x + delta[1])
-            if (pointToC.containsKey(o) && spaces.contains(pointToC[o]!!) && !pointToD.containsKey(o)) {
+            if (!pointToC.containsKey(o) || pointToD.containsKey(o)) continue
+            if (spaces.contains(pointToC[o]!!)) {
                 q.add(o)
+                pointToD[o] = pointToD[p]!! + 1
+            } else if (terminals.contains(o)) {
                 pointToD[o] = pointToD[p]!! + 1
             }
         }
