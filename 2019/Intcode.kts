@@ -6,7 +6,7 @@ fun interface IntcodeInputProvider {
     fun getInput(): Long
 }
 
-class IntcodeQueue: IntcodeInputProvider {
+open class IntcodeQueue: IntcodeInputProvider {
 
     private val inputs = LinkedList<Long>()
 
@@ -17,6 +17,8 @@ class IntcodeQueue: IntcodeInputProvider {
     override fun getInput(): Long {
         return inputs.removeFirst()
     }
+
+    val size get() = inputs.size
 }
 
 class Intcode(program: List<Long>, private val provider: IntcodeInputProvider) {
