@@ -1,4 +1,4 @@
-#load "../AoCUtil.csx"
+#load "../AocUtil.csx"
 
 using System;
 using System.Collections.Immutable;
