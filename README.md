@@ -42,8 +42,15 @@ node 2018/solutions.js <day> <part>
 ### 2019 ([Kotlin](https://kotlinlang.org/docs/command-line.html))
 
 ```shell
-kotlin 2019/Solve.main.kts <day> <part>
+kotlin 2019/solutions/Day##_XXXX.kts <part>
 ```
+
+### 2020 (C#/.NET)
+
+```shell
+dotnet script 2020/Solutions/Day##_XXXX.csx <part>
+```
+
 ### 2022 (Python)
 
 ```shell
