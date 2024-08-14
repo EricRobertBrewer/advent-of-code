@@ -72,7 +72,7 @@ class AocUtil {
     static ImmutableList<string> GetExampleInput(int year, int day) {
         string yearDir = GetYearDir(year);
         string pathInput = Path.Combine(yearDir, GetDayName(day) + "-example.txt");
-        return ImmutableList.Create<string>();
+        return File.ReadLines(pathInput).ToImmutableList();
     }
 
     static string GetYearDir(int year) {
