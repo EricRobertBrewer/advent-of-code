@@ -3,10 +3,6 @@ from collections import defaultdict
 import aoc
 
 
-def main():
-    aoc.solve(1, get_answer)
-
-
 def get_answer(lines, part):
     left_right = [tuple(map(int, line.split('   '))) for line in lines]
     left, right = zip(*left_right)
@@ -26,4 +22,4 @@ def to_counts(a):
 
 
 if __name__ == '__main__':
-    main()
+    aoc.solve(1, get_answer)
