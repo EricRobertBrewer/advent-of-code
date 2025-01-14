@@ -56,18 +56,20 @@ def get_answer(lines, part):
     if part == 1:
         return d_target
 
-    p_direction_to_backs[(*p_start, 1)] = None
-    p_set = set()
+    visited = set()
     frontier = [_ for _ in p_direction_targets]
     while len(frontier) > 0:
         p_direction = frontier.pop()
-        i, j, _ = p_direction
-        p_set.add((i, j))
+        if p_direction in visited:
+            continue
+        visited.add(p_direction)
+
         backs = p_direction_to_backs[p_direction]
-        if backs is not None:
-            for back in backs:
+        for back in backs:
+            if back is not None:
                 frontier.append(back)
-    return len(p_set)
+
+    return len(set((i, j) for i, j, _ in visited))
 
 
 if __name__ == '__main__':
