@@ -102,30 +102,46 @@ KEY_C_TO_ARROWS = {
 def get_answer(lines, part):
     codes = lines
 
+    depth = 2 if part == 1 else 25
+
+    memo = dict()
     answer = 0
     for code in codes:
-        sequences_key2 = translate_sequences([code], NUM_C_TO_ARROWS)
-        sequences_key1 = translate_sequences(sequences_key2, KEY_C_TO_ARROWS)
-        sequences_key0 = translate_sequences(sequences_key1, KEY_C_TO_ARROWS)
-        sequence_min = min(sequences_key0, key=len)
-        answer += len(sequence_min) * int(code[:3])
+        length = 0
+        c_prev = 'A'
+        for c in code:
+            length += min(get_sequence_length(arrows + 'A', depth, memo) for arrows in NUM_C_TO_ARROWS[c_prev][c])
+            c_prev = c
+        answer += length * int(code[:3])
     return answer
 
 
-def translate_sequences(sequences, c_to_arrows):
-    translations = list()
-    for sequence in sequences:
-        seq_translations = ['']
-        c_aiming = 'A'
-        for c in sequence:
-            seq_translations_next = list()
-            for seq_translation in seq_translations:
-                for arrows in c_to_arrows[c_aiming][c]:
-                    seq_translations_next.append(seq_translation + arrows + 'A')
-            seq_translations = seq_translations_next
-            c_aiming = c
-        translations.extend(seq_translations)
-    return translations
+def get_sequence_length(sequence, depth, memo):
+    if depth == 0:
+        return len(sequence)
+
+    length = 0
+    c_prev = 'A'
+    for c in sequence:
+        length += get_transition_length(c_prev, c, depth, memo)
+        c_prev = c
+    return length
+
+
+def get_transition_length(c_prev, c, depth, memo):
+    if c_prev in memo.keys() and c in memo[c_prev].keys() and depth in memo[c_prev][c].keys():
+        return memo[c_prev][c][depth]
+
+    length = min(get_sequence_length(arrows + 'A', depth - 1, memo) for arrows in KEY_C_TO_ARROWS[c_prev][c])
+
+    if c_prev not in memo.keys():
+        memo[c_prev] = dict()
+    if c not in memo[c_prev].keys():
+        memo[c_prev][c] = dict()
+    if depth not in memo[c_prev][c].keys():
+        memo[c_prev][c][depth] = dict()
+    memo[c_prev][c][depth] = length
+    return length
 
 
 if __name__ == '__main__':
