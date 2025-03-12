@@ -16,6 +16,9 @@ class Day19_MonsterMessages : AocUtil.Solver {
                 }
             }
         }
+        if (indexEmpty == -1) {
+            throw new SystemException("Unable to find empty line.");
+        }
 
         var ruleToChar = new Dictionary<int, char>();
         var ruleToPatterns = new Dictionary<int, List<List<int>>>();
@@ -49,43 +52,52 @@ class Day19_MonsterMessages : AocUtil.Solver {
         int answer = 0;
         for (int i = indexEmpty + 1; i < lines.Count; i++) {
             string message = lines[i];
-//             Console.WriteLine("" + (i - indexEmpty - 1) + ": " + message);
-            string match = Match(message, 0, ruleToChar, ruleToPatterns);
-            if (match == message) {
-                Console.WriteLine(message);
-                answer++;
+            List<string> matches = Matches(message, 0, ruleToChar, ruleToPatterns);
+            foreach (string match in matches) {
+                if (match == message) {
+                    answer++;
+                    break;
+                }
             }
         }
         return answer;
     }
 
-    static string Match(string message, int rule, Dictionary<int, char> ruleToChar, Dictionary<int, List<List<int>>> ruleToPatterns) {
-//         Console.WriteLine("  Match(" + message + ", " + rule + ")");
+    private static List<string> Matches(
+        string message,
+        int rule,
+        Dictionary<int, char> ruleToChar,
+        Dictionary<int, List<List<int>>> ruleToPatterns
+    ) {
+        List<string> matches = new List<string>();
         if (ruleToChar.ContainsKey(rule)) {
             char c = ruleToChar[rule];
             if (message.Length > 0 && message[0] == c) {
-                return "" + c;
-            } else {
-                return "!";
+                matches.Add("" + c);
             }
-        }
-        if (!ruleToPatterns.ContainsKey(rule)) {
-            throw new SystemException("Unknown rule: " + rule);
-        }
-        List<List<int>> patterns = ruleToPatterns[rule];
-        foreach (List<int> pattern in patterns) {
-            string match = "";
-            foreach (int patternRule in pattern) {
-                match += Match(message.Substring(match.Length), patternRule, ruleToChar, ruleToPatterns);
-                if (!message.StartsWith(match)) {
-                    break;
+        } else if (ruleToPatterns.ContainsKey(rule)) {
+            List<List<int>> patterns = ruleToPatterns[rule]; // Like: `9 14 | 10 1`
+            foreach (List<int> pattern in patterns) { // Like: `9 14`
+                List<string> patternMatches = new List<string> {""}; // At the currently processed rule.
+                foreach (int patternRule in pattern) { // Like: `9`
+                    List<string> patternMatchesNext = new List<string>(); // Hold for next rule to be processed.
+                    foreach (string match in patternMatches) {
+                        string tail = message.Substring(match.Length);
+                        List<string> tailMatches = Matches(tail, patternRule, ruleToChar, ruleToPatterns);
+                        foreach (string tailMatch in tailMatches) {
+                            patternMatchesNext.Add(match + tailMatch);
+                        }
+                    }
+                    patternMatches = patternMatchesNext;
+                }
+                foreach (string match in patternMatches) { // Survived through each rule in this pattern.
+                    matches.Add(match);
                 }
             }
-            if (message.StartsWith(match)) {
-                return match;
-            }
+        } else {
+            throw new SystemException("Unknown rule: " + rule);
         }
-        return "!";
+        return matches;
     }
 }
 
