@@ -51,6 +51,13 @@ kotlin 2019/solutions/Day##_XXXX.kts <part>
 dotnet script 2020/Solutions/Day##_XXXX.csx <part>
 ```
 
+### 2021 (Haskell)
+
+```commandline
+cd 2021
+runghc Day##_XXXX.hs <part>
+```
+
 ### 2022 (Python)
 
 ```commandline
