@@ -1,6 +1,3 @@
-import Data.List (sort)
-import qualified Data.Map as Map
-
 import AocUtil (solve)
 import Cs (lengthAtLeast, sumFirst)
 
@@ -9,7 +6,7 @@ main = do
 
 getAnswer :: [String] -> Int -> Int
 getAnswer ls 1 = timesIncreasing $ map read ls
-getAnswer ls _ = timesIncreasing $ windowSum 3 $ map read ls
+getAnswer ls 2 = timesIncreasing $ windowSum 3 $ map read ls
 
 timesIncreasing :: [Int] -> Int
 timesIncreasing (a:(b:xs)) = (if b > a then 1 else 0) + timesIncreasing (b:xs)

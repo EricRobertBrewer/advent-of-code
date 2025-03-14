@@ -21,6 +21,7 @@ parseInput :: [String] -> ([Int], [Int])
 parseInput ls = unzip $ map intPair ls
 
 intPair :: String -> (Int, Int)
-intPair l = case words l of
+intPair l =
+    case words l of
     [s1, s2] -> (read s1, read s2)
     _ -> undefined
