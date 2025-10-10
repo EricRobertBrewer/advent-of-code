@@ -32,7 +32,7 @@ incrementPoints mp ((x1, y1), (x2, y2)) =
 
 incrementPointsOrdered :: Map.Map (Int, Int) Int -> ((Int, Int), (Int, Int)) -> Map.Map (Int, Int) Int
 incrementPointsOrdered mp ((x1, y1), (x2, y2)) =
-    let mpInc = incrementPoint mp (x1, y1)
+    let mpInc = Map.insertWith (+) (x1, y1) 1 mp
     in case (x1 == x2, y1 == y2) of
         (True, True) -> mpInc
         (True, False) -> incrementPointsOrdered mpInc ((x1, y1 + 1), (x2, y2))
@@ -40,6 +40,3 @@ incrementPointsOrdered mp ((x1, y1), (x2, y2)) =
         (False, False) -> if y1 < y2
                           then incrementPoints mpInc ((x1 + 1, y1 + 1), (x2, y2))
                           else incrementPoints mpInc ((x1 + 1, y1 - 1), (x2, y2))
-
-incrementPoint :: Map.Map (Int, Int) Int -> (Int, Int) -> Map.Map (Int, Int) Int
-incrementPoint mp p = Map.insertWith (+) p 1 mp
