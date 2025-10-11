@@ -1,5 +1,6 @@
 import AocUtil (solve)
 
+
 main = do
     solve 2 getAnswer
 

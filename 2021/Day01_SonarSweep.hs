@@ -1,6 +1,7 @@
 import AocUtil (solve)
 import Cs (lengthAtLeast)
 
+
 main = do
     solve 1 getAnswer
 

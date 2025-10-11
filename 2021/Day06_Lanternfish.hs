@@ -1,8 +1,9 @@
 import Data.Map (Map)
 import qualified Data.Map as Map
-import qualified Data.Text as T
 
 import AocUtil (solve)
+import Cs (splitOnString)
+
 
 main = do
     solve 6 getAnswer
@@ -11,7 +12,7 @@ getAnswer :: [String] -> Int -> Int
 getAnswer ls part =
     Map.foldl (+) 0 $ processDays timerToCount 0 dayEnd
     where
-        inputFish = map (\x -> read x :: Int) $ map T.unpack $ T.splitOn (T.pack ",") $ T.pack $ head ls
+        inputFish = map (\s -> read s :: Int) $ splitOnString "," (head ls)
         timerToCount = foldl (\mp x -> Map.insertWith (+) x 1 mp) Map.empty inputFish
         dayEnd = if part == 1 then 80 else 256
 

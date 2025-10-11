@@ -3,6 +3,7 @@ import Data.List (partition, transpose)
 import AocUtil (solve)
 import Cs (groupAt)
 
+
 main = do
     solve 4 getAnswer
 

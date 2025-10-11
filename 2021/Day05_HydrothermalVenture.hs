@@ -3,6 +3,7 @@ import qualified Data.Map as Map
 
 import AocUtil (solve)
 
+
 main = do
     solve 5 getAnswer
 

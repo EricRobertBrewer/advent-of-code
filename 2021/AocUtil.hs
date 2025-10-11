@@ -20,8 +20,9 @@ readInputAndGetAnswer day part solver example = do
 
 -- Pad with '0's for single digit days, e.g., 3 -> "03"
 frontPad :: Int -> Char -> Int -> String
-frontPad len c x = replicate (len - length s) c ++ s
-    where s = show x
+frontPad len c x =
+    let s = show x
+    in replicate (len - length s) c ++ s
 
 printUsage :: IO ()
 printUsage = do

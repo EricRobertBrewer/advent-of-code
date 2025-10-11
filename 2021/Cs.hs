@@ -1,7 +1,11 @@
 module Cs (
     groupAt,
     lengthAtLeast,
+    splitOnString,
 ) where
+
+import qualified Data.Text as T
+
 
 groupAt :: Int -> [a] -> [[a]]
 groupAt _ [] = []
@@ -14,3 +18,7 @@ lengthAtLeast 0 _ = True
 lengthAtLeast n xs
     | n < 0 = error $ "Unexpected negative length: " ++ show n
     | n > 0 = if null xs then False else lengthAtLeast (n - 1) $ tail xs
+
+splitOnString :: String -> String -> [String]
+splitOnString sep s =
+    map T.unpack $ T.splitOn (T.pack sep) (T.pack s)

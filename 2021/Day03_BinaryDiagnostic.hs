@@ -2,6 +2,7 @@ import Data.List (transpose)
 
 import AocUtil (solve)
 
+
 main = do
     solve 3 getAnswer
 
