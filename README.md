@@ -82,3 +82,10 @@ runghc Day01_HistorianHysteria.hs 1
 cd 2024
 python <script> <part> [--example|-x]
 ```
+
+### 2025 (Lua)
+
+```commandline
+cd 2025
+lua day##_XXXX.lua <part>
+```
