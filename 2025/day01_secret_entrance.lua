@@ -3,7 +3,7 @@ require 'aoc'
 function get_answer(lines, part)
     local dial = 50
     local zeros = 0
-    for line in lines do
+    for i, line in ipairs(lines) do
         local direction = string.sub(line, 1, 1)
         local clicks = tonumber(string.sub(line, 2))
 

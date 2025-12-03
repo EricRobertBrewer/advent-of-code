@@ -7,9 +7,13 @@ function solve(day, get_answer)
         fname = '0' .. fname
     end
     io.input('../input/2025/' .. fname)
+    local lines = {}
+    for line in io.lines() do
+        table.insert(lines, line)
+    end
 
     local start = os.clock()
-    local answer = get_answer(io.lines(), part)
+    local answer = get_answer(lines, part)
     local duration = os.clock() - start
     print(answer)
     print('Time: ' .. duration .. ' s')
