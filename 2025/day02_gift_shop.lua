@@ -15,8 +15,7 @@ function get_answer(lines, part)
     end
 
     local sum_invalid = 0
-    local f_is_valid = is_valid_1
-    if part == 2 then f_is_valid = is_valid_2 end
+    local f_is_valid = part == 1 and is_valid_1 or is_valid_2
     for i, range in ipairs(ranges) do
         for j = range[1], range[2] do
             if not f_is_valid(j) then

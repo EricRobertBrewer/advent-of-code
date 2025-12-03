@@ -9,3 +9,11 @@ function split_char(s, sep)
     end
     return t
 end
+
+function from_digits(digits)
+    x = 0
+    for _, digit in ipairs(digits) do
+        x = x * 10 + digit
+    end
+    return x
+end
