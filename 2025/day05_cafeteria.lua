@@ -20,7 +20,7 @@ function get_answer(lines, part)
         local lo_hi_strs = split_char(lines[i], '-')
         local lo = tonumber(lo_hi_strs[1])
         local hi = tonumber(lo_hi_strs[2])
-        if lo < hi then ranges_orig[i] = {lo, hi} else ranges_orig[i] = {hi, lo} end
+        ranges_orig[i] = lo < hi and {lo, hi} or {hi, lo}
     end
 
     local ingredients = {}
